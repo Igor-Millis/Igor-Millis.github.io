@@ -71,10 +71,14 @@ focus = [
   "<strong>Pensamento de produto</strong> — requisitos, stakeholders, limitações e uso real.",
 ]
 stack_label = "stack"
-stack_title = "Ferramentas que já usei em entrega"
-stack_note = "Todos os itens abaixo aparecem no código dos projetos deste site."
+stack_title = "Ferramentas e linguagens"
+stack_note = "Os itens de Python e SQL aparecem no código dos projetos deste site; R é minha linguagem do dia a dia em Estatística."
 stack = [
-  ["linguagens", "Python · SQL"],
+  ["linguagens", "Python · R · SQL"],
+  ["r · dados", "tidyverse (dplyr · tidyr · ggplot2 · purrr · readr) · data.table · arrow · DBI / duckdb"],
+  ["r · modelagem", "tidymodels (recipes · parsnip · tune · yardstick) · caret · glmnet · ranger · xgboost · lme4 · survival · forecast / fable"],
+  ["r · inferência", "R base stats · broom · MASS · car · boot"],
+  ["r · relatórios", "R Markdown · Quarto · Shiny · knitr"],
   ["dados", "DuckDB · Parquet / PyArrow · pandas · NumPy · lxml · openpyxl"],
   ["ml & estatística", "scikit-learn · XGBoost · SHAP · matplotlib"],
   ["llm", "Ollama · Qwen2.5 (local) · contratos JSON Schema"],
@@ -239,7 +243,7 @@ s6_label = "06 · próximos"
 s6_title = "Limitações e próximos passos"
 s6_body = '''<ul>
 <li>Ainda sem deploy público — a API roda localmente ou no Docker.</li>
-<li>A calibração das probabilidades não foi avaliada; a interpretação de τ como custo pressupõe isso.</li>
+<li>Calibração verificada depois (nota de pesquisa): os escores são calibrados (ECE ≈ 0,008 no teste), então τ = 0,24 pode ser lido como uma razão de custos de cerca de 3×.</li>
 <li>Planejado: deploy, integração da interface com a API hospedada e documentação final.</li>
 </ul>'''
 
@@ -253,8 +257,8 @@ list_label = "notas"
 format_label = "formato"
 format = "Cada nota: uma pergunta, a matemática, dados reais e o que isso muda na prática."
 
-[research.threshold]
-slug = "threshold-is-a-decision"
+[research.notes.threshold-is-a-decision]
+scripts = ["js/threshold.js"]
 title = "Um threshold é uma decisão"
 seo_title = "Um threshold é uma decisão — escolhendo τ num modelo de inadimplência"
 description = "Por que 0,5 não é um padrão neutro: limiares sensíveis a custo, a razão de custos implícita em τ = 0,24 e a escolha pelo F1 na validação."
@@ -262,3 +266,12 @@ kind = "teoria da decisão estatística"
 date = "2026-11-05"
 minutes = 6
 abstract = "Por que 0,5 não é neutro, o que τ = 0,24 implica sobre o custo dos erros e como escolhê-lo sem tocar no conjunto de teste."
+
+[research.notes.calibration-check]
+title = "τ = 0,24 é mesmo uma razão de custos?"
+seo_title = "τ = 0,24 é mesmo uma razão de custos? — verificando a calibração de um modelo de crédito XGBoost"
+description = "Diagrama de confiabilidade, Brier score e ECE do modelo Credit Default; recalibração de Platt versus isotônica; e um intervalo bootstrap para o threshold ótimo de F1."
+kind = "calibração · reamostragem"
+date = "2026-11-06"
+minutes = 7
+abstract = "Verificando a ressalva da nota anterior: os escores são calibrados, recalibrar ajuda e quão ruidoso é o threshold ótimo?"

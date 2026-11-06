@@ -21,10 +21,12 @@ ROUTES: dict[str, str] = {
     "edudata": "/work/edudata/",
     "credit": "/work/credit-default-api/",
     "research": "/research/",
-    "note:threshold-is-a-decision": "/research/threshold-is-a-decision/",
 }
 
-NOTES = ["threshold-is-a-decision"]  # newest first
+# Research notes, newest first. Each slug needs [research.notes.<slug>] in every content/<lang>.toml
+# and a body in content/notes/<slug>.<lang>.html.
+NOTES = ["calibration-check", "threshold-is-a-decision"]
+ROUTES.update({f"note:{s}": f"/research/{s}/" for s in NOTES})
 
 
 def _toml(rel: str) -> dict:
@@ -44,7 +46,8 @@ class Site:
     def __post_init__(self) -> None:
         for lang in self.langs:
             self.content[lang] = _toml(f"content/{lang}.toml")
-        self.data = {"credit": _json("data/credit_default.json"), "edudata": _json("data/edudata.json")}
+        self.data = {"credit": _json("data/credit_default.json"), "edudata": _json("data/edudata.json"),
+                     "calibration": _json("data/calibration.json")}
 
     # ---- languages -------------------------------------------------------
     @property

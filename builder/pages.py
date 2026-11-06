@@ -4,7 +4,8 @@ from __future__ import annotations
 import json
 
 from .charts import hbars, threshold_chart
-from .core import ROOT, Site, attr, esc, integer, num
+from .charts import reliability as reliability_svg
+from .core import NOTES, ROOT, Site, attr, esc, integer, num
 from .layout import page, section
 
 KATEX = "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist"
@@ -91,6 +92,44 @@ def threshold_explorer(site: Site, lang: str) -> str:
   </div>
   <figcaption style="padding:0 18px 16px">{esc(c['th_cap'])}</figcaption>
 </figure>"""
+
+
+def reliability_figure(site: Site, lang: str) -> str:
+    d = site.data["calibration"]
+    pt = lang == "pt"
+    head = "modelo salvo · conjunto de teste · 10 bins" if pt else "saved model · test set · 10 bins"
+    cap = ("Cada ponto é um bin de probabilidade prevista (área ∝ n); a faixa de baixo mostra quantos clientes caem em cada bin. "
+           "O bin 0,9–1,0 (n = 2) não é plotado. Fonte: research/calibration/calibration.py." if pt else
+           "Each point is a bin of predicted probability (area ∝ n); the strip below shows how many clients fall in each bin. "
+           "The 0.9–1.0 bin (n = 2) is not plotted. Source: research/calibration/calibration.py.")
+    xl = "probabilidade prevista média" if pt else "mean predicted probability"
+    yl = "taxa de inadimplência observada" if pt else "observed default rate"
+    return f"""<figure class="panel">
+  <div class="panel-h"><span><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>{esc(head)}</span><span>n = {integer(sum(q['n'] for q in d['saved']['reliability']), lang)}</span></div>
+  <div class="panel-b chart"><span class="label" style="display:block;margin:0 0 8px">y: {esc(yl)} · x: {esc(xl)}</span>{reliability_svg(d['saved']['reliability'], lang)}</div>
+  <figcaption style="padding:0 18px 16px">{esc(cap)}</figcaption>
+</figure>"""
+
+
+def calibration_table(site: Site, lang: str) -> str:
+    d = site.data["calibration"]
+    pt = lang == "pt"
+    cols = (["modelo", "Brier", "log loss", "ECE", "ROC AUC", "p̂ médio", "g(0,24)", "c<sub>FN</sub>/c<sub>FP</sub>"] if pt else
+            ["model", "Brier", "log loss", "ECE", "ROC AUC", "mean p̂", "g(0.24)", "c<sub>FN</sub>/c<sub>FP</sub>"])
+    names = {"saved": "salvo (24k)" if pt else "saved (24k)", "raw": "refit, bruto" if pt else "refit, raw",
+             "platt": "refit + Platt", "isotonic": "refit + isotônica" if pt else "refit + isotonic"}
+    rows = []
+    for k in ("saved", "raw", "platt", "isotonic"):
+        r = d[k]
+        g = r.get("g_of_024", 0.24)
+        rows.append([names[k], num(r["brier"], lang, 4), num(r["logloss"], lang, 4), num(r["ece"], lang, 4),
+                     num(r["auc"], lang, 4), num(r["mean_p"], lang, 4), num(g, lang, 3), num((1 - g) / g, lang, 2) + "×"])
+    base = num(d["saved"]["base_rate"], lang, 4)
+    cap = (f"Conjunto de teste (n = 6.000, taxa real de inadimplência = {base}). Calibradores ajustados na validação (n = 4.800). "
+           "g(0,24) = probabilidade calibrada correspondente ao threshold bruto 0,24." if pt else
+           f"Test set (n = 6,000, observed default rate = {base}). Calibrators fitted on validation (n = 4,800). "
+           "g(0.24) = calibrated probability corresponding to the raw threshold 0.24.")
+    return table(cols, rows, hl={0}, cls="l2") + f'<p class="cap">{esc(cap)}</p>'
 
 
 def person_ld(site: Site, lang: str) -> dict:
@@ -339,8 +378,10 @@ def research(site: Site, lang: str) -> str:
     c = site.content[lang]
     r = c["research"]
     ui = c["ui"]
-    n = r["threshold"]
-    rows = f"""<a class="note-row rv" href="{site.url(lang, 'note:threshold-is-a-decision')}">
+    rows = ""
+    for slug in NOTES:
+        n = r["notes"][slug]
+        rows += f"""<a class="note-row rv" href="{site.url(lang, f'note:{slug}')}">
   <time datetime="{n['date']}">{n['date']}</time>
   <span><h3>{esc(n['title'])}</h3><p>{esc(n['abstract'])}</p></span>
   <span class="kind">{esc(n['kind'])}<br><span class="muted">{n['minutes']} {esc(ui['min_read'])}</span></span>
@@ -357,11 +398,20 @@ def research(site: Site, lang: str) -> str:
 def note(site: Site, lang: str, slug: str) -> str:
     c = site.content[lang]
     ui = c["ui"]
-    n = c["research"]["threshold"]
+    n = c["research"]["notes"][slug]
     key = f"note:{slug}"
     html_body = (ROOT / "content" / "notes" / f"{slug}.{lang}.html").read_text(encoding="utf-8")
-    html_body = html_body.replace("{credit}", site.url(lang, "credit"))
-    html_body = html_body.replace("<!--explorer-->", threshold_explorer(site, lang))
+    # Link placeholders: {credit}, {edudata}, {note:<slug>}
+    html_body = html_body.replace("{credit}", site.url(lang, "credit")).replace("{edudata}", site.url(lang, "edudata"))
+    for other in NOTES:
+        html_body = html_body.replace("{note:%s}" % other, site.url(lang, f"note:{other}"))
+    # Component placeholders
+    if "<!--explorer-->" in html_body:
+        html_body = html_body.replace("<!--explorer-->", threshold_explorer(site, lang))
+    if "<!--reliability-->" in html_body:
+        html_body = html_body.replace("<!--reliability-->", reliability_figure(site, lang))
+    if "<!--calibration-table-->" in html_body:
+        html_body = html_body.replace("<!--calibration-table-->", calibration_table(site, lang))
     by = (f'<div class="byline"><span>{esc(site.config["author"]["name"])}</span><time datetime="{n["date"]}">{n["date"]}</time>'
           f'<span>{n["minutes"]} {esc(ui["min_read"])}</span><span class="accent">{esc(n["kind"])}</span></div>')
     head = page_head(f'<a href="{site.url(lang, "research")}" style="text-decoration:none">{esc(ui["back_research"])}</a>',
@@ -382,7 +432,7 @@ def note(site: Site, lang: str, slug: str) -> str:
         "url": site.abs_url(lang, key),
     }
     return page(site, lang, key, title=n["seo_title"], description=n["description"], body=body,
-                scripts=("js/threshold.js",), head_extra=katex, jsonld=ld, og_type="article")
+                scripts=tuple(n.get("scripts", ())), head_extra=katex, jsonld=ld, og_type="article")
 
 
 def not_found(site: Site) -> str:

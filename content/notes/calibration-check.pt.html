@@ -1,0 +1,55 @@
+<p>A nota anterior, <a href="{note:threshold-is-a-decision}">“Um threshold é uma decisão”</a>, leu o threshold operacional do modelo <a href="{credit}">Credit Default</a> como uma razão de custos — \(\tau = 0{,}24\) significa que deixar passar um inadimplente custa cerca de \(3{,}2\times\) um falso alarme — e terminou com uma ressalva: essa leitura só vale se os escores forem <em>probabilidades calibradas</em>. Esta nota faz a verificação.</p>
+
+<h2><span class="n">§1</span>O que é “calibrado”</h2>
+
+<p>Um escore \(\hat p\) é calibrado quando, entre todos os clientes que recebem o escore \(p\), uma fração \(p\) de fato fica inadimplente:</p>
+
+<div class="eq">\[ \Pr\big(Y = 1 \mid \hat p(X) = p\big) = p \quad \text{para todo } p. \]<span class="tag-n">(1)</span></div>
+
+<p>A qualidade de ordenação (ROC AUC) não diz nada sobre isso: qualquer transformação crescente de \(\hat p\) tem a mesma AUC. Três medidas, todas calculadas no conjunto de teste intocado:</p>
+
+<div class="eq">\[ \text{Brier} = \frac1N\sum_{i}(\hat p_i - y_i)^2, \qquad \text{ECE} = \sum_{b=1}^{10}\frac{n_b}{N}\,\big|\bar p_b - \bar y_b\big|, \]<span class="tag-n">(2)</span></div>
+
+<p>além da log loss. O ECE (erro de calibração esperado) compara, em cada um de 10 bins de probabilidade, a probabilidade prevista média \(\bar p_b\) com a taxa de inadimplência observada \(\bar y_b\).</p>
+
+<h2><span class="n">§2</span>Protocolo</h2>
+
+<ul>
+<li><strong>O mesmo split do projeto.</strong> Treino/teste 80/20 estratificado e depois treino/validação 80/20, ambos com <code>random_state = 42</code>.</li>
+<li><strong>Modelo salvo.</strong> O pipeline de produção foi re-treinado nas 24.000 linhas de treino, então é avaliado apenas nas 6.000 de teste.</li>
+<li><strong>Recalibrar exige dados que o modelo nunca viu.</strong> Os mesmos hiperparâmetros foram re-treinados nas 19.200 linhas; Platt scaling (regressão logística sobre o logit) e regressão isotônica foram ajustados nas 4.800 de validação; tudo foi avaliado no teste.</li>
+<li><strong>Checagem.</strong> O refit reproduz o notebook exatamente: \(\tau = 0{,}24\), F1 = 0,5405 e ROC AUC = 0,7833 na validação. O modelo salvo dá ROC AUC = 0,7770 no teste, como reportado.</li>
+</ul>
+
+<h2><span class="n">§3</span>Resultado: os escores já são calibrados</h2>
+
+<!--reliability-->
+
+<p>Os pontos ficam sobre a diagonal. No conjunto de teste inteiro, a probabilidade prevista média é <strong>0,2213</strong>, contra uma taxa real de inadimplência de <strong>0,2212</strong>, e o ECE = 0,0076 (intervalo bootstrap de 95%: 0,007–0,020; o ECE é viesado para cima em amostras finitas, por isso o intervalo pende para a direita). As maiores diferenças são uma leve superconfiança nos bins de 0,6 a 0,8 (previsto 0,66 contra observado 0,62, e 0,75 contra 0,72) — com cerca de 240 clientes por bin, isso dá cerca de 1 a 1,2 erro-padrão, dentro do ruído.</p>
+
+<!--calibration-table-->
+
+<p>A recalibração confirma pelo outro lado. O mapa de Platt ajustado é \(\operatorname{logit} g(p) = 0{,}978\,\operatorname{logit} p - 0{,}006\) — quase a identidade. A regressão isotônica chega a <em>piorar</em> a log loss (0,4394 contra 0,4301): com 4.800 linhas de validação, sua função em degraus ajusta ruído.</p>
+
+<h2><span class="n">§4</span>Então τ = 0,24 é uma razão de custos?</h2>
+
+<p>Sim, aproximadamente. A recalibração é monótona, então não muda nenhuma decisão — muda apenas o que o threshold <em>significa</em>. Passando o corte bruto por cada calibrador, obtém-se</p>
+
+<div class="eq">\[ \frac{c_{FN}}{c_{FP}} = \frac{1 - g(0{,}24)}{g(0{,}24)} \in [\,2{,}7;\; 3{,}2\,]. \]<span class="tag-n">(3)</span></div>
+
+<p>A leitura de negócio se sustenta: <strong>o modelo trata deixar passar um inadimplente como cerca de três vezes mais caro que um falso alarme</strong>. Agora isso é uma afirmação defensável, não uma premissa.</p>
+
+<h2><span class="n">§5</span>Uma correção: o próprio threshold é ruidoso</h2>
+
+<p>A nota anterior comparou o ótimo empírico 0,24 com o threshold teórico que maximiza o F1 para escores calibrados, \(F1^{*}/2 \approx 0{,}27\), e atribuiu a diferença a uma calibração imperfeita. A calibração está boa, então essa explicação estava errada. Reamostrando a validação 500 vezes e recalculando o threshold ótimo para F1, obtém-se um <strong>intervalo bootstrap de 95% de [0,22; 0,33]</strong> (mediana 0,24). A curva de F1 na validação é plana — entre 0,532 e 0,541 para todo \(\tau\) de 0,22 a 0,30 —, então 0,27 está bem dentro do ruído. A diferença é variabilidade amostral, não descalibração.</p>
+
+<h2><span class="n">§6</span>Conclusões</h2>
+
+<ul>
+<li>Verifique a calibração antes de ler escores como probabilidades — e antes de “corrigi-la”. Aqui, recalibrar acrescentaria um componente sem melhorar nada.</li>
+<li>Recalibrar tem custo: a regressão isotônica sobreajusta conjuntos de calibração pequenos. Platt scaling é o padrão mais seguro quando há poucos dados.</li>
+<li>Um threshold ótimo é uma estimativa. Reporte sua incerteza; numa função objetivo plana, 0,24 contra 0,27 não significa nada.</li>
+<li>Com a calibração verificada, a probabilidade devolvida pela API pode ser lida literalmente: um cliente com escore 0,30 pertence a um grupo em que cerca de 30% ficam inadimplentes.</li>
+</ul>
+
+<p class="cap">Código e resultados: <a href="https://github.com/Igor-Millis/Igor-Millis.github.io/tree/main/research/calibration">research/calibration/</a> (scikit-learn 1.9.0, xgboost 3.3.0) · Modelo: <a href="https://github.com/Igor-Millis/credit-default-api">github.com/Igor-Millis/credit-default-api</a> · Platt, J. (1999), <em>Probabilistic outputs for support vector machines</em>; Niculescu-Mizil &amp; Caruana (2005), <em>Predicting good probabilities with supervised learning</em>, ICML.</p>

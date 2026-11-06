@@ -1,0 +1,55 @@
+<p>The previous note, <a href="{note:threshold-is-a-decision}">“A threshold is a decision”</a>, read the operating threshold of the <a href="{credit}">Credit Default</a> model as a cost ratio — \(\tau = 0.24\) means a missed defaulter costs about \(3.2\times\) a false alarm — and ended with a caveat: that reading holds only if the scores are <em>calibrated probabilities</em>. This note runs the check.</p>
+
+<h2><span class="n">§1</span>What “calibrated” means</h2>
+
+<p>A score \(\hat p\) is calibrated when, among all clients who receive the score \(p\), a fraction \(p\) actually default:</p>
+
+<div class="eq">\[ \Pr\big(Y = 1 \mid \hat p(X) = p\big) = p \quad \text{for all } p. \]<span class="tag-n">(1)</span></div>
+
+<p>Ranking quality (ROC AUC) says nothing about this: any increasing transformation of \(\hat p\) has the same AUC. Three measures, all computed on the untouched test set:</p>
+
+<div class="eq">\[ \text{Brier} = \frac1N\sum_{i}(\hat p_i - y_i)^2, \qquad \text{ECE} = \sum_{b=1}^{10}\frac{n_b}{N}\,\big|\bar p_b - \bar y_b\big|, \]<span class="tag-n">(2)</span></div>
+
+<p>plus the log loss. ECE (expected calibration error) compares, in each of 10 probability bins, the mean predicted probability \(\bar p_b\) with the observed default rate \(\bar y_b\).</p>
+
+<h2><span class="n">§2</span>Protocol</h2>
+
+<ul>
+<li><strong>Same split as the project.</strong> 80/20 stratified train/test, then 80/20 train/validation, both with <code>random_state = 42</code>.</li>
+<li><strong>Saved model.</strong> The production pipeline was refit on all 24,000 training rows, so it is evaluated only on the 6,000 test rows.</li>
+<li><strong>Recalibration needs data the model never saw.</strong> The same hyperparameters were refit on the 19,200-row split; Platt scaling (logistic regression on the logit) and isotonic regression were fitted on the 4,800 validation rows; everything was scored on test.</li>
+<li><strong>Sanity check.</strong> The refit reproduces the notebook exactly: validation \(\tau = 0.24\), F1 = 0.5405, ROC AUC = 0.7833. The saved model gives test ROC AUC = 0.7770, as reported.</li>
+</ul>
+
+<h2><span class="n">§3</span>Result: the scores are already calibrated</h2>
+
+<!--reliability-->
+
+<p>The points sit on the diagonal. Across the whole test set the mean predicted probability is <strong>0.2213</strong> against an observed default rate of <strong>0.2212</strong>, and ECE = 0.0076 (bootstrap 95% interval 0.007–0.020; ECE is biased upward in finite samples, so the interval leans right). The largest gaps are a slight overconfidence in the 0.6–0.8 bins (predicted 0.66 vs observed 0.62, and 0.75 vs 0.72) — with about 240 clients per bin, that is about 1–1.2 standard errors, within noise.</p>
+
+<!--calibration-table-->
+
+<p>Recalibration confirms it from the other side. The fitted Platt map is \(\operatorname{logit} g(p) = 0.978\,\operatorname{logit} p - 0.006\) — almost the identity. Isotonic regression slightly <em>worsens</em> the log loss (0.4394 vs 0.4301): with 4,800 validation rows, its step function fits noise.</p>
+
+<h2><span class="n">§4</span>So, is τ = 0.24 a cost ratio?</h2>
+
+<p>Yes, approximately. Recalibration is monotone, so it does not change any decision — it only changes what the threshold <em>means</em>. Mapping the raw cut-off through each calibrator gives</p>
+
+<div class="eq">\[ \frac{c_{FN}}{c_{FP}} = \frac{1 - g(0.24)}{g(0.24)} \in [\,2.7,\; 3.2\,]. \]<span class="tag-n">(3)</span></div>
+
+<p>The business reading survives: <strong>the model treats a missed defaulter as roughly three times as costly as a false alarm</strong>. That is now a defensible statement rather than an assumption.</p>
+
+<h2><span class="n">§5</span>A correction: the threshold itself is noisy</h2>
+
+<p>The previous note compared the empirical optimum 0.24 with the theoretical F1-optimal threshold for calibrated scores, \(F1^{*}/2 \approx 0.27\), and attributed the gap to imperfect calibration. Calibration turns out to be fine, so that explanation was wrong. Resampling the validation set 500 times and recomputing the F1-optimal threshold gives a <strong>95% bootstrap interval of [0.22, 0.33]</strong> (median 0.24). The validation F1 curve is flat — between 0.532 and 0.541 for every \(\tau\) from 0.22 to 0.30 — so 0.27 is well inside the noise. The gap is sampling variability, not miscalibration.</p>
+
+<h2><span class="n">§6</span>Takeaways</h2>
+
+<ul>
+<li>Check calibration before reading scores as probabilities — and before “fixing” it. Here, recalibrating would have added a component without improving anything.</li>
+<li>Recalibration has a cost: isotonic regression overfits small calibration sets. Platt scaling is the safer default when data is limited.</li>
+<li>An optimal threshold is an estimate. Report its uncertainty; on a flat objective, a 0.24-vs-0.27 difference means nothing.</li>
+<li>With calibration verified, the API's probability output can be read literally: a client scored 0.30 belongs to a group in which about 30% default.</li>
+</ul>
+
+<p class="cap">Code and results: <a href="https://github.com/Igor-Millis/Igor-Millis.github.io/tree/main/research/calibration">research/calibration/</a> (scikit-learn 1.9.0, xgboost 3.3.0) · Model: <a href="https://github.com/Igor-Millis/credit-default-api">github.com/Igor-Millis/credit-default-api</a> · Platt, J. (1999), <em>Probabilistic outputs for support vector machines</em>; Niculescu-Mizil &amp; Caruana (2005), <em>Predicting good probabilities with supervised learning</em>, ICML.</p>

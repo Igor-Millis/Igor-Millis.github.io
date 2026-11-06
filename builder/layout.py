@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 
-from .core import ROUTES, Site, attr, esc
+from .core import NOTES, ROUTES, Site, attr, esc
 
 FONTS = (
     "https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@400;500"
@@ -55,8 +55,8 @@ def _cmdk_data(site: Site, lang: str, key: str) -> str:
         {"label": "EduData", "hint": ui["nav_work"], "href": site.url(lang, "edudata")},
         {"label": "Credit Default API", "hint": ui["nav_work"], "href": site.url(lang, "credit")},
         {"label": ui["nav_research"], "hint": "03", "href": site.url(lang, "research")},
-        {"label": c["research"]["threshold"]["title"], "hint": ui["nav_research"],
-         "href": site.url(lang, "note:threshold-is-a-decision")},
+        *({"label": c["research"]["notes"][s]["title"], "hint": ui["nav_research"],
+           "href": site.url(lang, f"note:{s}")} for s in NOTES),
         {"label": ui["nav_about"], "hint": "01", "href": site.url(lang, "about")},
         {"label": ui["copy_email"], "hint": a["email"], "action": "copy", "value": a["email"]},
         {"label": "GitHub", "hint": a["github_handle"], "href": a["github"], "ext": True},

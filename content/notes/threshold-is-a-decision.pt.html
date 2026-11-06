@@ -20,7 +20,7 @@
 
 <p>Lido ao pé da letra: escolher 0,24 diz que <strong>deixar passar um inadimplente custa cerca de três vezes mais que um falso alarme</strong>. É uma afirmação com a qual uma equipe de crédito pode concordar ou discordar — e esse é justamente o ponto. Um threshold transforma uma premissa de negócio em um número.</p>
 
-<div class="note"><strong>Ressalva — calibração.</strong> A equação (3) vale para <em>probabilidades</em>. Se \(\hat p\) não for calibrado (se, entre clientes com escore 0,3, a taxa de inadimplência não for de cerca de 30%), a razão em (4) é apenas indicativa. A calibração não foi avaliada no projeto; um diagrama de confiabilidade e o Brier score são a próxima verificação natural.</div>
+<div class="note"><strong>Ressalva — calibração.</strong> A equação (3) vale para <em>probabilidades</em>. Se \(\hat p\) não for calibrado (se, entre clientes com escore 0,3, a taxa de inadimplência não for de cerca de 30%), a razão em (4) é apenas indicativa. A calibração não foi avaliada no projeto — <a href="{note:calibration-check}">a nota seguinte faz isso</a>: os escores são calibrados e a razão implícita se mantém em cerca de 2,7–3,2×.</div>
 
 <h2><span class="n">§2</span>O que o projeto fez de fato</h2>
 
@@ -36,7 +36,7 @@
 
 <div class="eq">\[ \tau_{F1}^{*} = \frac{F1^{*}}{2}. \]<span class="tag-n">(5)</span></div>
 
-<p>Com \(F1^{*} \approx 0{,}54\) na validação, (5) prevê \(\tau \approx 0{,}27\). O ótimo empírico, 0,24, fica próximo — coerente com escores razoavelmente, mas não perfeitamente, calibrados. Isso também explica por que thresholds ótimos para F1 costumam ficar bem abaixo de 0,5: o F1 é no máximo 1, então, para um modelo calibrado, o threshold ótimo nunca passa de 0,5.</p>
+<p>Com \(F1^{*} \approx 0{,}54\) na validação, (5) prevê \(\tau \approx 0{,}27\). O ótimo empírico, 0,24, fica próximo. <em>Atualização:</em> a nota seguinte <a href="{note:calibration-check}">verifica a calibração</a> — os escores são bem calibrados e a diferença é ruído amostral: o intervalo bootstrap de 95% do threshold ótimo de F1 é [0,22; 0,33]. Isso também explica por que thresholds ótimos para F1 costumam ficar bem abaixo de 0,5: o F1 é no máximo 1, então, para um modelo calibrado, o threshold ótimo nunca passa de 0,5.</p>
 
 <h2><span class="n">§4</span>Conclusões</h2>
 

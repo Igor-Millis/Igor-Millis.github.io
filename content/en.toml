@@ -71,10 +71,14 @@ focus = [
   "<strong>Product thinking</strong> — requirements, stakeholders, limitations and real use.",
 ]
 stack_label = "stack"
-stack_title = "Tools I've shipped with"
-stack_note = "Every item below appears in the code of the projects on this site."
+stack_title = "Tools and languages"
+stack_note = "Python and SQL items appear in the code of the projects on this site; R is my day-to-day language for statistics."
 stack = [
-  ["languages", "Python · SQL"],
+  ["languages", "Python · R · SQL"],
+  ["r · data", "tidyverse (dplyr · tidyr · ggplot2 · purrr · readr) · data.table · arrow · DBI / duckdb"],
+  ["r · modeling", "tidymodels (recipes · parsnip · tune · yardstick) · caret · glmnet · ranger · xgboost · lme4 · survival · forecast / fable"],
+  ["r · inference", "R base stats · broom · MASS · car · boot"],
+  ["r · reporting", "R Markdown · Quarto · Shiny · knitr"],
   ["data", "DuckDB · Parquet / PyArrow · pandas · NumPy · lxml · openpyxl"],
   ["ml & stats", "scikit-learn · XGBoost · SHAP · matplotlib"],
   ["llm", "Ollama · Qwen2.5 (local) · JSON-schema contracts"],
@@ -239,7 +243,7 @@ s6_label = "06 · next"
 s6_title = "Limitations & next steps"
 s6_body = '''<ul>
 <li>No public deployment yet — the API runs locally or in Docker.</li>
-<li>Probability calibration was not evaluated; the cost interpretation of τ assumes it.</li>
+<li>Calibration checked after the fact (research note): scores are calibrated (ECE ≈ 0.008 on test), so τ = 0.24 can be read as a cost ratio of about 3×.</li>
 <li>Planned: deploy, integrate the interface with the hosted API and finalize documentation.</li>
 </ul>'''
 
@@ -253,8 +257,8 @@ list_label = "notes"
 format_label = "format"
 format = "Each note: a question, the math, real data, and what it changes in practice."
 
-[research.threshold]
-slug = "threshold-is-a-decision"
+[research.notes.threshold-is-a-decision]
+scripts = ["js/threshold.js"]
 title = "A threshold is a decision"
 seo_title = "A threshold is a decision — choosing τ for a credit-default model"
 description = "Why 0.5 is not a neutral default: cost-sensitive thresholds, the cost ratio implied by τ = 0.24, and F1-optimal selection on validation data."
@@ -262,3 +266,12 @@ kind = "statistical decision theory"
 date = "2026-11-05"
 minutes = 6
 abstract = "Why 0.5 is not neutral, what τ = 0.24 implies about error costs, and how to choose it without touching the test set."
+
+[research.notes.calibration-check]
+title = "Is τ = 0.24 really a cost ratio?"
+seo_title = "Is τ = 0.24 really a cost ratio? — checking calibration of an XGBoost credit model"
+description = "Reliability diagram, Brier score and ECE for the Credit Default model; Platt vs isotonic recalibration; and a bootstrap interval for the F1-optimal threshold."
+kind = "calibration · resampling"
+date = "2026-11-06"
+minutes = 7
+abstract = "Checking the caveat of the previous note: are the scores calibrated, does recalibration help, and how noisy is the optimal threshold?"

@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import json
+import math
 
-from .core import esc, num
+from .core import esc, integer, num
 
 # Geometry shared with static/js/threshold.js through data attributes.
 TH = {"w": 640, "h": 300, "l": 40, "r": 14, "t": 14, "b": 34, "x0": 0.1, "x1": 0.9}
@@ -70,3 +71,37 @@ def hbars(items: list[list], lang: str, *, digits: int = 3, highlight: int = 1, 
             f'<text x="{label_w + bw + 8:.1f}" y="{y + 15}">{num(v, lang, digits)}</text>'
         )
     return f'<svg viewBox="0 0 {w} {h}" role="img" aria-label="bar chart">{"".join(out)}</svg>'
+
+
+def reliability(rows: list[dict], lang: str, *, min_n: int = 20) -> str:
+    """Reliability diagram: observed default rate vs mean predicted probability per bin,
+    with the bin counts as a histogram strip underneath."""
+    w, h, l, r, t, b = 640, 400, 44, 16, 14, 96
+    ph = h - t - b                      # plot height
+    X = lambda v: l + v * (w - l - r)    # noqa: E731
+    Y = lambda v: t + (1 - v) * ph       # noqa: E731
+    out = []
+    for v in (0, 0.25, 0.5, 0.75, 1):
+        out.append(f'<line class="gl" x1="{l}" x2="{w - r}" y1="{Y(v):.1f}" y2="{Y(v):.1f}"/>'
+                   f'<text x="{l - 8}" y="{Y(v) + 4:.1f}" text-anchor="end">{num(v, lang, 2)}</text>')
+        out.append(f'<text x="{X(v):.1f}" y="{t + ph + 18}" text-anchor="middle">{num(v, lang, 2)}</text>')
+    out.append(f'<line class="ax" x1="{l}" x2="{w - r}" y1="{t + ph}" y2="{t + ph}"/>')
+    out.append(f'<line x1="{X(0)}" y1="{Y(0)}" x2="{X(1)}" y2="{Y(1)}" stroke="var(--text-3)" stroke-dasharray="3 4"/>')
+    out.append(f'<text x="{X(0.83):.1f}" y="{Y(0.9):.1f}" text-anchor="end">{"calibração perfeita" if lang == "pt" else "perfect calibration"}</text>')
+    shown = [q for q in rows if q["n"] >= min_n]
+    d = " ".join(f"{'M' if i == 0 else 'L'}{X(q['mean_p']):.1f},{Y(q['obs']):.1f}" for i, q in enumerate(shown))
+    out.append(f'<path class="ln-a" d="{d}"/>')
+    nmax = max(q["n"] for q in rows)
+    for q in shown:
+        rad = 3 + 6 * math.sqrt(q["n"] / nmax)
+        out.append(f'<circle cx="{X(q["mean_p"]):.1f}" cy="{Y(q["obs"]):.1f}" r="{rad:.1f}" fill="var(--bg)" stroke="var(--accent)" stroke-width="1.5">'
+                   f'<title>p̄ = {num(q["mean_p"], lang, 3)} · obs = {num(q["obs"], lang, 3)} · n = {integer(q["n"], lang)}</title></circle>')
+    # histogram strip
+    hy, hh = t + ph + 36, 44
+    out.append(f'<text x="{l - 8}" y="{hy + 10}" text-anchor="end">n</text>')
+    for q in rows:
+        x0 = X(q["bin"] / 10) + 2
+        bh = max(1.0, hh * q["n"] / nmax)
+        out.append(f'<rect class="bar" x="{x0:.1f}" y="{hy + hh - bh:.1f}" width="{(w - l - r) / 10 - 4:.1f}" height="{bh:.1f}"/>'
+                   f'<text x="{x0 + (w - l - r) / 20 - 2:.1f}" y="{hy + hh + 14}" text-anchor="middle">{integer(q["n"], lang)}</text>')
+    return f'<svg viewBox="0 0 {w} {h}" role="img" aria-label="reliability diagram">{"".join(out)}</svg>'

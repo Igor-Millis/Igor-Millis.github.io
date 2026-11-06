@@ -20,7 +20,7 @@
 
 <p>Read literally: choosing 0.24 says that <strong>missing a defaulter costs about three times as much as a false alarm</strong>. That is a statement a credit team can agree or disagree with — which is exactly the point. A threshold turns a business assumption into a number.</p>
 
-<div class="note"><strong>Caveat — calibration.</strong> Equation (3) applies to <em>probabilities</em>. If \(\hat p\) is not calibrated (if, among clients scored 0.3, the default rate is not about 30%), the implied ratio in (4) is only indicative. Calibration was not evaluated in the project; a reliability diagram and the Brier score are the natural next check.</div>
+<div class="note"><strong>Caveat — calibration.</strong> Equation (3) applies to <em>probabilities</em>. If \(\hat p\) is not calibrated (if, among clients scored 0.3, the default rate is not about 30%), the implied ratio in (4) is only indicative. Calibration was not evaluated in the project — <a href="{note:calibration-check}">the follow-up note does it</a>: the scores are calibrated, and the implied ratio holds at about 2.7–3.2×.</div>
 
 <h2><span class="n">§2</span>What the project actually did</h2>
 
@@ -36,7 +36,7 @@
 
 <div class="eq">\[ \tau_{F1}^{*} = \frac{F1^{*}}{2}. \]<span class="tag-n">(5)</span></div>
 
-<p>With validation \(F1^{*} \approx 0.54\), (5) predicts \(\tau \approx 0.27\). The empirical optimum, 0.24, is close — consistent with reasonably, but not perfectly, calibrated scores. It also explains why F1-optimal thresholds are usually well below 0.5: F1 is at most 1, so for a calibrated model the optimal threshold can never exceed 0.5.</p>
+<p>With validation \(F1^{*} \approx 0.54\), (5) predicts \(\tau \approx 0.27\). The empirical optimum, 0.24, is close. <em>Update:</em> the follow-up note <a href="{note:calibration-check}">checks calibration</a> — the scores are well calibrated, and the gap is sampling noise: the bootstrap 95% interval of the F1-optimal threshold is [0.22, 0.33]. It also explains why F1-optimal thresholds are usually well below 0.5: F1 is at most 1, so for a calibrated model the optimal threshold can never exceed 0.5.</p>
 
 <h2><span class="n">§4</span>Takeaways</h2>
 
