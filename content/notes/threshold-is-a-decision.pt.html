@@ -1,0 +1,50 @@
+<p>Um classificador como o XGBoost não entrega uma decisão. Ele entrega um escore \(\hat p(x) \in [0,1]\), e a decisão só aparece quando escolhemos uma regra:</p>
+
+<div class="eq">\[ \hat y(x) = \mathbb{1}\{\hat p(x) \ge \tau\} \]<span class="tag-n">(1)</span></div>
+
+<p>As bibliotecas usam \(\tau = 0{,}5\) por padrão. Esse padrão parece neutro, mas não é: ele embute uma crença específica sobre o custo dos erros. No projeto <a href="{credit}">Credit Default</a>, mover \(\tau\) de 0,50 para 0,24 elevou o recall dos inadimplentes de 35,6% para 60,1% — uma mudança maior que a de qualquer busca de hiperparâmetros.</p>
+
+<h2><span class="n">§1</span>A visão de custos</h2>
+
+<p>Seja \(c_{FP}\) o custo de sinalizar um cliente que pagaria (falso positivo) e \(c_{FN}\) o custo de deixar passar um inadimplente (falso negativo). Para um cliente com probabilidade real de inadimplência \(p\), o custo esperado de cada ação é</p>
+
+<div class="eq">\[ \mathbb{E}[\text{custo} \mid \hat y = 1] = (1-p)\,c_{FP}, \qquad \mathbb{E}[\text{custo} \mid \hat y = 0] = p\,c_{FN}. \]<span class="tag-n">(2)</span></div>
+
+<p>Prever “inadimplente” é a melhor ação sempre que \(p\,c_{FN} \ge (1-p)\,c_{FP}\), o que leva ao threshold ótimo de Bayes</p>
+
+<div class="eq">\[ \tau^{*} = \frac{c_{FP}}{c_{FP} + c_{FN}}. \]<span class="tag-n">(3)</span></div>
+
+<p>Ou seja, \(\tau = 0{,}5\) é ótimo <strong>apenas se os dois erros custam o mesmo</strong>. Invertendo (3), todo threshold implica uma razão de custos:</p>
+
+<div class="eq">\[ \frac{c_{FN}}{c_{FP}} = \frac{1-\tau}{\tau}, \qquad \tau = 0{,}24 \;\Rightarrow\; \frac{c_{FN}}{c_{FP}} \approx 3{,}17. \]<span class="tag-n">(4)</span></div>
+
+<p>Lido ao pé da letra: escolher 0,24 diz que <strong>deixar passar um inadimplente custa cerca de três vezes mais que um falso alarme</strong>. É uma afirmação com a qual uma equipe de crédito pode concordar ou discordar — e esse é justamente o ponto. Um threshold transforma uma premissa de negócio em um número.</p>
+
+<div class="note"><strong>Ressalva — calibração.</strong> A equação (3) vale para <em>probabilidades</em>. Se \(\hat p\) não for calibrado (se, entre clientes com escore 0,3, a taxa de inadimplência não for de cerca de 30%), a razão em (4) é apenas indicativa. A calibração não foi avaliada no projeto; um diagrama de confiabilidade e o Brier score são a próxima verificação natural.</div>
+
+<h2><span class="n">§2</span>O que o projeto fez de fato</h2>
+
+<p>Não havia custos explícitos, então o threshold foi escolhido por um objetivo substituto: <strong>maximizar o F1 na validação</strong> (4.800 clientes, nunca usados na avaliação final). A busca em grade resultou em \(\tau = 0{,}24\), com F1 de validação = 0,5405. No conjunto de teste intocado (6.000 clientes), o mesmo threshold deu F1 = 0,5396 e recall = 0,6006 — quase nenhuma degradação, bom sinal de que a escolha não sofreu overfitting.</p>
+
+<p>O explorador abaixo usa a curva do conjunto de teste do notebook de seleção de modelos (grade de 0,05) para mostrar todo o trade-off e a razão de custos que cada \(\tau\) implica:</p>
+
+<!--explorer-->
+
+<h2><span class="n">§3</span>Uma checagem pela literatura</h2>
+
+<p>Para um classificador calibrado, o threshold que maximiza o F1 é igual à <strong>metade do F1 máximo atingível</strong> (Lipton, Elkan &amp; Narayanaswamy, 2014):</p>
+
+<div class="eq">\[ \tau_{F1}^{*} = \frac{F1^{*}}{2}. \]<span class="tag-n">(5)</span></div>
+
+<p>Com \(F1^{*} \approx 0{,}54\) na validação, (5) prevê \(\tau \approx 0{,}27\). O ótimo empírico, 0,24, fica próximo — coerente com escores razoavelmente, mas não perfeitamente, calibrados. Isso também explica por que thresholds ótimos para F1 costumam ficar bem abaixo de 0,5: o F1 é no máximo 1, então, para um modelo calibrado, o threshold ótimo nunca passa de 0,5.</p>
+
+<h2><span class="n">§4</span>Conclusões</h2>
+
+<ul>
+<li>O threshold faz parte do modelo. Reporte, justifique e versione — por isso a API devolve o threshold em toda previsão.</li>
+<li>Escolha \(\tau\) na validação, nunca no teste. O teste serve para um único número final e honesto.</li>
+<li>Se os custos são conhecidos, use (3). Se não, um substituto como o F1 funciona — mas traduza o resultado de volta em razão de custos com (4) e pergunte se faz sentido.</li>
+<li>Verifique a calibração antes de ler escores como probabilidades.</li>
+</ul>
+
+<p class="cap">Referência: Z. C. Lipton, C. Elkan, B. Narayanaswamy. <em>Thresholding Classifiers to Maximize F1 Score</em>. ECML PKDD, 2014. · Dados: <a href="https://github.com/Igor-Millis/credit-default-api">github.com/Igor-Millis/credit-default-api</a>, notebooks 09 e 010.</p>

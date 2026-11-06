@@ -1,0 +1,31 @@
+# Site-wide settings. Content lives in content/<lang>.toml; numbers in data/*.json.
+
+[site]
+# Final public URL. For a user site (repo "Igor-Millis.github.io") keep base_path = "".
+# For a project repo (e.g. "portfolio"), set base_path = "/portfolio".
+base_url = "https://igor-millis.github.io"
+base_path = ""
+default_lang = "en"
+updated = "2026-11-05"
+
+[author]
+name = "Igor Millis"
+email = "igormillis7@gmail.com"
+github = "https://github.com/Igor-Millis"
+github_handle = "Igor-Millis"
+linkedin = "https://www.linkedin.com/in/igor-millis-3aa9551a6/"
+linkedin_handle = "in/igor-millis"
+university = "UFES"
+coords = "−20.28, −40.30"
+
+[langs.en]
+prefix = ""
+html = "en"
+locale = "en_US"
+hreflang = "en"
+
+[langs.pt]
+prefix = "/pt"
+html = "pt-BR"
+locale = "pt_BR"
+hreflang = "pt-BR"

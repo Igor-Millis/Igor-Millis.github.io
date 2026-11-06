@@ -1,0 +1,50 @@
+<p>A classifier like XGBoost does not output a decision. It outputs a score \(\hat p(x) \in [0,1]\), and a decision appears only when we choose a rule:</p>
+
+<div class="eq">\[ \hat y(x) = \mathbb{1}\{\hat p(x) \ge \tau\} \]<span class="tag-n">(1)</span></div>
+
+<p>Libraries default to \(\tau = 0.5\). That default looks neutral, but it isn't: it encodes a specific belief about the cost of errors. In the <a href="{credit}">Credit Default</a> project, moving \(\tau\) from 0.50 to 0.24 raised recall on defaulters from 35.6% to 60.1% — a bigger change than any hyperparameter search delivered.</p>
+
+<h2><span class="n">§1</span>The cost view</h2>
+
+<p>Let \(c_{FP}\) be the cost of flagging a client who would have paid (false positive) and \(c_{FN}\) the cost of missing a defaulter (false negative). For a client with true default probability \(p\), the expected cost of each action is</p>
+
+<div class="eq">\[ \mathbb{E}[\text{cost} \mid \hat y = 1] = (1-p)\,c_{FP}, \qquad \mathbb{E}[\text{cost} \mid \hat y = 0] = p\,c_{FN}. \]<span class="tag-n">(2)</span></div>
+
+<p>Predicting “default” is the better action whenever \(p\,c_{FN} \ge (1-p)\,c_{FP}\), which gives the Bayes-optimal threshold</p>
+
+<div class="eq">\[ \tau^{*} = \frac{c_{FP}}{c_{FP} + c_{FN}}. \]<span class="tag-n">(3)</span></div>
+
+<p>So \(\tau = 0.5\) is optimal <strong>only if both errors cost the same</strong>. Inverting (3), any threshold implies a cost ratio:</p>
+
+<div class="eq">\[ \frac{c_{FN}}{c_{FP}} = \frac{1-\tau}{\tau}, \qquad \tau = 0.24 \;\Rightarrow\; \frac{c_{FN}}{c_{FP}} \approx 3.17. \]<span class="tag-n">(4)</span></div>
+
+<p>Read literally: choosing 0.24 says that <strong>missing a defaulter costs about three times as much as a false alarm</strong>. That is a statement a credit team can agree or disagree with — which is exactly the point. A threshold turns a business assumption into a number.</p>
+
+<div class="note"><strong>Caveat — calibration.</strong> Equation (3) applies to <em>probabilities</em>. If \(\hat p\) is not calibrated (if, among clients scored 0.3, the default rate is not about 30%), the implied ratio in (4) is only indicative. Calibration was not evaluated in the project; a reliability diagram and the Brier score are the natural next check.</div>
+
+<h2><span class="n">§2</span>What the project actually did</h2>
+
+<p>No explicit costs were available, so the threshold was chosen by a proxy objective: <strong>maximize F1 on the validation split</strong> (4,800 clients, never used for the final evaluation). The grid search produced \(\tau = 0.24\) with validation F1 = 0.5405. On the untouched test set (6,000 clients), the same threshold gave F1 = 0.5396 and recall = 0.6006 — almost no degradation, a good sign that the choice was not overfitted.</p>
+
+<p>The explorer below uses the test-set curve from the model-selection notebook (0.05 grid) to show the whole trade-off and the cost ratio each \(\tau\) implies:</p>
+
+<!--explorer-->
+
+<h2><span class="n">§3</span>A check from the literature</h2>
+
+<p>For a calibrated classifier, the F1-optimal threshold equals <strong>half the maximum attainable F1</strong> (Lipton, Elkan &amp; Narayanaswamy, 2014):</p>
+
+<div class="eq">\[ \tau_{F1}^{*} = \frac{F1^{*}}{2}. \]<span class="tag-n">(5)</span></div>
+
+<p>With validation \(F1^{*} \approx 0.54\), (5) predicts \(\tau \approx 0.27\). The empirical optimum, 0.24, is close — consistent with reasonably, but not perfectly, calibrated scores. It also explains why F1-optimal thresholds are usually well below 0.5: F1 is at most 1, so for a calibrated model the optimal threshold can never exceed 0.5.</p>
+
+<h2><span class="n">§4</span>Takeaways</h2>
+
+<ul>
+<li>A threshold is part of the model. Report it, justify it, and version it — the API returns it with every prediction for this reason.</li>
+<li>Choose \(\tau\) on validation data, never on the test set. The test set is for one final, honest number.</li>
+<li>If costs are known, use (3). If not, a proxy like F1 works — but translate the result back into an implied cost ratio with (4) and ask whether it makes sense.</li>
+<li>Check calibration before reading scores as probabilities.</li>
+</ul>
+
+<p class="cap">Reference: Z. C. Lipton, C. Elkan, B. Narayanaswamy. <em>Thresholding Classifiers to Maximize F1 Score</em>. ECML PKDD, 2014. · Data: <a href="https://github.com/Igor-Millis/credit-default-api">github.com/Igor-Millis/credit-default-api</a>, notebooks 09 and 010.</p>

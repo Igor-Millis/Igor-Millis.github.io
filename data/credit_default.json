@@ -1,0 +1,38 @@
+{
+  "_source": "github.com/Igor-Millis/credit-default-api — README.md, notebooks/09_model_selection.ipynb, notebooks/010_model_validation.ipynb, models/xgboost_tuned_feature_importance.csv",
+  "repo": "https://github.com/Igor-Millis/credit-default-api",
+  "dataset": { "n": 30000, "features": 23, "neg": 23364, "pos": 6636, "pos_rate": 0.2212 },
+  "split": { "train": 19200, "valid": 4800, "test": 6000 },
+  "models": [
+    { "name": "Logistic Regression", "variant": "baseline", "acc": 0.8095, "prec": 0.6966, "rec": 0.2457, "f1": 0.3632, "auc": 0.7100 },
+    { "name": "Logistic Regression", "variant": "grid search", "acc": 0.6780, "prec": 0.3675, "rec": 0.6323, "f1": 0.4648, "auc": 0.7105 },
+    { "name": "Decision Tree", "variant": "tuned", "acc": 0.8173, "auc": 0.7477 },
+    { "name": "Random Forest", "variant": "baseline", "acc": 0.8135, "auc": 0.7546 },
+    { "name": "Random Forest", "variant": "grid search", "acc": 0.7867, "auc": 0.7735 },
+    { "name": "XGBoost", "variant": "baseline", "acc": 0.8183, "prec": 0.6626, "rec": 0.3640, "f1": 0.4698, "auc": 0.7731 },
+    { "name": "XGBoost", "variant": "grid search", "acc": 0.8173, "prec": 0.6620, "rec": 0.3557, "f1": 0.4627, "auc": 0.7770 }
+  ],
+  "hyperparams": {
+    "colsample_bytree": 0.8, "learning_rate": 0.05, "max_depth": 7, "min_child_weight": 5,
+    "n_estimators": 100, "reg_lambda": 5, "subsample": 0.8
+  },
+  "grid_combinations": 72,
+  "cv_auc": 0.7853,
+  "final": {
+    "threshold": 0.24, "acc": 0.7733, "prec": 0.4899, "rec": 0.6006, "f1": 0.5396, "auc": 0.7770,
+    "cm": { "tn": 3843, "fp": 830, "fn": 530, "tp": 797 },
+    "valid": { "f1": 0.5405, "rec": 0.6036, "prec": 0.4893, "auc": 0.7833 }
+  },
+  "threshold_curve": [
+    [0.10, 0.2807, 0.9103, 0.4291], [0.15, 0.3515, 0.7792, 0.4844], [0.20, 0.4342, 0.6564, 0.5227],
+    [0.25, 0.5026, 0.5931, 0.5441], [0.30, 0.5375, 0.5396, 0.5385], [0.35, 0.5778, 0.4815, 0.5253],
+    [0.40, 0.6119, 0.4326, 0.5068], [0.45, 0.6350, 0.3881, 0.4818], [0.50, 0.6620, 0.3557, 0.4627],
+    [0.55, 0.6813, 0.3271, 0.4420], [0.60, 0.6937, 0.2901, 0.4091], [0.65, 0.7220, 0.2427, 0.3632],
+    [0.70, 0.7524, 0.1786, 0.2887], [0.75, 0.8118, 0.1138, 0.1996], [0.80, 0.8590, 0.0505, 0.0954],
+    [0.85, 0.8095, 0.0128, 0.0252], [0.90, 1.0000, 0.0015, 0.0030]
+  ],
+  "importance": [
+    ["PAY_0", 0.4361], ["PAY_2", 0.1395], ["PAY_3", 0.0449], ["PAY_4", 0.0382], ["PAY_5", 0.0303],
+    ["PAY_6", 0.0208], ["SEX_2", 0.0189], ["EDUCATION_5", 0.0177], ["PAY_AMT2", 0.0173], ["LIMIT_BAL", 0.0165]
+  ]
+}

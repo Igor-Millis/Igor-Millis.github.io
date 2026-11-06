@@ -1,0 +1,264 @@
+# Conteúdo em português. Strings com ''' aceitam HTML inline.
+
+[ui]
+skip = "Pular para o conteúdo"
+nav_work = "projetos"
+nav_research = "pesquisa"
+nav_about = "sobre"
+nav_home = "início"
+cmdk_hint = "Buscar ou ir para…"
+cmdk_open = "Abrir menu de comandos"
+cmdk_nav = "navegar"
+cmdk_go = "abrir"
+cmdk_close = "fechar"
+theme = "Alternar tema claro/escuro"
+lang_label = "Idioma"
+copy_email = "Copiar e-mail"
+copied = "E-mail copiado"
+source = "fonte"
+repo = "repositório"
+read = "ler"
+back_work = "← todos os projetos"
+back_research = "← todas as notas"
+footer_title = '''Vamos construir algo <em class="voice">que faça diferença.</em>'''
+footer_elsewhere = "em outros lugares"
+footer_site = "site"
+status_built = "build"
+status_stack = "estático · sem rastreadores · build em python"
+updated = "atualizado"
+min_read = "min de leitura"
+
+[home]
+title = "Igor Millis — Estatística, Data Science e Engenharia de Dados"
+description = "Portfólio de Igor Millis, graduando em Estatística na UFES: machine learning, engenharia de dados, LLMs locais e modelagem estatística."
+prompt_flag = "--verbose"
+h1 = '''Estudante de Estatística construindo sistemas de dados <em class="voice">que se sustentam.</em>'''
+sub = ["Bacharelado em Estatística (em curso) · UFES", "ML · engenharia de dados · LLMs locais", "Espírito Santo, Brasil"]
+readout = "campo de gradiente ∇L(θ) · partículas seguem −∇"
+doors_label = "índice"
+door_work_title = "Projetos"
+door_work_text = "Dois sistemas de ponta a ponta: um motor analítico local sobre oito anos de dados públicos da educação e um modelo de risco de crédito servido como API testada."
+door_research_title = "Pesquisa"
+door_research_text = "Notas e experimentos: decisões estatísticas, modelagem, algoritmos e implementações — com equações e números reais."
+door_about_title = "Sobre"
+door_about_text = "Como penso a Estatística, as ferramentas que uso e como falar comigo."
+selected_label = "projetos selecionados"
+
+[about]
+title = "Sobre — Igor Millis"
+description = "Sobre Igor Millis: graduando em Estatística na UFES com foco em data science, machine learning, IA e engenharia de dados."
+label = "sobre / 01"
+h1 = '''Rigor primeiro. <em class="voice">Depois,</em> escala.'''
+paragraphs = [
+  "Vejo a Estatística como uma forma de entender fenômenos: investigar padrões, quantificar incertezas e construir modelos que representem problemas reais. Gosto de saber o que há por trás dos métodos — do fundamento matemático à implementação.",
+  "Sou graduando em Estatística na UFES e direciono meus projetos para Data Science, Machine Learning, IA e Engenharia de Dados, combinando rigor estatístico e desenvolvimento de software.",
+  "Penso em produto de ponta a ponta: requisitos, usuários, fraquezas e uso real — tudo no papel antes do código. Curiosidade, constância e intensidade (minha principal característica) guiam o que construo. Não demonstrações de ferramentas: projetos que testam hipóteses, expõem seus limites e resolvem algo de fato.",
+  "Aqui é onde matemática, dados e tecnologia se encontram — projetos, experimentos e estudos que acompanham minha evolução.",
+]
+portrait_alt = "Igor Millis falando ao microfone em um evento"
+portrait_cap = ["fig. 1 — igor millis", ""]
+edu_label = "formação"
+edu = [
+  { when = "atual", title = "Bacharelado em Estatística", place = "Universidade Federal do Espírito Santo (UFES)", text = "Em curso.", now = true },
+]
+focus_label = "foco"
+focus_title = "No que eu trabalho"
+focus = [
+  "<strong>Modelagem estatística</strong> — inferência, incerteza, avaliação de modelos e limiares de decisão.",
+  "<strong>Machine learning</strong> — de baselines a ensembles otimizados, com interpretabilidade e validação honesta.",
+  "<strong>Engenharia de dados</strong> — pipelines em camadas, armazenamento colunar, linhagem e regras de qualidade.",
+  "<strong>LLMs com salvaguardas</strong> — modelos locais atrás de contratos estritos: eles interpretam, o código calcula.",
+  "<strong>Pensamento de produto</strong> — requisitos, stakeholders, limitações e uso real.",
+]
+stack_label = "stack"
+stack_title = "Ferramentas que já usei em entrega"
+stack_note = "Todos os itens abaixo aparecem no código dos projetos deste site."
+stack = [
+  ["linguagens", "Python · SQL"],
+  ["dados", "DuckDB · Parquet / PyArrow · pandas · NumPy · lxml · openpyxl"],
+  ["ml & estatística", "scikit-learn · XGBoost · SHAP · matplotlib"],
+  ["llm", "Ollama · Qwen2.5 (local) · contratos JSON Schema"],
+  ["backend", "FastAPI · Pydantic · Uvicorn"],
+  ["apps", "Streamlit · interface com http.server (stdlib)"],
+  ["qualidade", "pytest · suítes de regressão · gabaritos"],
+  ["ops", "Docker · Docker Compose · Git / GitHub"],
+]
+contact_label = "contato"
+contact_title = "Fale comigo"
+contact_text = "Aberto a estágios, pesquisa e vagas na área de dados. E-mail é o caminho mais rápido."
+
+[work]
+title = "Projetos — Igor Millis"
+description = "Projetos de Igor Millis: EduData, motor analítico local sobre as Sinopses do INEP, e Credit Default API, modelo XGBoost servido com FastAPI."
+label = "projetos / 02"
+h1 = '''Sistemas, <em class="voice">não</em> notebooks.'''
+lede = "Cada projeto vai do dado bruto a algo que uma pessoa consegue usar — com testes, decisões documentadas e limitações declaradas."
+
+[work.edudata]
+title = "EduData — Consultas em linguagem natural às Sinopses do INEP"
+description = "Motor analítico local sobre as Sinopses Estatísticas da Educação Superior 2017–2024: pipeline DuckDB com linhagem por célula, interpretador por regras, LLM local opcional, 458 testes."
+name = "EduData"
+kicker = "engenharia de dados · motor analítico · LLM local"
+summary = "Pergunte em português sobre oito edições das estatísticas da educação superior brasileira. Os números vêm do banco — nunca de um modelo."
+tags = ["Python", "DuckDB", "SQL", "Parquet", "Ollama", "pytest"]
+meta = ["2017—2024", "8 edições · INEP"]
+spec = [
+  ["fonte", "INEP/MEC — Sinopses Estatísticas da Educação Superior"],
+  ["período", "2017–2024 (8 edições anuais)"],
+  ["armazenamento", "DuckDB (~4,5 GB) · staging em Parquet"],
+  ["execução", "100% local · Python 3.12 · Windows"],
+  ["llm", "Ollama + Qwen2.5 7B (opcional)"],
+  ["status", "v1 entregue · projeto independente"],
+]
+stats = [
+  ["662", "abas de planilha diagnosticadas"],
+  ["3,8 GB", "de XLSX brutos ingeridos"],
+  ["458", "testes automatizados"],
+  ["18", "decisões de arquitetura registradas"],
+]
+s1_label = "01 · problema"
+s1_title = "Dado público, formato hostil"
+s1_body = '''<p>As Sinopses do INEP são as estatísticas oficiais anuais da educação superior brasileira — mas chegam como centenas de abas de planilha por ano, com layouts que mudam entre edições. Responder “como evoluíram as matrículas no Espírito Santo?” exige abrir pastas de trabalho, achar a aba certa e torcer para as colunas significarem o mesmo que no ano anterior.</p>
+<p><strong>Objetivo:</strong> uma ferramenta em que qualquer pessoa pergunta em português e recebe um número <strong>calculado, rastreável e honesto</strong> sobre o que a base não contém.</p>'''
+s2_label = "02 · pipeline"
+s2_title = "Sete camadas do ZIP à resposta"
+s2_body = "Os arquivos originais nunca são alterados. Cada valor do núcleo guarda a aba e a célula da planilha do INEP de onde veio. Selecione uma etapa:"
+stages = [
+  ["P0", "staging", "<strong>Cópia fiel.</strong> O XML de cada aba é lido em streaming com lxml (sem Excel): uma tabela Parquet por aba e ano, todo valor guardado como texto bruto com a linha de origem."],
+  ["P1", "anexos", "<strong>Mapeamento curado de cabeçalhos</strong> transforma colunas da planilha em dimensões explícitas nos anexos por curso, validado contra os arquivos originais."],
+  ["P2", "núcleo", "<strong>Fatos em formato longo</strong> no DuckDB, com dimensões, status de qualidade e origem por célula para cada valor."],
+  ["P3", "sinopse", "<strong>Tabelas da Sinopse</strong> (sexo, cor/raça, faixa etária, organização…) mapeadas por vocabulário e validadas — inclusive totais conferidos no XML original."],
+  ["P4", "correspondências", "<strong>Correspondências entre anos</strong> (ex.: códigos de curso revisados em 2024), para que comparações só ocorram com compatibilidade verificada."],
+  ["P5", "visões", "<strong>Visões analíticas</strong> sobre o núcleo, incluindo o Anexo I reconstruído como visão depois de provar I = II + III célula a célula."],
+  ["P6", "marts", "<strong>Três marts compactos</strong> com regras de agregação explícitas (“somar só folhas”), validados contra os fatos. O motor lê apenas eles."],
+]
+s3_label = "03 · motor"
+s3_title = "Pergunta → consulta → SQL"
+s3_body = '''<p>Um interpretador por regras, com catálogo semântico, transforma a pergunta numa <code>Consulta</code> estruturada. Essa consulta em JSON é validada contra o catálogo e o banco e então compilada em <strong>SQL parametrizado</strong>, executado numa conexão <strong>somente leitura</strong>. Rankings, crescimento e participações são calculados depois, em Python.</p>
+<p>Reproduza perguntas reais do gabarito do projeto:</p>'''
+replay_head = "edudata › replay de consulta"
+replay_cols = ["1 · consulta.json", "2 · sql (read_only)", "3 · resultado"]
+replay_ok = "Executada em <b>{mart}</b> · parâmetros com <b>?</b> · células suspeitas sinalizadas, ausência ≠ zero."
+replay_rank = "O ranking e o top 10 são calculados no código de análise, não no SQL."
+replay_why_out_of_range = "Pede esclarecimento: a base cobre apenas 2017–2024. Nenhum número é inventado."
+replay_why_not_published = "Pede esclarecimento: as Sinopses não publicam taxas de conclusão por coorte."
+replay_note = "Consultas retiradas de tests/gold_interpretacoes.jsonl. SQL reproduzido a partir do planejador em motor/consultas.py — um replay, não um banco ao vivo."
+s4_label = "04 · llm"
+s4_title = "Onde um LLM local ajuda — e onde não"
+s4_body = '''<p>Um modelo local (Ollama, em CPU) pode ajudar a interpretar perguntas que as regras não reconhecem. Ele segue o <strong>mesma estrutura de consulta em JSON</strong>: devolve nomes, nunca SQL nem números. A decisão de mantê-lo opcional veio de medi-lo em 40 perguntas parafraseadas e inéditas:</p>'''
+s4_cols = ["interpretador", "paráfrases /24", "controle inédito /16", "total /40", "tempo médio"]
+s4_cap = "* As regras foram ajustadas depois de ver as falhas nas paráfrases, então 24/24 não mede generalização; o conjunto de controle inédito mede. Fonte: _arquitetura/02_decisoes.md (D17)."
+s4_after = '''<p><strong>Decisão:</strong> regras por padrão; modo híbrido com o modelo 7B como opção, com aviso obrigatório para conferir a interpretação. Nenhum modelo sozinho igualou as regras — o 7B errou muito menos que o 3B (27 × 21 de 40), então, quando o modelo é usado, a exatidão pesa mais que a latência.</p>'''
+s5_label = "05 · qualidade"
+s5_title = "Regras de honestidade, garantidas em código"
+s5_body = '''<ul>
+<li><strong>Nada é corrigido em silêncio.</strong> Inconsistências da publicação (ocorrências Q01–Q13) ficam como publicadas, recebem status <code>suspeito</code> e são citadas nas respostas.</li>
+<li><strong>Ausência ≠ zero.</strong> Linhas ausentes nunca viram zero; participações sem numerador ficam indefinidas.</li>
+<li><strong>Razões são razões de somas</strong> — nunca médias de razões.</li>
+<li><strong>Segurança do SQL em camadas:</strong> conexão somente leitura, só SELECT/WITH, lista de tabelas autorizadas, sem acesso a arquivos, limite de 60 s e de 5.000 linhas, toda consulta registrada.</li>
+<li><strong>Operações reversíveis:</strong> compactação do banco por cópia-validação-troca (5,11 → 4,48 GB), com equivalência provada nas 61 respostas do gabarito.</li>
+</ul>'''
+s6_label = "06 · saída"
+s6_title = "Gráficos que afirmam a conclusão"
+s6_body = "O título afirma o achado, só o Espírito Santo recebe cor, os valores são rotulados na ponta da linha e as séries anuais ganham uma projeção de 3 anos por tendência linear com intervalo de previsão de 95% — marcada como extrapolação estatística, não dado do INEP."
+figs = [
+  ["edudata-grafico-comparacao-projecao.webp", "As matrículas no ES cresceram 18,7% entre 2017 e 2024; faixa da projeção = intervalo de previsão de 95%.", 1200, 672],
+  ["edudata-grafico-ranking-ufs.webp", "Posição do Espírito Santo entre as UFs.", 1200, 672],
+  ["edudata-tela-inicial.webp", "Interface web local (só biblioteca padrão do Python).", 1200, 833],
+  ["edudata-resposta-qualidade.webp", "Uma resposta com sinalização de qualidade, interpretação, fontes e limitações.", 1200, 1167],
+]
+s7_label = "07 · limites"
+s7_title = "Limitações conhecidas"
+s7_body = '''<ul>
+<li>Deficiência, cotas, financiamento, turno, nacionalidade e titulação docente existem na base, mas ainda não estão disponíveis no motor.</li>
+<li>As Sinopses não publicam taxas de evasão ou conclusão por coorte; cursos, vagas e inscritos a distância só existem no total Brasil.</li>
+<li>O interpretador por regras cobre as formas de pergunta documentadas no guia; o LLM local é experimental (27/40 sozinho).</li>
+<li>O banco (~4,5 GB) não está no repositório — é reconstruído a partir dos ZIPs públicos (~3 h) com o manifesto de MD5.</li>
+</ul>
+<p class="cap">Projeto independente com dados públicos — não é produto oficial de nenhuma instituição.</p>'''
+
+[work.credit]
+title = "Credit Default API — Modelo de risco XGBoost servido com FastAPI"
+description = "Previsão de inadimplência de cartão de crédito no dataset da UCI: quatro famílias de modelos, grid search, threshold ajustado para 0,24, SHAP, FastAPI com validação Pydantic, pytest e Docker."
+name = "Credit Default API"
+kicker = "machine learning · serving de modelos"
+summary = "Estimar a probabilidade de um cliente de cartão ficar inadimplente no próximo mês, escolher o limiar de decisão de propósito e servir tudo como uma API REST validada."
+tags = ["XGBoost", "scikit-learn", "SHAP", "FastAPI", "Pydantic", "Docker"]
+meta = ["ROC AUC 0,777", "recall 0,601"]
+spec = [
+  ["dataset", "Default of Credit Card Clients (UCI)"],
+  ["tarefa", "classificação binária · default no próximo mês"],
+  ["modelo", "XGBoost (grid search) + threshold 0,24"],
+  ["serving", "FastAPI · POST /predict · Docker"],
+  ["interface", "cliente Streamlit via Docker Compose"],
+  ["status", "roda localmente · sem deploy público ainda"],
+]
+stats = [
+  ["30.000", "clientes · 23 preditoras"],
+  ["22,1%", "de inadimplência (desbalanceamento moderado)"],
+  ["0,777", "ROC AUC no teste separado"],
+  ["60,1%", "dos inadimplentes identificados"],
+]
+s1_label = "01 · problema"
+s1_title = "Acurácia é o alvo errado"
+s1_body = '''<p>Com 77,9% dos clientes adimplentes, um modelo que prevê “não inadimplente” para todos já tem 78% de acurácia — e não serve para nada. Os custos dos dois erros não são simétricos: deixar passar um inadimplente costuma ser pior do que mandar um bom cliente para revisão.</p>
+<p>Por isso o projeto avalia <strong>precision, recall, F1 e ROC AUC</strong>, mantém um conjunto de teste estratificado (6.000 clientes) intocado até o fim e trata o limiar de decisão como uma escolha de modelagem.</p>'''
+s2_label = "02 · método"
+s2_title = "Um pipeline, quatro famílias de modelos"
+s2_body = '''<p>O pré-processamento fica dentro de um <code>Pipeline</code> do scikit-learn, para que treino e inferência apliquem as mesmas transformações: <code>StandardScaler</code> nos valores, <code>OneHotEncoder</code> em sexo, escolaridade e estado civil, e o histórico ordinal de pagamentos (<code>PAY_0…PAY_6</code>) mantido na escala original. Cada família foi treinada como baseline e com grid search.</p>'''
+s2_cols = ["modelo", "variante", "acurácia", "precision", "recall", "F1", "ROC AUC"]
+s2_cap = "Conjunto de teste, threshold 0,50. Árvore de Decisão e Random Forest têm apenas acurácia e AUC na fonte. Fonte: README.md, notebooks/09_model_selection.ipynb."
+s3_label = "03 · threshold"
+s3_title = "Mover o limiar é o ganho de verdade"
+s3_body = '''<p>No corte padrão de 0,50, o grid search quase não mudou o XGBoost (AUC 0,773 → 0,777) e o recall ficou perto de 36%. A ordenação das probabilidades era boa; o gargalo era a <strong>regra de decisão</strong>. Arraste o threshold:</p>'''
+th_head = "xgboost (grid search) · teste · grade de 0,05"
+th_label = "threshold τ"
+th_keys = ["precision", "recall", "F1", "c<sub>FN</sub>/c<sub>FP</sub> implícito"]
+th_cap = "Curva: notebooks/09_model_selection.ipynb (teste, n = 6.000). O threshold operacional 0,24 foi escolhido maximizando o F1 na validação (F1 = 0,5405) em notebooks/010_model_validation.ipynb. Razão de custos implícita = (1 − τ)/τ, válida só se as probabilidades forem calibradas."
+s3_after = '''<p>O modelo final usa <strong>τ = 0,24</strong>: passa a encontrar <strong>60,1%</strong> dos inadimplentes em vez de 35,6%, trocando precision (0,66 → 0,49) por recall — uma decisão de negócio explicitada. Por que 0,24 e o que isso implica está na nota de pesquisa <a href="{note}">“Um threshold é uma decisão”</a>.</p>'''
+cm_title = "Matriz de confusão final — teste, τ = 0,24"
+cm_rows = ["real 0", "real 1"]
+cm_cols = ["pred 0", "pred 1"]
+cm_names = ["verd. neg.", "falso pos.", "falso neg.", "verd. pos."]
+final_cols = ["métrica", "valor"]
+final_rows = ["acurácia", "precision", "recall", "F1", "ROC AUC"]
+s4_label = "04 · interpretabilidade"
+s4_title = "O que move a previsão"
+s4_body = "A análise SHAP e a importância de variáveis do modelo concordam: o histórico recente de pagamentos domina. Só o PAY_0 (status do mês mais recente) concentra cerca de 44% da importância."
+s4_cap = "Importância de variáveis do XGBoost, top 10 (colunas one-hot com seu nível). Fonte: models/xgboost_tuned_feature_importance.csv."
+best_params = "melhores hiperparâmetros · 72 combinações · CV ROC AUC 0,7853"
+s5_label = "05 · serving"
+s5_title = "Do pickle à API"
+s5_body = '''<p>O pipeline e o threshold são carregados uma vez com joblib. <code>POST /predict</code> recebe as 23 variáveis do cliente, validadas por um schema Pydantic com domínios <code>Literal</code> para os códigos categóricos — <code>SEX = 7</code> é recusado com HTTP 422 antes de chegar ao modelo.</p>'''
+s5_after = '''<ul>
+<li><strong>Testes:</strong> pytest + <code>TestClient</code> do FastAPI — entrada válida retorna 200 com probabilidade e threshold em [0, 1]; categoria inválida retorna 422.</li>
+<li><strong>Docker:</strong> imagem Python 3.13 com um <code>requirements-api.txt</code> mínimo; só os artefatos do modelo final são copiados.</li>
+<li><strong>Compose:</strong> um cliente Streamlit conversa com o contêiner da API pela rede interna.</li>
+</ul>'''
+s6_label = "06 · próximos"
+s6_title = "Limitações e próximos passos"
+s6_body = '''<ul>
+<li>Ainda sem deploy público — a API roda localmente ou no Docker.</li>
+<li>A calibração das probabilidades não foi avaliada; a interpretação de τ como custo pressupõe isso.</li>
+<li>Planejado: deploy, integração da interface com a API hospedada e documentação final.</li>
+</ul>'''
+
+[research]
+title = "Pesquisa — Igor Millis"
+description = "Notas de pesquisa e experimentos de Igor Millis: decisões estatísticas, modelagem, machine learning e implementações computacionais."
+label = "pesquisa / 03"
+h1 = '''Notas da <em class="voice">bancada.</em>'''
+lede = "Estudos, experimentos estatísticos, modelagem matemática e implementações. Escritas para entender, não para impressionar — todo número é reproduzível a partir de uma fonte linkada."
+list_label = "notas"
+format_label = "formato"
+format = "Cada nota: uma pergunta, a matemática, dados reais e o que isso muda na prática."
+
+[research.threshold]
+slug = "threshold-is-a-decision"
+title = "Um threshold é uma decisão"
+seo_title = "Um threshold é uma decisão — escolhendo τ num modelo de inadimplência"
+description = "Por que 0,5 não é um padrão neutro: limiares sensíveis a custo, a razão de custos implícita em τ = 0,24 e a escolha pelo F1 na validação."
+kind = "teoria da decisão estatística"
+date = "2026-11-05"
+minutes = 6
+abstract = "Por que 0,5 não é neutro, o que τ = 0,24 implica sobre o custo dos erros e como escolhê-lo sem tocar no conjunto de teste."

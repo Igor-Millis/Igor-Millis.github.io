@@ -1,0 +1,51 @@
+{
+  "_source": "github.com/Igor-Millis/consulta-sinopses-educacao-superior — README.md, _arquitetura/02_decisoes.md (D01–D18), motor/consultas.py, motor/seguranca.py, tests/gold_interpretacoes.jsonl",
+  "repo": "https://github.com/Igor-Millis/consulta-sinopses-educacao-superior",
+  "llm_eval": [
+    { "name": "Rules", "para": 24, "ctrl": 14, "total": 38, "time": "0.2 s", "note": "*" },
+    { "name": "LLM 3B alone", "para": 13, "ctrl": 8, "total": 21, "time": "11 s" },
+    { "name": "LLM 7B alone", "para": 14, "ctrl": 13, "total": 27, "time": "21–23 s" },
+    { "name": "Hybrid (rules + 7B)", "para": 24, "ctrl": 14, "total": 38, "time": "0.5–1 s", "note": "*" }
+  ],
+  "replay": [
+    {
+      "q": "Quantas matrículas existem no Espírito Santo em 2024?",
+      "contract": { "indicador": "matriculas", "tipo": "valor", "anos": [2024], "locais": ["UF-32"], "filtros": {}, "quebras": [], "pede_esclarecimento": false },
+      "mart": "mart_anexos_geo",
+      "sql": "SELECT ano, id_geo, nivel_geo,\n       sum(valor) AS valor,\n       bool_or(tem_suspeito) AS tem_suspeito,\n       string_agg(DISTINCT ocorrencias, ';') AS ocorrencias,\n       min(origem_exemplo) AS origem\nFROM mart_anexos_geo\nWHERE indicador = ?\n  AND list_contains(?, ano)\n  AND (list_contains(?, id_geo))\nGROUP BY ALL ORDER BY ALL",
+      "params": "['matriculas', [2024], ['UF-32']]",
+      "ok": true
+    },
+    {
+      "q": "Quais são os dez municípios capixabas com mais matrículas em 2024?",
+      "contract": { "indicador": "matriculas", "tipo": "ranking", "anos": [2024], "locais": ["UF-32"], "listar_municipios_uf": "32", "top_n": 10, "ordem": "desc", "pede_esclarecimento": false },
+      "mart": "mart_anexos_geo",
+      "sql": "SELECT ano, id_geo, nivel_geo,\n       sum(valor) AS valor,\n       bool_or(tem_suspeito) AS tem_suspeito,\n       string_agg(DISTINCT ocorrencias, ';') AS ocorrencias,\n       min(origem_exemplo) AS origem\nFROM mart_anexos_geo\nWHERE indicador = ?\n  AND list_contains(?, ano)\n  AND (list_contains(?, id_geo)\n       OR (nivel_geo = 'Município' AND id_geo IN (\n           SELECT id_geo FROM dim_geografia\n           WHERE nivel_geo = 'Município' AND co_uf = ?)))\nGROUP BY ALL ORDER BY ALL",
+      "params": "['matriculas', [2024], ['UF-32'], '32']",
+      "ok": true,
+      "ranking": true
+    },
+    {
+      "q": "Quantas matrículas presenciais existem no ES?",
+      "contract": { "indicador": "matriculas", "tipo": "valor", "anos": [2024], "locais": ["UF-32"], "filtros": { "modalidade": "Presencial" }, "quebras": [], "pede_esclarecimento": false },
+      "mart": "mart_anexos_geo",
+      "sql": "SELECT ano, id_geo, nivel_geo,\n       sum(valor) AS valor,\n       bool_or(tem_suspeito) AS tem_suspeito,\n       string_agg(DISTINCT ocorrencias, ';') AS ocorrencias,\n       min(origem_exemplo) AS origem\nFROM mart_anexos_geo\nWHERE indicador = ?\n  AND list_contains(?, ano)\n  AND (list_contains(?, id_geo))\n  AND modalidade = ?\nGROUP BY ALL ORDER BY ALL",
+      "params": "['matriculas', [2024], ['UF-32'], 'Presencial']",
+      "ok": true
+    },
+    {
+      "q": "Matrículas no ES em 2015",
+      "contract": { "indicador": "matriculas", "tipo": "valor", "anos": [2015], "locais": ["UF-32"], "pede_esclarecimento": true },
+      "mart": null,
+      "ok": false,
+      "why": "out_of_range"
+    },
+    {
+      "q": "Taxa de conclusão no ES",
+      "contract": { "indicador": null, "tipo": "valor", "anos": [], "locais": [], "pede_esclarecimento": true },
+      "mart": null,
+      "ok": false,
+      "why": "not_published"
+    }
+  ]
+}
