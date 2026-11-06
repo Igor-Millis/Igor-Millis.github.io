@@ -37,7 +37,7 @@ sub = ["B.Sc. Statistics (in progress) · UFES", "ML · data engineering · loca
 readout = "gradient field ∇L(θ) · particles follow −∇"
 doors_label = "index"
 door_work_title = "Work"
-door_work_text = "Two end-to-end systems: a local analytics engine over eight years of public education data, and a credit-risk model served as a tested API."
+door_work_text = "End-to-end products, from raw data to something people use: data engineering, machine learning and LLMs — with tests, documented decisions and stated limits."
 door_research_title = "Articles"
 door_research_text = "Articles and experiments: statistical decisions, modeling, algorithms and implementations — with equations and real numbers."
 door_about_title = "About"
@@ -120,7 +120,7 @@ contact_text = "Open to internships, research and data roles. Email is the faste
 
 [work]
 title = "Work — Igor Millis"
-description = "Selected projects by Igor Millis: EduData, a local analytics engine over INEP higher-education data, and Credit Default API, an XGBoost model served with FastAPI."
+description = "Selected projects by Igor Millis: end-to-end data products in data engineering, machine learning and LLMs, with tests and documented decisions."
 label = "work / 02"
 h1 = '''Systems, <em class="voice">not</em> notebooks.'''
 lede = "Each project goes from raw data to something a person can use — with tests, documented decisions and stated limitations."

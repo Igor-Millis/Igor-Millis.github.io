@@ -37,7 +37,7 @@ sub = ["Bacharelado em Estatística (em curso) · UFES", "ML · engenharia de da
 readout = "campo de gradiente ∇L(θ) · partículas seguem −∇"
 doors_label = "índice"
 door_work_title = "Projetos"
-door_work_text = "Dois sistemas de ponta a ponta: um motor analítico local sobre oito anos de dados públicos da educação e um modelo de risco de crédito servido como API testada."
+door_work_text = "Produtos de ponta a ponta, do dado bruto a algo que as pessoas usam: engenharia de dados, machine learning e LLMs — com testes, decisões documentadas e limites declarados."
 door_research_title = "Artigos"
 door_research_text = "Artigos e experimentos: decisões estatísticas, modelagem, algoritmos e implementações — com equações e números reais."
 door_about_title = "Sobre"
@@ -120,7 +120,7 @@ contact_text = "Aberto a estágios, pesquisa e vagas na área de dados. E-mail �
 
 [work]
 title = "Projetos — Igor Millis"
-description = "Projetos de Igor Millis: EduData, motor analítico local sobre as Sinopses do INEP, e Credit Default API, modelo XGBoost servido com FastAPI."
+description = "Projetos de Igor Millis: produtos de dados de ponta a ponta em engenharia de dados, machine learning e LLMs, com testes e decisões documentadas."
 label = "projetos / 02"
 h1 = '''Sistemas, <em class="voice">não</em> notebooks.'''
 lede = "Cada projeto vai do dado bruto a algo que uma pessoa consegue usar — com testes, decisões documentadas e limitações declaradas."
