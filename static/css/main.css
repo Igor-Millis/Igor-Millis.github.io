@@ -97,7 +97,10 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 0; }
 }
 .top .wrap { display: flex; align-items: center; justify-content: space-between; height: 56px; gap: 16px; }
 .brand { font: 500 13px var(--f-mono); text-decoration: none; display: flex; align-items: center; gap: 10px; white-space: nowrap; }
-.brand .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); animation: pulse 3.2s ease-in-out infinite; }
+.brand .logo { width: 20px; height: 20px; flex: none; transition: transform .3s var(--ease); }
+.brand .logo rect { fill: var(--bg-raised); stroke: var(--line-strong); stroke-width: 1; }
+.brand .logo path { fill: none; stroke: var(--accent); stroke-width: 2.6; stroke-linecap: square; }
+.brand:hover .logo { transform: rotate(-8deg); }
 .brand .path { color: var(--text-3); }
 @keyframes pulse { 50% { box-shadow: 0 0 0 6px transparent; } }
 .nav { display: flex; align-items: center; gap: 4px; }

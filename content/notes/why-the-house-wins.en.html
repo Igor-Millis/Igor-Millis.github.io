@@ -1,5 +1,7 @@
 <p>Betting apps sell a feeling: the next bet could be the one. Statistics sells a different product: <strong>what happens over many bets</strong>. The two are not in conflict — short-run wins are real and frequent — but only one of them describes the bettor's bank balance after a year. This note builds that picture from first principles, with every number computed in a <a href="https://github.com/Igor-Millis/Igor-Millis.github.io/tree/main/research/bets">reproducible script</a>.</p>
 
+<div class="note"><strong>A note on simplification.</strong> This article is written for a general audience, so it simplifies on purpose: bets are independent, stakes are fixed, markets are priced efficiently, and examples use round, illustrative odds rather than data from a specific bookmaker. Real markets add complications — varying margins, correlated outcomes, bonuses, in-play pricing — but none of them changes the core arithmetic.</div>
+
 <h2><span class="n">§1</span>Odds are prices</h2>
 
 <p>A decimal odd \(o\) pays \(o\) per unit staked if the bet wins (stake included). The probability that would make the bet fair is \(1/o\), the <strong>implied probability</strong>. In a fair market, the implied probabilities of all outcomes sum to 1. In a real one, they don't:</p>

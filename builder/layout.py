@@ -132,7 +132,7 @@ def page(
 <a class="skip" href="#main">{esc(ui['skip'])}</a>
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="{site.url(lang, 'home')}"><span class="dot" aria-hidden="true"></span>igor-millis<span class="path">{esc(ROUTES[key].rstrip('/') and '~' + ROUTES[key].rstrip('/') or '~/')}</span></a>
+    <a class="brand" href="{site.url(lang, 'home')}"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6"/><path d="M10 7.5h12M10 24.5h12M16 7.5v17"/></svg>igor-millis<span class="path">{esc(ROUTES[key].rstrip('/') and '~' + ROUTES[key].rstrip('/') or '~/')}</span></a>
     {_nav(site, lang, key)}
     <div class="tools">
       <button class="btn-ghost" type="button" data-cmdk aria-label="{esc(ui['cmdk_open'])}"><kbd>⌘K</kbd></button>
