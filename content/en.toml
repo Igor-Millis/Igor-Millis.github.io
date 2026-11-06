@@ -32,7 +32,7 @@ min_read = "min read"
 title = "Igor Millis — Statistics, Data Science & Data Engineering"
 description = "Portfolio of Igor Millis, Statistics student at UFES: machine learning, data engineering, local LLMs and statistical modeling."
 prompt_flag = "--verbose"
-h1 = '''Statistics student building data systems <em class="voice">that hold up.</em>'''
+h1 = '''Statistics student building products <em class="voice">that hold up.</em>'''
 sub = ["B.Sc. Statistics (in progress) · UFES", "ML · data engineering · local LLMs", "Espírito Santo, Brazil"]
 readout = "gradient field ∇L(θ) · particles follow −∇"
 doors_label = "index"
@@ -58,13 +58,35 @@ paragraphs = [
 portrait_alt = "Igor Millis speaking into a microphone at an event"
 portrait_cap = ["fig. 1 — igor millis", ""]
 edu_label = "education"
-edu_title = "Education and track record"
-edu_intro = "A Statistics degree for the foundations; projects built end to end for everything a classroom doesn't test."
+edu_title = "Degree and courses"
+edu_intro = "Formal training in Statistics, complemented by courses on taking machine learning to production."
 edu = [
-  { when = "in progress", title = "B.Sc. in Statistics", place = "Universidade Federal do Espírito Santo (UFES)", text = "Probability, inference, regression and multivariate methods, with R as the daily tool.", now = true },
-  { when = "oct — nov 2026", title = "EduData v1", place = "independent project · INEP public data", text = "Local analytics engine over 8 editions of the Higher Education Synopses: DuckDB pipeline, cell-level lineage, optional local LLM, 458 tests.", href = "edudata" },
-  { when = "aug — nov 2026", title = "Research notes", place = "this site", text = "Decision thresholds, probability calibration, the statistics of betting — each with reproducible code.", href = "research" },
-  { when = "jun — aug 2026", title = "Credit Default API", place = "machine learning project", text = "Four model families, grid search, threshold tuning, SHAP, FastAPI, pytest and Docker.", href = "credit" },
+  { when = "2020 — 2027", title = "B.Sc. in Statistics", place = "Universidade Federal do Espírito Santo (UFES)", text = "", now = true },
+  { when = "2026 — 2027", title = "MLOps and the Machine Learning Model Lifecycle", place = "Data Science Academy", text = "" },
+  { when = "2026 — 2027", title = "CI/CD Pipelines for Machine Learning and AI Operations", place = "Data Science Academy", text = "" },
+  { when = "2026", title = "Software Engineering for Machine Learning", place = "Data Science Academy", text = "" },
+  { when = "2026", title = "Development and Deployment of ML Models", place = "Data Science Academy", text = "" },
+]
+exp_label = "experience"
+exp_title = "Where I've applied it"
+exp = [
+  { when = "jan 2026 — present", org = "Instituto Jones dos Santos Neves (IJSN)", roles = ["Research intern"], items = [
+    "Build, forecast and analyze the indicators that support Espírito Santo's <strong>State Education Plan 2026–2036</strong>.",
+    "Analysis, engineering and prediction work on public data.",
+    "Introduced <strong>Git + GitHub</strong> to version, document and store the team's projects.",
+    "Implementing AI agents in the team's workflow.",
+  ], now = true },
+  { when = "current", org = "Cetti", roles = ["Data consulting"], items = [
+    "In practice, the company's data consultant: turning commercial and operational questions into structured information and decisions.",
+    "Built a <strong>stock, orders and CRM platform</strong> with Lovable, structuring and digitizing B2B and B2C processes.",
+    "Centralized commercial and operational information into one base to track stock, orders and customer behavior.",
+  ], now = true },
+  { when = "2022 — 2024", org = "Junior Enterprise Movement", roles = ["Projects Director · CONSTAT", "President · CONSTAT", "Development Director · JUNIORES"], items = [
+    "Organized and quality-assured the delivery of statistical products, with <strong>high NPS</strong>.",
+    "<strong>Won a national case competition and award</strong> on management, data and planning.",
+    "Wrote two strategic plans, with KPIs and OKRs, for JUNIORES and CONSTAT.",
+    "Established a culture of data-driven decisions in management.",
+  ] },
 ]
 focus_label = "focus"
 focus_title = "What I work on"
@@ -88,7 +110,7 @@ stack = [
   ["ml & stats", "scikit-learn · XGBoost · SHAP · matplotlib"],
   ["llm", "Ollama · Qwen2.5 (local) · JSON-schema contracts"],
   ["backend", "FastAPI · Pydantic · Uvicorn"],
-  ["apps", "Streamlit · stdlib http.server UI"],
+  ["apps", "Streamlit · Lovable · stdlib http.server UI"],
   ["quality", "pytest · regression suites · gold sets"],
   ["ops", "Docker · Docker Compose · Git / GitHub"],
 ]

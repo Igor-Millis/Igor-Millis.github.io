@@ -203,8 +203,14 @@ def about(site: Site, lang: str) -> str:
         if e.get("href"):
             title = f'<a href="{site.url(lang, e["href"])}">{title} <span class="arr" aria-hidden="true">↗</span></a>'
         return (f'<div class="tl{" now" if e.get("now") else ""}"><span class="when">{esc(e["when"])}</span>'
-                f'<h3>{title}</h3><p class="place">{esc(e["place"])}</p><p>{esc(e["text"])}</p></div>')
+                f'<h3>{title}</h3><p class="place">{esc(e["place"])}</p>'
+                + (f'<p>{esc(e["text"])}</p>' if e.get("text") else "") + "</div>")
     edu = f'<p class="prose" style="margin-bottom:28px">{esc(ab["edu_intro"])}</p><div class="timeline">' + "".join(tl(e) for e in ab["edu"]) + "</div>"
+    exp = '<div class="exp">' + "".join(
+        f'<article class="job{" now" if x.get("now") else ""}"><div class="job-h"><span class="when">{esc(x["when"])}</span>'
+        f'<h3>{esc(x["org"])}</h3><p class="roles">{" · ".join(esc(r) for r in x["roles"])}</p></div>'
+        f'<ul>{"".join(f"<li>{i}</li>" for i in x["items"])}</ul></article>'
+        for x in ab["exp"]) + "</div>"
     focus = '<div class="focus-grid">' + "".join(
         f'<a class="focus" href="{site.url(lang, f["href"])}"><span class="fn">{i + 1:02d}</span>'
         f'<h3>{esc(f["title"])}</h3><p>{esc(f["text"])}</p><span class="proof">→ {esc(f["proof"])}</span></a>'
@@ -221,9 +227,10 @@ def about(site: Site, lang: str) -> str:
         page_head(ab["label"], ab["h1"])
         + intro
         + section(f"<b>01.1</b> / {esc(ab['edu_label'])}", esc(ab["edu_title"]), edu)
-        + section(f"<b>01.2</b> / {esc(ab['focus_label'])}", esc(ab["focus_title"]), focus)
-        + section(f"<b>01.3</b> / {esc(ab['stack_label'])}", esc(ab["stack_title"]), stack)
-        + section(f"<b>01.4</b> / {esc(ab['contact_label'])}", esc(ab["contact_title"]), links, id="contact")
+        + section(f"<b>01.2</b> / {esc(ab['exp_label'])}", esc(ab["exp_title"]), exp, id="experience")
+        + section(f"<b>01.3</b> / {esc(ab['focus_label'])}", esc(ab["focus_title"]), focus)
+        + section(f"<b>01.4</b> / {esc(ab['stack_label'])}", esc(ab["stack_title"]), stack)
+        + section(f"<b>01.5</b> / {esc(ab['contact_label'])}", esc(ab["contact_title"]), links, id="contact")
     )
     return page(site, lang, "about", title=ab["title"], description=ab["description"], body=body,
                 jsonld=person_ld(site, lang), og_type="profile")

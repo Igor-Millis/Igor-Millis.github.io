@@ -531,3 +531,16 @@ kbd { font: 400 11px var(--f-mono); border: 1px solid var(--line-strong); border
 [data-palette="chroma"] .focus:nth-child(4) { --fc: var(--c-sky); }
 [data-palette="chroma"] .focus:nth-child(5) { --fc: var(--c-green); }
 @media (max-width: 720px) { .focus-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- 20. About: experience ---------- */
+.exp { border-top: 1px solid var(--line); }
+.job { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: 28px; padding: 26px 0; border-bottom: 1px solid var(--line); }
+.job .when { font: 400 12px var(--f-mono); color: var(--text-3); }
+.job.now .when::before { content: "● "; color: var(--sc, var(--accent)); }
+.job h3 { font-size: 20px; margin: 6px 0 6px; }
+.job .roles { font: 400 12.5px/1.7 var(--f-mono); color: var(--sc, var(--accent)); margin: 0; }
+.job ul { margin: 0; padding-left: 1.1em; }
+.job li { color: var(--text-2); font-size: 15.5px; line-height: 1.65; margin-bottom: 0.5em; }
+.job li::marker { content: "— "; color: var(--sc, var(--accent)); }
+.job li strong { color: var(--text); font-weight: 500; }
+@media (max-width: 720px) { .job { grid-template-columns: minmax(0, 1fr); gap: 12px; } }
