@@ -76,15 +76,15 @@ exp = [
     "Introduced <strong>Git + GitHub</strong> to version, document and store the team's projects.",
     "Implementing AI agents in the team's workflow.",
   ], now = true },
-  { when = "current", org = "Cetti", roles = ["Data consulting"], items = [
-    "In practice, the company's data consultant: turning commercial and operational questions into structured information and decisions.",
+  { when = "2024 — present", org = "Cetti", roles = ["Management and Data Consulting"], items = [
+    "In practice, the company's management and data consultant: turning commercial and operational questions into structured information and decisions.",
     "Built a <strong>stock, orders and CRM platform</strong> with Lovable, structuring and digitizing B2B and B2C processes.",
     "Centralized commercial and operational information into one base to track stock, orders and customer behavior.",
   ], now = true },
   { when = "2022 — 2024", org = "Junior Enterprise Movement", roles = ["Projects Director · CONSTAT", "President · CONSTAT", "Development Director · JUNIORES"], items = [
     "Organized and quality-assured the delivery of statistical products, with <strong>high NPS</strong>.",
     "<strong>Won a national case competition and award</strong> on management, data and planning.",
-    "Wrote two strategic plans, with KPIs and OKRs, for JUNIORES and CONSTAT.",
+    "Took part in two strategic plans, with KPIs and OKRs, for JUNIORES and CONSTAT.",
     "Established a culture of data-driven decisions in management.",
   ] },
 ]
