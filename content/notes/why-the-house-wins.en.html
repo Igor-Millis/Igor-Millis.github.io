@@ -1,0 +1,102 @@
+<p>Betting apps sell a feeling: the next bet could be the one. Statistics sells a different product: <strong>what happens over many bets</strong>. The two are not in conflict — short-run wins are real and frequent — but only one of them describes the bettor's bank balance after a year. This note builds that picture from first principles, with every number computed in a <a href="https://github.com/Igor-Millis/Igor-Millis.github.io/tree/main/research/bets">reproducible script</a>.</p>
+
+<h2><span class="n">§1</span>Odds are prices</h2>
+
+<p>A decimal odd \(o\) pays \(o\) per unit staked if the bet wins (stake included). The probability that would make the bet fair is \(1/o\), the <strong>implied probability</strong>. In a fair market, the implied probabilities of all outcomes sum to 1. In a real one, they don't:</p>
+
+<!--bets-market-->
+
+<p>The excess over 100% — here 4.8% — is the <strong>overround</strong>, the bookmaker's margin. Dividing each implied probability by the sum removes it and gives the fair odds. Every price the bettor sees has been shaded down from its fair value.</p>
+
+<h2><span class="n">§2</span>Expected value: the loss is built into the price</h2>
+
+<p>Let \(p\) be the true probability that a bet wins. The gain \(G\) per unit staked is \(o - 1\) with probability \(p\) and \(-1\) otherwise:</p>
+
+<div class="eq">\[ \mathbb{E}[G] = p\,(o-1) - (1-p) = p\,o - 1. \]<span class="tag-n">(1)</span></div>
+
+<p>If the market is efficient — its fair probabilities equal the true ones, \(p = q\) — and each price carries the margin \(m\), then \(o = 1/\big(q(1+m)\big)\) and</p>
+
+<div class="eq">\[ \mathbb{E}[G] = \frac{1}{1+m} - 1 = -\frac{m}{1+m}. \]<span class="tag-n">(2)</span></div>
+
+<p>Two consequences. First, the expected loss does <strong>not depend on which outcome you pick</strong>: favourite, draw or underdog, each unit staked loses \(m/(1+m)\) on average — 4.6% in the market above. Second, nothing about the bettor's skill enters (2). To change the sign, you need \(p > 1/o\): a better probability than the market's, by more than its margin (§8).</p>
+
+<h2><span class="n">§3</span>The law of large numbers</h2>
+
+<p>Take the simplest reference bet: odds 1.91 on a genuine 50/50 event, a common price for “even” markets. Then \(\mu = \mathbb{E}[G] = 0.5 \times 1.91 - 1 = -4.5\%\) and the standard deviation of a single bet is \(\sigma = o\sqrt{p(1-p)} = 0.955\) — the noise is twenty times larger than the signal. That is why a single bet tells you almost nothing.</p>
+
+<p>The (strong) law of large numbers says the average return per bet converges to the expectation:</p>
+
+<div class="eq">\[ \bar G_n = \frac1n \sum_{i=1}^{n} G_i \;\xrightarrow{\text{a.s.}}\; \mu = -4.5\%. \]<span class="tag-n">(3)</span></div>
+
+<!--bets-lln-->
+
+<p>Early on, the paths are everywhere — some bettors are up 20% or more. The band narrows like \(1/\sqrt n\), and all paths are pulled toward the same line. The law does not say losses are guaranteed on any given day; it says <strong>the average is not negotiable</strong>.</p>
+
+<h2><span class="n">§4</span>The central limit theorem: when luck runs out</h2>
+
+<p>The <em>total</em> result \(S_n = \sum G_i\) behaves differently from the average. Its expected value falls linearly, \(n\mu\), while the luck around it grows only like \(\sigma\sqrt n\). By the central limit theorem,</p>
+
+<div class="eq">\[ S_n \approx \mathcal{N}\big(n\mu,\; n\sigma^2\big), \qquad \Pr(S_n > 0) \approx \Phi\!\left(\frac{\mu\sqrt n}{\sigma}\right) \xrightarrow[n\to\infty]{} 0. \]<span class="tag-n">(4)</span></div>
+
+<p>Linear beats square root. The expected loss overtakes two standard deviations of luck at</p>
+
+<div class="eq">\[ n^{*} = \left(\frac{2\sigma}{|\mu|}\right)^{2} \approx 1{,}800 \text{ bets}. \]<span class="tag-n">(5)</span></div>
+
+<p>At five bets a day, that is about a year. The exact binomial probabilities:</p>
+
+<!--bets-ahead-->
+
+<p>After 100 bets, almost one bettor in three is still ahead — which is exactly what keeps the experience convincing. After 2,000, fewer than 2%. Try it:</p>
+
+<!--bets-sim-->
+
+<h2><span class="n">§5</span>Accumulators: the margin compounds</h2>
+
+<p>A multiple (parlay) multiplies the odds of \(k\) selections. It also multiplies the margins. With independent legs, each priced as in (2),</p>
+
+<div class="eq">\[ \mathbb{E}[G_{\text{parlay}}] = \left(\frac{1}{1+m}\right)^{k} - 1. \]<span class="tag-n">(6)</span></div>
+
+<!--bets-parlay-->
+
+<p>A 5-leg accumulator gives back about 79 cents per real staked in expectation: the house edge is roughly <strong>four and a half times</strong> that of a single bet. Big multipliers on the screen are the visible side of the same arithmetic.</p>
+
+<h2><span class="n">§6</span>Gambler's ruin</h2>
+
+<p>Real bankrolls are finite. Suppose a bettor starts with \(k\) units, bets one unit at odds 2.00 with win probability \(p\), and stops on reaching \(N\) or zero. With \(r = (1-p)/p\), the classical result is</p>
+
+<div class="eq">\[ \Pr(\text{reach } N \text{ before } 0) = \frac{1 - r^{k}}{1 - r^{N}}. \]<span class="tag-n">(7)</span></div>
+
+<!--bets-ruin-->
+
+<p>In a fair game, the chance of doubling 50 units is 50%. A disadvantage of just two percentage points (\(p = 0.49\)) cuts it to 12%; four points cuts it to under 2%. Small edges become decisive because the walk is long.</p>
+
+<h2><span class="n">§7</span>Fallacies the numbers rule out</h2>
+
+<ul>
+<li><strong>“It's due.”</strong> Independent events have no memory: after five losses, \(p\) is still \(p\). The gambler's fallacy confuses the law of large numbers — which works by <em>diluting</em> past deviations — with a force that corrects them.</li>
+<li><strong>Streaks.</strong> In 100 fair coin flips, the longest run is typically 6 or 7. Streaks are what randomness looks like, not evidence of form.</li>
+<li><strong>Survivorship.</strong> From the table in §4, about 31% of bettors are ahead after 100 bets. Among a million players, that is hundreds of thousands of genuine winning stories — selected from a population that, in aggregate, loses 4.5% of everything it stakes.</li>
+<li><strong>Regression to the mean.</strong> A great month is usually followed by a more ordinary one — not because luck “turned”, but because extreme results are partly noise.</li>
+</ul>
+
+<h2><span class="n">§8</span>Can anyone win? Kelly and the edge</h2>
+
+<p>Yes — if they consistently estimate \(p\) better than the market by more than its margin, so that \(p\,o - 1 > 0\). Even then, stake size matters. Betting a fraction \(f\) of the bankroll at net odds \(b = o - 1\), the long-run growth rate of capital is</p>
+
+<div class="eq">\[ g(f) = p\,\ln(1 + b f) + (1-p)\,\ln(1 - f), \qquad f^{*} = \frac{b\,p - (1-p)}{b}. \]<span class="tag-n">(8)</span></div>
+
+<p>\(f^{*}\) is the Kelly fraction. A bettor who wins 52% of bets at odds 2.10 — a genuine edge of \(p\,o - 1 = 9.2\%\) per bet — should stake about <strong>8.4%</strong> per bet, for a growth of only 0.38% per bet. Betting twice that fraction drives the growth rate to about zero; more than that, and capital shrinks despite the edge. And when there is no edge, (8) gives \(f^{*} < 0\): <strong>the optimal stake is zero</strong>. In practice, bookmakers can also limit accounts that win consistently, which caps even the rare real edge.</p>
+
+<h2><span class="n">§9</span>Takeaways</h2>
+
+<ul>
+<li>The margin is in the price: every unit staked loses \(m/(1+m)\) on average, whichever outcome is chosen.</li>
+<li>The average converges (LLN); the total diverges downward, because \(n|\mu|\) grows faster than \(\sigma\sqrt n\) (CLT). The crossover is around 1,800 bets for a 4.5% edge.</li>
+<li>Short-run wins are frequent and real — that is the product, not a flaw in the math.</li>
+<li>Accumulators compound the margin; finite bankrolls turn small edges into near-certain ruin.</li>
+<li>Winning requires better probabilities than the market <em>and</em> disciplined staking — and, absent an edge, the optimal bet is no bet.</li>
+</ul>
+
+<div class="note">Betting can be entertainment with a known price. If it stops being that — chasing losses, betting money needed elsewhere — it is worth talking to someone and looking for professional help.</div>
+
+<p class="cap">Code: <a href="https://github.com/Igor-Millis/Igor-Millis.github.io/tree/main/research/bets">research/bets/bets.py</a> (standard library, fixed seeds). References: J. L. Kelly Jr. (1956), <em>A New Interpretation of Information Rate</em>, Bell System Technical Journal; W. Feller, <em>An Introduction to Probability Theory and Its Applications</em>, vol. 1 (gambler's ruin); R. H. Thaler &amp; W. T. Ziemba (1988), <em>Anomalies: Parimutuel Betting Markets</em>, Journal of Economic Perspectives.</p>

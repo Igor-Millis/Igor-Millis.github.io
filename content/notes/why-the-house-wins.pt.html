@@ -1,0 +1,102 @@
+<p>Os apps de apostas vendem uma sensação: a próxima aposta pode ser a certa. A Estatística vende outro produto: <strong>o que acontece ao longo de muitas apostas</strong>. As duas coisas não se contradizem — vitórias de curto prazo são reais e frequentes —, mas só uma delas descreve o saldo do apostador depois de um ano. Esta nota monta esse quadro a partir dos fundamentos, com todos os números calculados num <a href="https://github.com/Igor-Millis/Igor-Millis.github.io/tree/main/research/bets">script reprodutível</a>.</p>
+
+<h2><span class="n">§1</span>Odds são preços</h2>
+
+<p>Uma odd decimal \(o\) paga \(o\) por unidade apostada se a aposta ganhar (com a aposta incluída). A probabilidade que tornaria a aposta justa é \(1/o\), a <strong>probabilidade implícita</strong>. Num mercado justo, as probabilidades implícitas de todos os resultados somam 1. Num mercado real, não somam:</p>
+
+<!--bets-market-->
+
+<p>O que passa de 100% — aqui, 4,8% — é o <strong>overround</strong>, a margem da casa. Dividir cada probabilidade implícita pela soma remove essa margem e dá as odds justas. Todo preço que o apostador vê foi rebaixado em relação ao valor justo.</p>
+
+<h2><span class="n">§2</span>Valor esperado: a perda já está no preço</h2>
+
+<p>Seja \(p\) a probabilidade real de a aposta ganhar. O ganho \(G\) por unidade apostada é \(o - 1\) com probabilidade \(p\) e \(-1\) caso contrário:</p>
+
+<div class="eq">\[ \mathbb{E}[G] = p\,(o-1) - (1-p) = p\,o - 1. \]<span class="tag-n">(1)</span></div>
+
+<p>Se o mercado for eficiente — suas probabilidades justas iguais às reais, \(p = q\) — e cada preço carregar a margem \(m\), então \(o = 1/\big(q(1+m)\big)\) e</p>
+
+<div class="eq">\[ \mathbb{E}[G] = \frac{1}{1+m} - 1 = -\frac{m}{1+m}. \]<span class="tag-n">(2)</span></div>
+
+<p>Duas consequências. Primeira: a perda esperada <strong>não depende do resultado escolhido</strong> — favorito, empate ou zebra, cada unidade apostada perde \(m/(1+m)\) em média, 4,6% no mercado acima. Segunda: nada sobre a habilidade do apostador entra em (2). Para mudar o sinal, é preciso \(p > 1/o\): uma probabilidade melhor que a do mercado, por mais que a margem (§8).</p>
+
+<h2><span class="n">§3</span>A lei dos grandes números</h2>
+
+<p>Tome a aposta de referência mais simples: odd 1,91 num evento genuinamente 50/50, um preço comum em mercados “equilibrados”. Então \(\mu = \mathbb{E}[G] = 0{,}5 \times 1{,}91 - 1 = -4{,}5\%\) e o desvio-padrão de uma aposta é \(\sigma = o\sqrt{p(1-p)} = 0{,}955\) — o ruído é vinte vezes maior que o sinal. Por isso uma aposta isolada não diz quase nada.</p>
+
+<p>A lei (forte) dos grandes números diz que o retorno médio por aposta converge para a esperança:</p>
+
+<div class="eq">\[ \bar G_n = \frac1n \sum_{i=1}^{n} G_i \;\xrightarrow{\text{q.c.}}\; \mu = -4{,}5\%. \]<span class="tag-n">(3)</span></div>
+
+<!--bets-lln-->
+
+<p>No começo, os caminhos estão em toda parte — alguns apostadores estão 20% ou mais no lucro. A faixa se estreita como \(1/\sqrt n\), e todos os caminhos são puxados para a mesma linha. A lei não diz que o prejuízo é garantido num dia qualquer; diz que <strong>a média não se negocia</strong>.</p>
+
+<h2><span class="n">§4</span>O teorema central do limite: quando a sorte acaba</h2>
+
+<p>O resultado <em>total</em> \(S_n = \sum G_i\) se comporta de outro jeito. Seu valor esperado cai linearmente, \(n\mu\), enquanto a sorte em volta dele cresce só como \(\sigma\sqrt n\). Pelo teorema central do limite,</p>
+
+<div class="eq">\[ S_n \approx \mathcal{N}\big(n\mu,\; n\sigma^2\big), \qquad \Pr(S_n > 0) \approx \Phi\!\left(\frac{\mu\sqrt n}{\sigma}\right) \xrightarrow[n\to\infty]{} 0. \]<span class="tag-n">(4)</span></div>
+
+<p>Linear vence raiz quadrada. A perda esperada ultrapassa dois desvios-padrão de sorte em</p>
+
+<div class="eq">\[ n^{*} = \left(\frac{2\sigma}{|\mu|}\right)^{2} \approx 1.800 \text{ apostas}. \]<span class="tag-n">(5)</span></div>
+
+<p>A cinco apostas por dia, isso é cerca de um ano. As probabilidades exatas pela binomial:</p>
+
+<!--bets-ahead-->
+
+<p>Depois de 100 apostas, quase um apostador em cada três ainda está no lucro — e é exatamente isso que mantém a experiência convincente. Depois de 2.000, menos de 2%. Teste:</p>
+
+<!--bets-sim-->
+
+<h2><span class="n">§5</span>Apostas múltiplas: a margem se acumula</h2>
+
+<p>Uma múltipla multiplica as odds de \(k\) seleções. Também multiplica as margens. Com seleções independentes, cada uma precificada como em (2),</p>
+
+<div class="eq">\[ \mathbb{E}[G_{\text{múltipla}}] = \left(\frac{1}{1+m}\right)^{k} - 1. \]<span class="tag-n">(6)</span></div>
+
+<!--bets-parlay-->
+
+<p>Uma múltipla de 5 seleções devolve, em média, cerca de 79 centavos por real apostado: a vantagem da casa é aproximadamente <strong>quatro vezes e meia</strong> a de uma aposta simples. Os multiplicadores grandes na tela são o lado visível da mesma conta.</p>
+
+<h2><span class="n">§6</span>A ruína do jogador</h2>
+
+<p>Bancas reais são finitas. Suponha que um apostador comece com \(k\) unidades, aposte uma unidade por vez a odd 2,00 com probabilidade de vitória \(p\) e pare ao chegar a \(N\) ou a zero. Com \(r = (1-p)/p\), o resultado clássico é</p>
+
+<div class="eq">\[ \Pr(\text{chegar a } N \text{ antes de } 0) = \frac{1 - r^{k}}{1 - r^{N}}. \]<span class="tag-n">(7)</span></div>
+
+<!--bets-ruin-->
+
+<p>Num jogo justo, a chance de dobrar 50 unidades é de 50%. Uma desvantagem de apenas dois pontos percentuais (\(p = 0{,}49\)) a reduz a 12%; quatro pontos, a menos de 2%. Vantagens pequenas se tornam decisivas porque o caminho é longo.</p>
+
+<h2><span class="n">§7</span>Falácias que os números descartam</h2>
+
+<ul>
+<li><strong>“Agora vai.”</strong> Eventos independentes não têm memória: depois de cinco derrotas, \(p\) continua sendo \(p\). A falácia do apostador confunde a lei dos grandes números — que funciona <em>diluindo</em> os desvios passados — com uma força que os corrige.</li>
+<li><strong>Sequências.</strong> Em 100 lançamentos de uma moeda honesta, a maior sequência costuma ter 6 ou 7. Sequências são a cara do acaso, não evidência de fase boa.</li>
+<li><strong>Viés de sobrevivência.</strong> Pela tabela da §4, cerca de 31% dos apostadores estão no lucro depois de 100 apostas. Num milhão de jogadores, são centenas de milhares de histórias reais de vitória — selecionadas de uma população que, no agregado, perde 4,5% de tudo o que aposta.</li>
+<li><strong>Regressão à média.</strong> Um mês ótimo costuma ser seguido por um mais comum — não porque a sorte “virou”, mas porque resultados extremos são em parte ruído.</li>
+</ul>
+
+<h2><span class="n">§8</span>Alguém consegue ganhar? Kelly e a vantagem</h2>
+
+<p>Sim — se estimar \(p\) melhor que o mercado, de forma consistente, por mais que a margem, de modo que \(p\,o - 1 > 0\). Mesmo assim, o tamanho da aposta importa. Apostando uma fração \(f\) da banca com odd líquida \(b = o - 1\), a taxa de crescimento do capital no longo prazo é</p>
+
+<div class="eq">\[ g(f) = p\,\ln(1 + b f) + (1-p)\,\ln(1 - f), \qquad f^{*} = \frac{b\,p - (1-p)}{b}. \]<span class="tag-n">(8)</span></div>
+
+<p>\(f^{*}\) é a fração de Kelly. Um apostador que ganha 52% das apostas a odd 2,10 — uma vantagem real de \(p\,o - 1 = 9{,}2\%\) por aposta — deveria apostar cerca de <strong>8,4%</strong> da banca por vez, para um crescimento de apenas 0,38% por aposta. Apostar o dobro dessa fração leva a taxa de crescimento a cerca de zero; acima disso, o capital encolhe apesar da vantagem. E, quando não há vantagem, (8) dá \(f^{*} < 0\): <strong>a aposta ótima é zero</strong>. Na prática, as casas também podem limitar contas que ganham com consistência, o que limita até a rara vantagem real.</p>
+
+<h2><span class="n">§9</span>Conclusões</h2>
+
+<ul>
+<li>A margem está no preço: cada unidade apostada perde \(m/(1+m)\) em média, seja qual for o resultado escolhido.</li>
+<li>A média converge (LGN); o total diverge para baixo, porque \(n|\mu|\) cresce mais rápido que \(\sigma\sqrt n\) (TCL). O cruzamento fica em torno de 1.800 apostas para uma desvantagem de 4,5%.</li>
+<li>Vitórias de curto prazo são frequentes e reais — isso é o produto, não uma falha da matemática.</li>
+<li>Múltiplas acumulam a margem; bancas finitas transformam desvantagens pequenas em ruína quase certa.</li>
+<li>Ganhar exige probabilidades melhores que as do mercado <em>e</em> disciplina no tamanho das apostas — e, sem vantagem, a melhor aposta é não apostar.</li>
+</ul>
+
+<div class="note">Apostar pode ser entretenimento com preço conhecido. Se deixar de ser — correr atrás do prejuízo, apostar dinheiro que faz falta —, vale conversar com alguém e procurar ajuda profissional.</div>
+
+<p class="cap">Código: <a href="https://github.com/Igor-Millis/Igor-Millis.github.io/tree/main/research/bets">research/bets/bets.py</a> (biblioteca padrão, sementes fixas). Referências: J. L. Kelly Jr. (1956), <em>A New Interpretation of Information Rate</em>, Bell System Technical Journal; W. Feller, <em>An Introduction to Probability Theory and Its Applications</em>, vol. 1 (ruína do jogador); R. H. Thaler &amp; W. T. Ziemba (1988), <em>Anomalies: Parimutuel Betting Markets</em>, Journal of Economic Perspectives.</p>

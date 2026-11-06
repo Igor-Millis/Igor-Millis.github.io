@@ -25,7 +25,7 @@ ROUTES: dict[str, str] = {
 
 # Research notes, newest first. Each slug needs [research.notes.<slug>] in every content/<lang>.toml
 # and a body in content/notes/<slug>.<lang>.html.
-NOTES = ["calibration-check", "threshold-is-a-decision"]
+NOTES = ["why-the-house-wins", "calibration-check", "threshold-is-a-decision"]
 ROUTES.update({f"note:{s}": f"/research/{s}/" for s in NOTES})
 
 
@@ -47,7 +47,8 @@ class Site:
         for lang in self.langs:
             self.content[lang] = _toml(f"content/{lang}.toml")
         self.data = {"credit": _json("data/credit_default.json"), "edudata": _json("data/edudata.json"),
-                     "calibration": _json("data/calibration.json")}
+                     "calibration": _json("data/calibration.json"),
+                     "bets": _json("data/bets.json")}
 
     # ---- languages -------------------------------------------------------
     @property

@@ -58,17 +58,22 @@ paragraphs = [
 portrait_alt = "Igor Millis speaking into a microphone at an event"
 portrait_cap = ["fig. 1 — igor millis", ""]
 edu_label = "education"
+edu_title = "Education and track record"
+edu_intro = "A Statistics degree for the foundations; projects built end to end for everything a classroom doesn't test."
 edu = [
-  { when = "now", title = "B.Sc. in Statistics", place = "Universidade Federal do Espírito Santo (UFES)", text = "In progress.", now = true },
+  { when = "in progress", title = "B.Sc. in Statistics", place = "Universidade Federal do Espírito Santo (UFES)", text = "Probability, inference, regression and multivariate methods, with R as the daily tool.", now = true },
+  { when = "oct — nov 2026", title = "EduData v1", place = "independent project · INEP public data", text = "Local analytics engine over 8 editions of the Higher Education Synopses: DuckDB pipeline, cell-level lineage, optional local LLM, 458 tests.", href = "edudata" },
+  { when = "aug — nov 2026", title = "Research notes", place = "this site", text = "Decision thresholds, probability calibration, the statistics of betting — each with reproducible code.", href = "research" },
+  { when = "jun — aug 2026", title = "Credit Default API", place = "machine learning project", text = "Four model families, grid search, threshold tuning, SHAP, FastAPI, pytest and Docker.", href = "credit" },
 ]
 focus_label = "focus"
 focus_title = "What I work on"
 focus = [
-  "<strong>Statistical modeling</strong> — inference, uncertainty, model evaluation and decision thresholds.",
-  "<strong>Machine learning</strong> — from baselines to tuned ensembles, with interpretability and honest validation.",
-  "<strong>Data engineering</strong> — layered pipelines, columnar storage, lineage and data-quality rules.",
-  "<strong>LLMs with guardrails</strong> — local models behind strict contracts: they interpret, code computes.",
-  "<strong>Product thinking</strong> — requirements, stakeholders, limitations and real use.",
+  { title = "Statistical modeling", text = "Inference, uncertainty and model evaluation — calibration, resampling, decision thresholds. Mostly in R, also in Python.", proof = "research notes", href = "research" },
+  { title = "Machine learning", text = "From baselines to tuned ensembles, with honest validation splits, interpretability and a decision rule chosen on purpose.", proof = "Credit Default API", href = "credit" },
+  { title = "Data engineering", text = "Layered pipelines, columnar storage, cell-level lineage and data-quality rules that never fix data silently.", proof = "EduData · pipeline", href = "edudata" },
+  { title = "LLMs with guardrails", text = "Local models behind strict JSON contracts: the model interprets, code computes — and its accuracy is measured, not assumed.", proof = "EduData · llm evaluation", href = "edudata" },
+  { title = "Product thinking", text = "Requirements, users, limitations and real use — written down before the code, stated openly after it.", proof = "every project page", href = "work" },
 ]
 stack_label = "stack"
 stack_title = "Tools and languages"
@@ -263,7 +268,7 @@ title = "A threshold is a decision"
 seo_title = "A threshold is a decision — choosing τ for a credit-default model"
 description = "Why 0.5 is not a neutral default: cost-sensitive thresholds, the cost ratio implied by τ = 0.24, and F1-optimal selection on validation data."
 kind = "statistical decision theory"
-date = "2026-11-05"
+date = "2026-08-18"
 minutes = 6
 abstract = "Why 0.5 is not neutral, what τ = 0.24 implies about error costs, and how to choose it without touching the test set."
 
@@ -272,6 +277,16 @@ title = "Is τ = 0.24 really a cost ratio?"
 seo_title = "Is τ = 0.24 really a cost ratio? — checking calibration of an XGBoost credit model"
 description = "Reliability diagram, Brier score and ECE for the Credit Default model; Platt vs isotonic recalibration; and a bootstrap interval for the F1-optimal threshold."
 kind = "calibration · resampling"
-date = "2026-11-06"
+date = "2026-09-22"
 minutes = 7
 abstract = "Checking the caveat of the previous note: are the scores calibrated, does recalibration help, and how noisy is the optimal threshold?"
+
+[research.notes.why-the-house-wins]
+title = "Why the house wins"
+seo_title = "Why the house wins — a statistical view of sports betting (LLN, CLT, gambler's ruin, Kelly)"
+description = "Odds as prices, expected value, the law of large numbers, the central limit theorem, accumulators, gambler's ruin and the Kelly criterion — with an in-browser bankroll simulator."
+kind = "probability · betting"
+date = "2026-11-05"
+minutes = 12
+scripts = ["js/bets.js"]
+abstract = "A statistical view of betting: why the margin is in the price, why luck runs out after about 1,800 bets, and what it would take to actually win."

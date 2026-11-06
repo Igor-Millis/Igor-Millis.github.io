@@ -58,17 +58,22 @@ paragraphs = [
 portrait_alt = "Igor Millis falando ao microfone em um evento"
 portrait_cap = ["fig. 1 — igor millis", ""]
 edu_label = "formação"
+edu_title = "Formação e trajetória"
+edu_intro = "A graduação em Estatística dá os fundamentos; projetos de ponta a ponta cobrem o que a sala de aula não testa."
 edu = [
-  { when = "atual", title = "Bacharelado em Estatística", place = "Universidade Federal do Espírito Santo (UFES)", text = "Em curso.", now = true },
+  { when = "em curso", title = "Bacharelado em Estatística", place = "Universidade Federal do Espírito Santo (UFES)", text = "Probabilidade, inferência, regressão e métodos multivariados, com R como ferramenta do dia a dia.", now = true },
+  { when = "out — nov 2026", title = "EduData v1", place = "projeto independente · dados públicos do INEP", text = "Motor analítico local sobre 8 edições das Sinopses da Educação Superior: pipeline DuckDB, linhagem por célula, LLM local opcional, 458 testes.", href = "edudata" },
+  { when = "ago — nov 2026", title = "Notas de pesquisa", place = "este site", text = "Limiares de decisão, calibração de probabilidades, a estatística das bets — cada uma com código reprodutível.", href = "research" },
+  { when = "jun — ago 2026", title = "Credit Default API", place = "projeto de machine learning", text = "Quatro famílias de modelos, grid search, ajuste de threshold, SHAP, FastAPI, pytest e Docker.", href = "credit" },
 ]
 focus_label = "foco"
 focus_title = "No que eu trabalho"
 focus = [
-  "<strong>Modelagem estatística</strong> — inferência, incerteza, avaliação de modelos e limiares de decisão.",
-  "<strong>Machine learning</strong> — de baselines a ensembles otimizados, com interpretabilidade e validação honesta.",
-  "<strong>Engenharia de dados</strong> — pipelines em camadas, armazenamento colunar, linhagem e regras de qualidade.",
-  "<strong>LLMs com salvaguardas</strong> — modelos locais atrás de contratos estritos: eles interpretam, o código calcula.",
-  "<strong>Pensamento de produto</strong> — requisitos, stakeholders, limitações e uso real.",
+  { title = "Modelagem estatística", text = "Inferência, incerteza e avaliação de modelos — calibração, reamostragem, limiares de decisão. Principalmente em R, também em Python.", proof = "notas de pesquisa", href = "research" },
+  { title = "Machine learning", text = "De baselines a ensembles otimizados, com divisões de validação honestas, interpretabilidade e uma regra de decisão escolhida de propósito.", proof = "Credit Default API", href = "credit" },
+  { title = "Engenharia de dados", text = "Pipelines em camadas, armazenamento colunar, linhagem por célula e regras de qualidade que nunca corrigem dados em silêncio.", proof = "EduData · pipeline", href = "edudata" },
+  { title = "LLMs com salvaguardas", text = "Modelos locais atrás de contratos JSON estritos: o modelo interpreta, o código calcula — e a exatidão é medida, não presumida.", proof = "EduData · avaliação do llm", href = "edudata" },
+  { title = "Pensamento de produto", text = "Requisitos, usuários, limitações e uso real — no papel antes do código, declarados abertamente depois.", proof = "todas as páginas de projeto", href = "work" },
 ]
 stack_label = "stack"
 stack_title = "Ferramentas e linguagens"
@@ -263,7 +268,7 @@ title = "Um threshold é uma decisão"
 seo_title = "Um threshold é uma decisão — escolhendo τ num modelo de inadimplência"
 description = "Por que 0,5 não é um padrão neutro: limiares sensíveis a custo, a razão de custos implícita em τ = 0,24 e a escolha pelo F1 na validação."
 kind = "teoria da decisão estatística"
-date = "2026-11-05"
+date = "2026-08-18"
 minutes = 6
 abstract = "Por que 0,5 não é neutro, o que τ = 0,24 implica sobre o custo dos erros e como escolhê-lo sem tocar no conjunto de teste."
 
@@ -272,6 +277,16 @@ title = "τ = 0,24 é mesmo uma razão de custos?"
 seo_title = "τ = 0,24 é mesmo uma razão de custos? — verificando a calibração de um modelo de crédito XGBoost"
 description = "Diagrama de confiabilidade, Brier score e ECE do modelo Credit Default; recalibração de Platt versus isotônica; e um intervalo bootstrap para o threshold ótimo de F1."
 kind = "calibração · reamostragem"
-date = "2026-11-06"
+date = "2026-09-22"
 minutes = 7
 abstract = "Verificando a ressalva da nota anterior: os escores são calibrados, recalibrar ajuda e quão ruidoso é o threshold ótimo?"
+
+[research.notes.why-the-house-wins]
+title = "Por que a casa sempre ganha"
+seo_title = "Por que a casa sempre ganha — a visão estatística das bets (LGN, TCL, ruína do jogador, Kelly)"
+description = "Odds como preços, valor esperado, lei dos grandes números, teorema central do limite, múltiplas, ruína do jogador e critério de Kelly — com um simulador de banca no navegador."
+kind = "probabilidade · apostas"
+date = "2026-11-05"
+minutes = 12
+scripts = ["js/bets.js"]
+abstract = "A visão estatística das bets: por que a margem está no preço, por que a sorte acaba depois de cerca de 1.800 apostas e o que seria preciso para ganhar de verdade."

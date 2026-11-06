@@ -5,6 +5,7 @@ import json
 
 from .charts import hbars, threshold_chart
 from .charts import reliability as reliability_svg
+from .bets import COMPONENTS as BETS_COMPONENTS
 from .core import NOTES, ROOT, Site, attr, esc, integer, num
 from .layout import page, section
 
@@ -197,11 +198,17 @@ def about(site: Site, lang: str) -> str:
     <div class="about-text rv">{paras}</div>
   </div>
 </section>"""
-    edu = '<div class="timeline">' + "".join(
-        f"""<div class="tl{' now' if e.get('now') else ''}"><span class="when">{esc(e['when'])}</span><h3>{esc(e['title'])}</h3><p>{esc(e['place'])} · {esc(e['text'])}</p></div>"""
-        for e in ab["edu"]
-    ) + "</div>"
-    focus = '<div class="prose"><ul>' + "".join(f"<li>{f}</li>" for f in ab["focus"]) + "</ul></div>"
+    def tl(e: dict) -> str:
+        title = esc(e["title"])
+        if e.get("href"):
+            title = f'<a href="{site.url(lang, e["href"])}">{title} <span class="arr" aria-hidden="true">↗</span></a>'
+        return (f'<div class="tl{" now" if e.get("now") else ""}"><span class="when">{esc(e["when"])}</span>'
+                f'<h3>{title}</h3><p class="place">{esc(e["place"])}</p><p>{esc(e["text"])}</p></div>')
+    edu = f'<p class="prose" style="margin-bottom:28px">{esc(ab["edu_intro"])}</p><div class="timeline">' + "".join(tl(e) for e in ab["edu"]) + "</div>"
+    focus = '<div class="focus-grid">' + "".join(
+        f'<a class="focus" href="{site.url(lang, f["href"])}"><span class="fn">{i + 1:02d}</span>'
+        f'<h3>{esc(f["title"])}</h3><p>{esc(f["text"])}</p><span class="proof">→ {esc(f["proof"])}</span></a>'
+        for i, f in enumerate(ab["focus"])) + "</div>"
     stack = '<dl class="stack">' + "".join(f"<div><dt>{esc(k)}</dt><dd>{esc(v)}</dd></div>" for k, v in ab["stack"]) + "</dl>"
     stack += f'<p class="cap">{esc(ab["stack_note"])}</p>'
     links = f"""<p class="muted" style="max-width:52ch">{esc(ab['contact_text'])}</p>
@@ -213,7 +220,7 @@ def about(site: Site, lang: str) -> str:
     body = (
         page_head(ab["label"], ab["h1"])
         + intro
-        + section(f"<b>01.1</b> / {esc(ab['edu_label'])}", "", edu)
+        + section(f"<b>01.1</b> / {esc(ab['edu_label'])}", esc(ab["edu_title"]), edu)
         + section(f"<b>01.2</b> / {esc(ab['focus_label'])}", esc(ab["focus_title"]), focus)
         + section(f"<b>01.3</b> / {esc(ab['stack_label'])}", esc(ab["stack_title"]), stack)
         + section(f"<b>01.4</b> / {esc(ab['contact_label'])}", esc(ab["contact_title"]), links, id="contact")
@@ -405,13 +412,12 @@ def note(site: Site, lang: str, slug: str) -> str:
     html_body = html_body.replace("{credit}", site.url(lang, "credit")).replace("{edudata}", site.url(lang, "edudata"))
     for other in NOTES:
         html_body = html_body.replace("{note:%s}" % other, site.url(lang, f"note:{other}"))
-    # Component placeholders
-    if "<!--explorer-->" in html_body:
-        html_body = html_body.replace("<!--explorer-->", threshold_explorer(site, lang))
-    if "<!--reliability-->" in html_body:
-        html_body = html_body.replace("<!--reliability-->", reliability_figure(site, lang))
-    if "<!--calibration-table-->" in html_body:
-        html_body = html_body.replace("<!--calibration-table-->", calibration_table(site, lang))
+    # Component placeholders: <!--name--> in the note body -> rendered component
+    components = {"explorer": threshold_explorer, "reliability": reliability_figure,
+                  "calibration-table": calibration_table, **BETS_COMPONENTS}
+    for name, render in components.items():
+        if f"<!--{name}-->" in html_body:
+            html_body = html_body.replace(f"<!--{name}-->", render(site, lang))
     by = (f'<div class="byline"><span>{esc(site.config["author"]["name"])}</span><time datetime="{n["date"]}">{n["date"]}</time>'
           f'<span>{n["minutes"]} {esc(ui["min_read"])}</span><span class="accent">{esc(n["kind"])}</span></div>')
     head = page_head(f'<a href="{site.url(lang, "research")}" style="text-decoration:none">{esc(ui["back_research"])}</a>',
