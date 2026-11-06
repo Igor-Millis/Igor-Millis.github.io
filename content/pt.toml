@@ -3,7 +3,7 @@
 [ui]
 skip = "Pular para o conteúdo"
 nav_work = "projetos"
-nav_research = "pesquisa"
+nav_research = "artigos"
 nav_about = "sobre"
 nav_home = "início"
 cmdk_hint = "Buscar ou ir para…"
@@ -19,7 +19,7 @@ source = "fonte"
 repo = "repositório"
 read = "ler"
 back_work = "← todos os projetos"
-back_research = "← todas as notas"
+back_research = "← todos os artigos"
 footer_title = '''Vamos construir algo <em class="voice">que faça diferença.</em>'''
 footer_elsewhere = "em outros lugares"
 footer_site = "site"
@@ -38,8 +38,8 @@ readout = "campo de gradiente ∇L(θ) · partículas seguem −∇"
 doors_label = "índice"
 door_work_title = "Projetos"
 door_work_text = "Dois sistemas de ponta a ponta: um motor analítico local sobre oito anos de dados públicos da educação e um modelo de risco de crédito servido como API testada."
-door_research_title = "Pesquisa"
-door_research_text = "Notas e experimentos: decisões estatísticas, modelagem, algoritmos e implementações — com equações e números reais."
+door_research_title = "Artigos"
+door_research_text = "Artigos e experimentos: decisões estatísticas, modelagem, algoritmos e implementações — com equações e números reais."
 door_about_title = "Sobre"
 door_about_text = "Como penso a Estatística, as ferramentas que uso e como falar comigo."
 selected_label = "projetos selecionados"
@@ -91,7 +91,7 @@ exp = [
 focus_label = "foco"
 focus_title = "No que eu trabalho"
 focus = [
-  { title = "Modelagem estatística", text = "Inferência, incerteza e avaliação de modelos — calibração, reamostragem, limiares de decisão. Principalmente em R, também em Python.", proof = "notas de pesquisa", href = "research" },
+  { title = "Modelagem estatística", text = "Inferência, incerteza e avaliação de modelos — calibração, reamostragem, limiares de decisão. Principalmente em R, também em Python.", proof = "artigos", href = "research" },
   { title = "Machine learning", text = "De baselines a ensembles otimizados, com divisões de validação honestas, interpretabilidade e uma regra de decisão escolhida de propósito.", proof = "Credit Default API", href = "credit" },
   { title = "Engenharia de dados", text = "Pipelines em camadas, armazenamento colunar, linhagem por célula e regras de qualidade que nunca corrigem dados em silêncio.", proof = "EduData · pipeline", href = "edudata" },
   { title = "LLMs com salvaguardas", text = "Modelos locais atrás de contratos JSON estritos: o modelo interpreta, o código calcula — e a exatidão é medida, não presumida.", proof = "EduData · avaliação do llm", href = "edudata" },
@@ -246,7 +246,7 @@ th_head = "xgboost (grid search) · teste · grade de 0,05"
 th_label = "threshold τ"
 th_keys = ["precision", "recall", "F1", "c<sub>FN</sub>/c<sub>FP</sub> implícito"]
 th_cap = "Curva: notebooks/09_model_selection.ipynb (teste, n = 6.000). O threshold operacional 0,24 foi escolhido maximizando o F1 na validação (F1 = 0,5405) em notebooks/010_model_validation.ipynb. Razão de custos implícita = (1 − τ)/τ, válida só se as probabilidades forem calibradas."
-s3_after = '''<p>O modelo final usa <strong>τ = 0,24</strong>: passa a encontrar <strong>60,1%</strong> dos inadimplentes em vez de 35,6%, trocando precision (0,66 → 0,49) por recall — uma decisão de negócio explicitada. Por que 0,24 e o que isso implica está na nota de pesquisa <a href="{note}">“Um threshold é uma decisão”</a>.</p>'''
+s3_after = '''<p>O modelo final usa <strong>τ = 0,24</strong>: passa a encontrar <strong>60,1%</strong> dos inadimplentes em vez de 35,6%, trocando precision (0,66 → 0,49) por recall — uma decisão de negócio explicitada. Por que 0,24 e o que isso implica está no artigo <a href="{note}">“Um threshold é uma decisão”</a>.</p>'''
 cm_title = "Matriz de confusão final — teste, τ = 0,24"
 cm_rows = ["real 0", "real 1"]
 cm_cols = ["pred 0", "pred 1"]
@@ -270,17 +270,17 @@ s6_label = "06 · próximos"
 s6_title = "Limitações e próximos passos"
 s6_body = '''<ul>
 <li>Ainda sem deploy público — a API roda localmente ou no Docker.</li>
-<li>Calibração verificada depois (nota de pesquisa): os escores são calibrados (ECE ≈ 0,008 no teste), então τ = 0,24 pode ser lido como uma razão de custos de cerca de 3×.</li>
+<li>Calibração verificada depois (artigo): os escores são calibrados (ECE ≈ 0,008 no teste), então τ = 0,24 pode ser lido como uma razão de custos de cerca de 3×.</li>
 <li>Planejado: deploy, integração da interface com a API hospedada e documentação final.</li>
 </ul>'''
 
 [research]
-title = "Pesquisa — Igor Millis"
-description = "Notas de pesquisa e experimentos de Igor Millis: decisões estatísticas, modelagem, machine learning e implementações computacionais."
-label = "pesquisa / 03"
+title = "Artigos — Igor Millis"
+description = "Artigos e experimentos de Igor Millis: decisões estatísticas, modelagem, machine learning e implementações computacionais."
+label = "artigos / 03"
 h1 = '''Notas da <em class="voice">bancada.</em>'''
 lede = "Estudos, experimentos estatísticos, modelagem matemática e implementações. Escritas para entender, não para impressionar — todo número é reproduzível a partir de uma fonte linkada."
-list_label = "notas"
+list_label = "artigos"
 format_label = "formato"
 format = "Cada nota: uma pergunta, a matemática, dados reais e o que isso muda na prática."
 

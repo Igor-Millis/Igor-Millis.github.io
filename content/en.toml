@@ -3,7 +3,7 @@
 [ui]
 skip = "Skip to content"
 nav_work = "work"
-nav_research = "research"
+nav_research = "articles"
 nav_about = "about"
 nav_home = "home"
 cmdk_hint = "Search or jump to…"
@@ -19,7 +19,7 @@ source = "source"
 repo = "repository"
 read = "read"
 back_work = "← all work"
-back_research = "← all notes"
+back_research = "← all articles"
 footer_title = '''Let's build something <em class="voice">that matters.</em>'''
 footer_elsewhere = "elsewhere"
 footer_site = "site"
@@ -38,8 +38,8 @@ readout = "gradient field ∇L(θ) · particles follow −∇"
 doors_label = "index"
 door_work_title = "Work"
 door_work_text = "Two end-to-end systems: a local analytics engine over eight years of public education data, and a credit-risk model served as a tested API."
-door_research_title = "Research"
-door_research_text = "Notes and experiments: statistical decisions, modeling, algorithms and implementations — with equations and real numbers."
+door_research_title = "Articles"
+door_research_text = "Articles and experiments: statistical decisions, modeling, algorithms and implementations — with equations and real numbers."
 door_about_title = "About"
 door_about_text = "How I think about statistics, the tools I use, and how to reach me."
 selected_label = "selected work"
@@ -91,7 +91,7 @@ exp = [
 focus_label = "focus"
 focus_title = "What I work on"
 focus = [
-  { title = "Statistical modeling", text = "Inference, uncertainty and model evaluation — calibration, resampling, decision thresholds. Mostly in R, also in Python.", proof = "research notes", href = "research" },
+  { title = "Statistical modeling", text = "Inference, uncertainty and model evaluation — calibration, resampling, decision thresholds. Mostly in R, also in Python.", proof = "articles", href = "research" },
   { title = "Machine learning", text = "From baselines to tuned ensembles, with honest validation splits, interpretability and a decision rule chosen on purpose.", proof = "Credit Default API", href = "credit" },
   { title = "Data engineering", text = "Layered pipelines, columnar storage, cell-level lineage and data-quality rules that never fix data silently.", proof = "EduData · pipeline", href = "edudata" },
   { title = "LLMs with guardrails", text = "Local models behind strict JSON contracts: the model interprets, code computes — and its accuracy is measured, not assumed.", proof = "EduData · llm evaluation", href = "edudata" },
@@ -246,7 +246,7 @@ th_head = "xgboost (grid search) · test set · 0.05 grid"
 th_label = "threshold τ"
 th_keys = ["precision", "recall", "F1", "implied c<sub>FN</sub>/c<sub>FP</sub>"]
 th_cap = "Curve: notebooks/09_model_selection.ipynb (test set, n = 6,000). The operating threshold 0.24 was selected by maximizing F1 on the validation split (F1 = 0.5405) in notebooks/010_model_validation.ipynb. Implied cost ratio = (1 − τ)/τ, valid only if probabilities are calibrated."
-s3_after = '''<p>The final model uses <strong>τ = 0.24</strong>: it now finds <strong>60.1%</strong> of defaulters instead of 35.6%, trading precision (0.66 → 0.49) for recall — a business decision made explicit. Why 0.24 and what it implies is discussed in the research note <a href="{note}">“A threshold is a decision”</a>.</p>'''
+s3_after = '''<p>The final model uses <strong>τ = 0.24</strong>: it now finds <strong>60.1%</strong> of defaulters instead of 35.6%, trading precision (0.66 → 0.49) for recall — a business decision made explicit. Why 0.24 and what it implies is discussed in the article <a href="{note}">“A threshold is a decision”</a>.</p>'''
 cm_title = "Final confusion matrix — test set, τ = 0.24"
 cm_rows = ["actual 0", "actual 1"]
 cm_cols = ["pred 0", "pred 1"]
@@ -270,17 +270,17 @@ s6_label = "06 · next"
 s6_title = "Limitations & next steps"
 s6_body = '''<ul>
 <li>No public deployment yet — the API runs locally or in Docker.</li>
-<li>Calibration checked after the fact (research note): scores are calibrated (ECE ≈ 0.008 on test), so τ = 0.24 can be read as a cost ratio of about 3×.</li>
+<li>Calibration checked after the fact (article): scores are calibrated (ECE ≈ 0.008 on test), so τ = 0.24 can be read as a cost ratio of about 3×.</li>
 <li>Planned: deploy, integrate the interface with the hosted API and finalize documentation.</li>
 </ul>'''
 
 [research]
-title = "Research — Igor Millis"
-description = "Research notes and experiments by Igor Millis: statistical decisions, modeling, machine learning and computational implementations."
-label = "research / 03"
+title = "Articles — Igor Millis"
+description = "Articles and experiments by Igor Millis: statistical decisions, modeling, machine learning and computational implementations."
+label = "articles / 03"
 h1 = '''Notes from the <em class="voice">bench.</em>'''
 lede = "Studies, statistical experiments, mathematical modeling and implementations. Written to understand, not to impress — every number is reproducible from a linked source."
-list_label = "notes"
+list_label = "articles"
 format_label = "format"
 format = "Each note: a question, the math, real data, and what it changes in practice."
 
