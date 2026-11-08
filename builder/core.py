@@ -25,7 +25,7 @@ ROUTES: dict[str, str] = {
 
 # Research notes, newest first. Each slug needs [research.notes.<slug>] in every content/<lang>.toml
 # and a body in content/notes/<slug>.<lang>.html.
-NOTES = ["why-the-house-wins", "calibration-check", "threshold-is-a-decision"]
+NOTES = ["local-llms", "why-the-house-wins", "calibration-check", "threshold-is-a-decision"]
 ROUTES.update({f"note:{s}": f"/research/{s}/" for s in NOTES})
 
 

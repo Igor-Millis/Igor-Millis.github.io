@@ -368,6 +368,9 @@ pre.code { background: var(--bg-raised); border: 1px solid var(--line); border-r
 .article strong { color: var(--text); font-weight: 500; }
 .eq { margin: 28px 0; padding: 18px 20px; border: 1px solid var(--line); background: var(--bg-raised); overflow-x: auto; position: relative; font-size: 17px; color: var(--text); }
 .eq .tag-n { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font: 400 12px var(--f-mono); color: var(--text-3); }
+.article h2 + .tbl-wrap, .article p + .tbl-wrap { margin: 20px 0 24px; }
+table.txt th, table.txt td { white-space: normal; text-align: left; vertical-align: top; line-height: 1.5; min-width: 120px; }
+table.txt td:first-child { color: var(--text); }
 .byline { display: flex; flex-wrap: wrap; gap: 6px 24px; font: 400 12px var(--f-mono); color: var(--text-3); margin-top: 28px; }
 
 /* ---------- 14. Command palette ---------- */

@@ -312,3 +312,12 @@ date = "2026-11-05"
 minutes = 12
 scripts = ["js/bets.js"]
 abstract = "A statistical view of betting: why the margin is in the price, why luck runs out after about 1,800 bets, and what it would take to actually win."
+
+[research.notes.local-llms]
+title = "Local LLMs: a guide from scratch"
+seo_title = "Local LLMs: what they are, what they are for and which to choose (Ollama, Qwen, Llama, Gemma)"
+description = "A beginner's guide to local LLMs: what they are, local vs cloud, hardware and quantization, Ollama and LM Studio, the main model families (Qwen, Llama, Gemma, Mistral, DeepSeek, gpt-oss, Phi) and which to use for each task."
+kind = "ai · local llms"
+date = "2026-11-08"
+minutes = 15
+abstract = "What a language model running on your own computer is, when it beats the cloud, what you need to run one and which model to pick for each task — no AI background assumed."

@@ -1,0 +1,181 @@
+<p>When someone uses ChatGPT, Gemini or Claude, the text they type leaves their computer, travels over the internet to a company's data center, gets processed there, and the answer comes back. A <strong>local LLM</strong> does the same job without that trip: the model is stored on your own computer and runs there, even with no internet connection. This article explains, from scratch, what that means, when it is worth it, which models are the best known and which one to pick for each task — including what I learned using a local model in a real project, <a href="{edudata}">EduData</a>.</p>
+
+<div class="note"><strong>A note on dates.</strong> This field moves very fast: new models come out almost every month. The names and recommendations below reflect the landscape at the end of 2026. The <em>concepts</em> (size, quantization, memory, context) change slowly; the list of “best models” does not. Memory and speed figures are orders of magnitude to guide you, not exact measurements — they vary with the computer, the software and the settings.</div>
+
+<h2><span class="n">§1</span>What an LLM is, without jargon</h2>
+
+<p><strong>LLM</strong> stands for <em>Large Language Model</em>. In practice, it is a program that has learned to <strong>continue text</strong>. It was trained by reading an enormous amount of text — books, websites, code, papers — and in the process learned patterns: which words tend to follow which, how a question is usually answered, how code is usually written.</p>
+
+<p>When you type “The capital of France is”, the model works out which continuations are most likely and picks “Paris”. A whole chatbot conversation is that, repeated many times: the model generates the answer one piece at a time. Those pieces are called <strong>tokens</strong> — something between a syllable and a word. A page of English text is roughly 500 to 700 tokens.</p>
+
+<p>Three ideas help with everything else in this article:</p>
+
+<ul>
+<li><strong>Parameters.</strong> The “adjustable numbers” inside the model — what it learned is stored in them. A <strong>7B</strong> model has 7 billion parameters; a <strong>70B</strong> one, 70 billion. Broadly, more parameters = more knowledge and better reasoning, but also more memory and slower answers.</li>
+<li><strong>Weights.</strong> The file that holds those parameters. “Downloading a model” means downloading that file, which can be anywhere from 1 to over 100 GB.</li>
+<li><strong>Context.</strong> How much text the model can “keep in mind” at once: the conversation so far, the document you pasted, the instructions. Measured in tokens (e.g. 8k, 32k, 128k).</li>
+</ul>
+
+<p>A useful analogy: the model is like a student who read an entire library and then <strong>had the library taken away</strong>. They remember a lot, write well and reason, but they do not look things up — so sometimes they remember wrongly, with complete confidence. That has a name: <strong>hallucination</strong>, and it applies to both local and cloud models.</p>
+
+<h2><span class="n">§2</span>Local vs cloud: what is the difference</h2>
+
+<p>The famous assistants (ChatGPT, Gemini, Claude) run <strong>in the cloud</strong>: on huge machines with graphics cards that each cost as much as a car. A <strong>local</strong> LLM runs on your laptop, your desktop or your company's server. That is only possible because several companies and labs publish their models' weights for anyone to download — so-called <strong>open models</strong> (or <em>open-weight</em> models).</p>
+
+<div class="tbl-wrap"><table class="txt"><thead><tr><th scope=col></th><th scope=col>Local LLM</th><th scope=col>Cloud LLM</th></tr></thead><tbody>
+<tr><td>Where it runs</td><td>On your computer</td><td>On the company's servers</td></tr>
+<tr><td>Privacy</td><td>Data never leaves the machine</td><td>Data is sent to a third party</td></tr>
+<tr><td>Internet</td><td>Only to download the model once</td><td>Always required</td></tr>
+<tr><td>Cost</td><td>Free per use; costs hardware and power</td><td>Monthly subscription or pay per use</td></tr>
+<tr><td>Quality</td><td>Good to very good, depending on size</td><td>Usually the best available</td></tr>
+<tr><td>Speed</td><td>Depends on your hardware</td><td>Fast and consistent</td></tr>
+<tr><td>Control</td><td>Full: the version never changes unless you change it</td><td>The company can change or retire the model</td></tr>
+<tr><td>Ease</td><td>Needs installing and choosing</td><td>Open the website and go</td></tr>
+</tbody></table></div>
+
+<p>In short: the cloud wins on <strong>peak quality and convenience</strong>; local wins on <strong>privacy, predictable cost, offline use and control</strong>. It is not a team sport — many people use both, each for what it does best.</p>
+
+<h2><span class="n">§3</span>What it is for, and when to use it</h2>
+
+<p>A local LLM does almost everything a chatbot does: answer questions, summarize, translate, rewrite, proofread, explain code, write code, pull information out of documents and classify text. The right question is not “what can it do” but <strong>when is it the best choice</strong>.</p>
+
+<p><strong>Local is worth it when:</strong></p>
+<ul>
+<li><strong>The data is sensitive.</strong> Medical records, contracts, customer data, internal documents, anything covered by privacy law. If the text cannot leave the organization, the cloud is already out.</li>
+<li><strong>The volume is high and repetitive.</strong> Classifying 50,000 comments, extracting fields from thousands of PDFs, summarizing an archive of meeting minutes. In the cloud every call costs money; locally, the cost is electricity.</li>
+<li><strong>There is no reliable internet</strong> — in the field, on a plane, on a closed corporate network.</li>
+<li><strong>You need predictability.</strong> A system that depends on a model should give the same answer tomorrow. With the model file stored locally, it does not change on its own.</li>
+<li><strong>You want to learn.</strong> Running a local model is the best way to understand, hands-on, how these tools work and where they fail.</li>
+</ul>
+
+<p><strong>The cloud is better when:</strong></p>
+<ul>
+<li>The task needs the <strong>strongest reasoning available</strong>: hard math, complex programming across large projects, long and subtle analysis.</li>
+<li>You need <strong>up-to-date information</strong> and built-in web search.</li>
+<li>Your computer is modest and the task is occasional — paying per use is cheaper than buying hardware.</li>
+<li>Many people will use it at once and nobody wants to run a server.</li>
+</ul>
+
+<h2><span class="n">§4</span>What you need to run one</h2>
+
+<p>The deciding factor is <strong>memory</strong>. The whole model has to fit in memory to run at a reasonable speed — ideally in the graphics card's memory (<strong>VRAM</strong>), which is much faster; if it does not fit, it falls back to regular memory (RAM) and the processor, and gets much slower.</p>
+
+<p>This is where the trick that made all of this possible comes in: <strong>quantization</strong>. Originally each parameter takes 16 bits. Quantizing stores it with less precision — 8, 5 or 4 bits — a bit like saving a photo as JPEG instead of RAW: the file gets much smaller and the difference is barely noticeable. A 7B model that would take about 14 GB drops to around 4–5 GB at 4 bits. The names you will see, such as <code>Q4_K_M</code> or <code>Q8_0</code>, give the level: <strong>Q4</strong> is the most common balance; <strong>Q8</strong> is nearly identical to the original but twice the size.</p>
+
+<p>A rule of thumb: at 4 bits, each <strong>1 billion parameters takes about 0.6 GB</strong>, plus 1–2 GB of headroom for the conversation's context.</p>
+
+<div class="tbl-wrap"><table class="txt"><thead><tr><th scope=col>Model size</th><th scope=col>Approx. memory (Q4)</th><th scope=col>Runs well on</th><th scope=col>What to expect</th></tr></thead><tbody>
+<tr><td>1B – 4B</td><td>1 – 3 GB</td><td>Any recent laptop, even a phone</td><td>Simple tasks: summarizing, classifying, rewriting</td></tr>
+<tr><td>7B – 9B</td><td>5 – 7 GB</td><td>Laptop with 16 GB RAM, or an 8 GB graphics card</td><td>A good everyday assistant</td></tr>
+<tr><td>12B – 14B</td><td>8 – 10 GB</td><td>12 GB graphics card, or 32 GB RAM</td><td>Noticeably more reliable; great value</td></tr>
+<tr><td>24B – 32B</td><td>15 – 20 GB</td><td>24 GB card, or a Mac with 32 GB+</td><td>Very good; close to cloud models of a year or two ago</td></tr>
+<tr><td>70B+</td><td>40 GB or more</td><td>Several cards, a Mac with 64 GB+, a server</td><td>Excellent, but expensive to run</td></tr>
+</tbody></table></div>
+
+<p>Two practical notes. <strong>Apple-silicon Macs (M1 onwards)</strong> are surprisingly good at this, because memory is shared between processor and graphics — a 32 GB Mac runs models that would need an expensive graphics card on a PC. And <strong>you can run without a graphics card</strong>: in EduData, the 7B model runs on the processor alone. It works, but each answer takes seconds instead of fractions of a second.</p>
+
+<h2><span class="n">§5</span>The tools: Ollama and friends</h2>
+
+<p>The model is just a file. To talk to it you need a program that loads and runs it. The best known:</p>
+
+<ul>
+<li><strong>Ollama</strong> — the most popular and the simplest way to start. It installs like any program (Windows, Mac or Linux) and downloads models with one command. It also starts a small server on your computer (at <code>localhost:11434</code>), so other programs can use the model — that is how EduData talks to Qwen. It has its own chat window too.</li>
+<li><strong>LM Studio</strong> — the friendliest option if you would rather avoid the terminal. It has a graphical interface, built-in model search, and tells you whether a model fits your computer before you download it.</li>
+<li><strong>llama.cpp</strong> — the “engine” behind many of these tools (Ollama started on top of it). More technical, but the most flexible and efficient. It popularized the <strong>GGUF</strong> file format, the standard for quantized models.</li>
+<li><strong>Jan</strong> and <strong>GPT4All</strong> — open-source desktop apps focused on privacy and simplicity.</li>
+<li><strong>Open WebUI</strong> — a ChatGPT-like interface that runs in the browser and connects to Ollama. Good for a family or a small team.</li>
+<li><strong>vLLM</strong> — for servers: serves many people at once efficiently. It is what companies use to put an open model into production.</li>
+</ul>
+
+<p>Getting started with Ollama takes a few minutes. Once installed, in a terminal:</p>
+
+<pre class="code">ollama pull qwen3:8b      # download the model (~5 GB)
+ollama run qwen3:8b       # open a chat in the terminal
+ollama list               # list downloaded models
+ollama rm qwen3:8b        # delete a model to free up space</pre>
+
+<p>What comes after the colon is the <strong>tag</strong>: the size and sometimes the quantization. <code>qwen3:8b</code> is Qwen3 with 8 billion parameters; <code>qwen3:4b</code> would be the smaller version. The full library is at <a href="https://ollama.com/library">ollama.com/library</a>.</p>
+
+<h2><span class="n">§6</span>The best-known model families</h2>
+
+<p>Open models come in <strong>families</strong>: a company releases several versions in different sizes, sometimes with specialized variants (for code, images or reasoning). The main ones:</p>
+
+<ul>
+<li><strong>Qwen (Alibaba).</strong> Probably the most complete open family today. It has everything: tiny models (0.6B) and huge ones, versions for code (<strong>Qwen-Coder</strong>), for images (<strong>Qwen-VL</strong>) and for embeddings. It is strong in <strong>many languages, including Portuguese</strong>, and very good at following strict formats such as JSON. Qwen2.5 established the family; <strong>Qwen3</strong> added a “think before answering” mode that can be switched on and off. It is what I use in EduData.</li>
+<li><strong>Llama (Meta).</strong> The family that made open models popular, in 2023. Llama 3 (8B and 70B, then versions 3.1–3.3) became a reference point with a huge ecosystem of community fine-tunes. Llama 4 brought larger models, heavier for home computers.</li>
+<li><strong>Gemma (Google).</strong> Open, compact versions of the technology behind Gemini. <strong>Gemma 3</strong> (1B to 27B) understands images and does very well for its size; there are also variants built for phones.</li>
+<li><strong>Mistral (Mistral AI, France).</strong> Known for efficient models. <strong>Mistral Small</strong> (about 24B) is a great middle ground, and <strong>Mistral Nemo</strong> (12B) was popular for its quality in European languages. There is also Codestral, for code.</li>
+<li><strong>DeepSeek (China).</strong> Became famous with <strong>DeepSeek-R1</strong>, a reasoning model that competed with the best in the world. The original is far too large for home use, but there are “distilled” versions — smaller models trained to imitate it — that run in Ollama.</li>
+<li><strong>gpt-oss (OpenAI).</strong> OpenAI's first open-weight models since GPT-2. The 20B version runs on a computer with about 16 GB of memory and is good at reasoning and tool use.</li>
+<li><strong>Phi (Microsoft).</strong> Small models trained on carefully selected data. <strong>Phi-4</strong> (14B) and Phi-4-mini stand out in reasoning and math for their size, but are weaker in general knowledge and in languages other than English.</li>
+</ul>
+
+<p>Beyond these, there are models that do not chat but are essential building blocks: <strong>embedding models</strong> (such as <code>nomic-embed-text</code>, <code>bge-m3</code> and <code>qwen3-embedding</code>), which turn text into lists of numbers so you can search by meaning, and <strong>Whisper</strong> (OpenAI), which transcribes audio into text and also runs locally.</p>
+
+<h2><span class="n">§7</span>Which one is good for what</h2>
+
+<p>The table below is a starting point. The best choice always depends on your computer: start with the largest model that runs comfortably on your machine and test it on your own tasks.</p>
+
+<div class="tbl-wrap"><table class="txt"><thead><tr><th scope=col>Task</th><th scope=col>Good choices</th><th scope=col>Why</th></tr></thead><tbody>
+<tr><td>General assistant</td><td>Qwen3 8B/14B · Gemma 3 12B/27B · Mistral Small</td><td>Good languages, good balance of quality and size</td></tr>
+<tr><td>Programming</td><td>Qwen2.5-Coder · Qwen3-Coder · Codestral · gpt-oss 20b</td><td>Trained on lots of code; the Coder models have small versions for in-editor autocomplete</td></tr>
+<tr><td>Reasoning, math, logic</td><td>Qwen3 (thinking mode) · distilled DeepSeek-R1 · gpt-oss · Phi-4</td><td>They “think out loud” before answering: slower, but more often right</td></tr>
+<tr><td>Reading images, photos, screenshots, scanned tables</td><td>Qwen2.5-VL · Gemma 3 · Llama 3.2 Vision</td><td>Multimodal models: take images and text</td></tr>
+<tr><td>Weak computer or phone</td><td>Qwen3 1.7B/4B · Gemma 3 1B/4B · Llama 3.2 3B · Phi-4-mini</td><td>Fit in 1–3 GB; fine for simple tasks</td></tr>
+<tr><td>Extracting JSON, classifying</td><td>Qwen2.5/Qwen3 7B+ · Mistral Small</td><td>Follow formats strictly; pair well with validation in code</td></tr>
+<tr><td>Chatting with your documents (RAG)</td><td>Embedding: nomic-embed-text, bge-m3 · Chat: Qwen3, Gemma 3</td><td>One model finds the right passages; another writes the answer</td></tr>
+<tr><td>Transcribing audio</td><td>Whisper (via whisper.cpp)</td><td>Local transcription of meetings, lectures and interviews</td></tr>
+</tbody></table></div>
+
+<p>Some terms that show up in model names:</p>
+<ul>
+<li><strong>instruct</strong> or <strong>chat</strong>: tuned to converse and follow instructions — almost always what you want. The <strong>base</strong> model only continues text and is meant for people who will train it further.</li>
+<li><strong>coder</strong>, <strong>vl</strong>/<strong>vision</strong>: specialized in code or images.</li>
+<li><strong>MoE</strong> (<em>mixture of experts</em>), as in <code>qwen3:30b-a3b</code>: the model has 30B in total but uses only 3B per token. It takes the memory of a big model but answers at the speed of a small one.</li>
+<li><strong>distill</strong>: a smaller model trained to imitate a larger one.</li>
+</ul>
+
+<h2><span class="n">§8</span>In practice: the EduData case</h2>
+
+<p>In <a href="{edudata}">EduData</a>, a query engine over Brazil's INEP higher-education statistics, I tested whether a local model could understand questions in Portuguese and turn them into a structured query. The model never computes anything: it only returns a JSON saying <em>what</em> was asked, and the code validates that JSON and fetches the numbers from the database.</p>
+
+<p>On 40 unseen questions, <strong>Qwen2.5 7B</strong> got 27 right; <strong>Qwen2.5 3B</strong>, 21. Neither matched the hand-written rules. So the model stayed optional, with a warning telling the user to check the interpretation. Three lessons that apply to any project:</p>
+
+<ul>
+<li><strong>Measure before you trust.</strong> “Looks good” in a chat is not the same as being right 9 times out of 10. Build a small set of questions with correct answers and test.</li>
+<li><strong>Size matters more than speed</strong> when mistakes are costly: the 7B made far fewer errors than the 3B.</li>
+<li><strong>Let the model interpret and the code compute.</strong> LLMs are great with language and bad at arithmetic and exact facts. Using them only for what they do well — and checking their output — is what makes a system reliable.</li>
+</ul>
+
+<h2><span class="n">§9</span>Limitations and caveats</h2>
+
+<ul>
+<li><strong>They make things up.</strong> Hallucination happens in every model, more often in small ones. Do not take an answer as fact without checking, especially numbers, names, laws and citations.</li>
+<li><strong>Frozen knowledge.</strong> The model only knows what was in its training data, up to a certain date. It does not know what happened yesterday unless you put that information in the context.</li>
+<li><strong>Context has a cost.</strong> Many models advertise 128k tokens of context, but every extra token takes memory. Ollama's default is much smaller and may need raising for long documents.</li>
+<li><strong>Licenses vary.</strong> “Open” does not mean “no rules”. Qwen and Mistral usually ship under Apache 2.0 (very permissive); Llama and Gemma have their own licenses with conditions. For commercial use, read the license.</li>
+<li><strong>Download from trusted sources.</strong> Prefer Ollama's official library or the labs' official Hugging Face pages.</li>
+<li><strong>Privacy depends on the whole stack.</strong> The model is local, but the app around it may not be. Check that the interface you use does not send data elsewhere.</li>
+</ul>
+
+<h2><span class="n">§10</span>How to start today</h2>
+
+<ul>
+<li><strong>1. Check your memory.</strong> On Windows: Task Manager → Performance (RAM and, under “GPU”, the graphics card's dedicated memory).</li>
+<li><strong>2. Install Ollama</strong> (<a href="https://ollama.com">ollama.com</a>) or, if you prefer something fully visual, LM Studio.</li>
+<li><strong>3. Choose by size:</strong> 8 GB RAM → <code>qwen3:4b</code> or <code>gemma3:4b</code>; 16 GB → <code>qwen3:8b</code>; a 12 GB+ graphics card → <code>qwen3:14b</code> or <code>gemma3:12b</code>.</li>
+<li><strong>4. Test with your own real tasks</strong> — an email to rewrite, a text to summarize, some code to explain — and compare with a cloud service.</li>
+<li><strong>5. Swap and compare.</strong> Downloading another model is one command. The best way to choose is to test two or three on the same questions.</li>
+</ul>
+
+<h2><span class="n">§11</span>Takeaways</h2>
+
+<ul>
+<li>A local LLM is a language model that runs on your computer: data never leaves it and it works without internet.</li>
+<li>It is worth it when there is <strong>sensitive data, high volume, no internet or a need for control</strong>; the cloud is still better for the hardest reasoning and for people who just want to open it and go.</li>
+<li><strong>Memory</strong> decides what runs; quantization (Q4) makes a 7–8B model fit in about 5 GB.</li>
+<li><strong>Ollama</strong> is the simplest way in; <strong>Qwen, Llama, Gemma, Mistral, DeepSeek, gpt-oss and Phi</strong> are the main families, and Qwen is the most versatile choice today, including for Portuguese.</li>
+<li>No model removes the need to check: test on your own tasks, measure accuracy, and leave anything that must be exact to code.</li>
+</ul>
+
+<p class="cap">References: <a href="https://ollama.com/library">Ollama library</a>; <a href="https://github.com/ggml-org/llama.cpp">llama.cpp</a>; <a href="https://lmstudio.ai">LM Studio</a>; <a href="https://huggingface.co/Qwen">Qwen on Hugging Face</a>. EduData results: decision D17 in the project's <code>_arquitetura/02_decisoes.md</code>. Memory and sizes are approximations for 4-bit quantization.</p>
