@@ -1,6 +1,7 @@
 {
   "_source": "github.com/Igor-Millis/consulta-sinopses-educacao-superior — README.md, _arquitetura/02_decisoes.md (D01–D18), motor/consultas.py, motor/seguranca.py, tests/gold_interpretacoes.jsonl",
   "repo": "https://github.com/Igor-Millis/consulta-sinopses-educacao-superior",
+  "demo": "https://consulta-sinopses.onrender.com",
   "llm_eval": [
     { "name": "Rules", "para": 24, "ctrl": 14, "total": 38, "time": "0.2 s", "note": "*" },
     { "name": "LLM 3B alone", "para": 13, "ctrl": 8, "total": 21, "time": "11 s" },

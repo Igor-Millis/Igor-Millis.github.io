@@ -17,6 +17,9 @@ copy_email = "Copiar e-mail"
 copied = "E-mail copiado"
 source = "fonte"
 repo = "repositório"
+demo = "versão online"
+demo_cta = "Testar a versão online"
+demo_note = "plano gratuito: a primeira visita pode levar ~1 min para acordar o servidor"
 read = "ler"
 back_work = "← todos os projetos"
 back_research = "← todos os artigos"
@@ -137,7 +140,7 @@ spec = [
   ["fonte", "INEP/MEC — Sinopses Estatísticas da Educação Superior"],
   ["período", "2017–2024 (8 edições anuais)"],
   ["armazenamento", "DuckDB (~4,5 GB) · staging em Parquet"],
-  ["execução", "100% local · Python 3.12 · Windows"],
+  ["execução", "local (Python 3.12 · Windows) ou online (Render · só regras · banco enxuto de 105 MB)"],
   ["llm", "Ollama + Qwen2.5 7B (opcional)"],
   ["status", "v1 entregue · projeto independente"],
 ]

@@ -49,8 +49,10 @@ def stats(items: list[list[str]]) -> str:
     ) + "</div>"
 
 
-def spec(items: list[list[str]], repo: str, ui: dict) -> str:
+def spec(items: list[list[str]], repo: str, ui: dict, demo: str | None = None) -> str:
     rows = "".join(f"<div><dt>{esc(k)}</dt><dd>{esc(v)}</dd></div>" for k, v in items)
+    if demo:
+        rows += f'<div><dt>{esc(ui["demo"])}</dt><dd><a href="{demo}" rel="noopener">{esc(demo.replace("https://", ""))} ↗</a></dd></div>'
     short = repo.replace("https://", "")
     rows += f'<div><dt>{esc(ui["repo"])}</dt><dd><a href="{repo}" rel="noopener">{esc(short)} ↗</a></dd></div>'
     return f'<dl class="spec">{rows}</dl>'
@@ -242,14 +244,16 @@ def work(site: Site, lang: str) -> str:
     return page(site, lang, "work", title=w["title"], description=w["description"], body=body)
 
 
-def _project_head(site: Site, lang: str, p: dict, repo: str) -> str:
+def _project_head(site: Site, lang: str, p: dict, repo: str, demo: str | None = None) -> str:
     ui = site.content[lang]["ui"]
+    cta = (f'<p style="margin-top:20px"><a class="btn-ghost" href="{demo}" rel="noopener">{esc(ui["demo_cta"])} ↗</a>'
+           f' <span class="cap" style="margin-left:8px">{esc(ui["demo_note"])}</span></p>') if demo else ""
     head = page_head(f'<a href="{site.url(lang, "work")}" style="text-decoration:none">{esc(ui["back_work"])}</a> · {esc(p["kicker"])}',
-                     esc(p["name"]), esc(p["summary"]), tags(p["tags"]))
+                     esc(p["name"]), esc(p["summary"]), tags(p["tags"]) + cta)
     overview = f"""<section class="sec overview" style="padding-top:48px">
   <div class="wrap">
     <div class="rv">{stats(p['stats'])}</div>
-    <div class="rv" style="margin-top:32px">{spec(p['spec'], repo, ui)}</div>
+    <div class="rv" style="margin-top:32px">{spec(p['spec'], repo, ui, demo)}</div>
   </div>
 </section>"""
     return head + overview
@@ -326,7 +330,7 @@ def edudata(site: Site, lang: str) -> str:
     ) + "</div>"
 
     body = (
-        _project_head(site, lang, p, repo)
+        _project_head(site, lang, p, repo, d.get("demo"))
         + section(esc(p["s1_label"]), esc(p["s1_title"]), f'<div class="prose">{p["s1_body"]}</div>')
         + section(esc(p["s2_label"]), esc(p["s2_title"]), pipeline)
         + section(esc(p["s3_label"]), esc(p["s3_title"]), replay)
