@@ -105,3 +105,28 @@ def reliability(rows: list[dict], lang: str, *, min_n: int = 20) -> str:
         out.append(f'<rect class="bar" x="{x0:.1f}" y="{hy + hh - bh:.1f}" width="{(w - l - r) / 10 - 4:.1f}" height="{bh:.1f}"/>'
                    f'<text x="{x0 + (w - l - r) / 20 - 2:.1f}" y="{hy + hh + 14}" text-anchor="middle">{integer(q["n"], lang)}</text>')
     return f'<svg viewBox="0 0 {w} {h}" role="img" aria-label="reliability diagram">{"".join(out)}</svg>'
+
+
+def ci_bars(items: list[list], lang: str, *, digits: int = 3, highlight: int = 2, label_w: int = 230) -> str:
+    """Horizontal bars with a 95% CI whisker. items = [[label, value, lo, hi], ...] sorted desc."""
+    w, row, gap = 640, 22, 8
+    vmax = max((hi if hi is not None else v) for _, v, _, hi in items)
+    plot_w = w - label_w - 70
+    X = lambda v: label_w + v / vmax * plot_w  # noqa: E731
+    h = len(items) * (row + gap)
+    out = []
+    for i, (label, v, lo, hi) in enumerate(items):
+        y = i * (row + gap)
+        cls = "bar hl" if i < highlight else "bar"
+        out.append(
+            f'<text x="{label_w - 10}" y="{y + 15}" text-anchor="end" class="{"t-strong" if i < highlight else ""}">{esc(label)}</text>'
+            f'<rect class="{cls}" x="{label_w}" y="{y + 4}" width="{max(1.0, X(v) - label_w):.1f}" height="{row - 8}"/>'
+        )
+        if lo is not None and hi is not None:
+            yc = y + row / 2
+            out.append(f'<line class="ci" x1="{X(lo):.1f}" x2="{X(hi):.1f}" y1="{yc:.1f}" y2="{yc:.1f}"/>'
+                       f'<line class="ci" x1="{X(lo):.1f}" x2="{X(lo):.1f}" y1="{yc - 4:.1f}" y2="{yc + 4:.1f}"/>'
+                       f'<line class="ci" x1="{X(hi):.1f}" x2="{X(hi):.1f}" y1="{yc - 4:.1f}" y2="{yc + 4:.1f}"/>')
+        tx = X(hi if hi is not None else v) + 8
+        out.append(f'<text x="{tx:.1f}" y="{y + 15}">{num(v, lang, digits)}</text>')
+    return f'<svg viewBox="0 0 {w} {h}" role="img" aria-label="bar chart with confidence intervals">{"".join(out)}</svg>'

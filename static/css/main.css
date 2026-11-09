@@ -550,3 +550,24 @@ kbd { font: 400 11px var(--f-mono); border: 1px solid var(--line-strong); border
 .job li::marker { content: "— "; color: var(--sc, var(--accent)); }
 .job li strong { color: var(--text); font-weight: 500; }
 @media (max-width: 720px) { .job { grid-template-columns: minmax(0, 1fr); gap: 12px; } }
+
+/* Adaptive Recommender page: tab groups of any size, CI whiskers, formula and weekend boxes */
+.pipe.pipe-9 { grid-template-columns: repeat(9, minmax(0, 1fr)); }
+.pipe.pipe-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+@media (max-width: 960px) {
+  .pipe.pipe-9, .pipe.pipe-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pipe.pipe-9 button, .pipe.pipe-6 button { border-bottom: 1px solid var(--line); }
+}
+.pipe-detail h4 { font: 500 12px var(--f-mono); color: var(--accent); text-transform: lowercase; margin: 18px 0 6px; letter-spacing: .02em; }
+.pipe-detail h4:first-child { margin-top: 0; }
+.pipe-detail p { margin: 0 0 10px; }
+.pipe-detail ul { padding-left: 1.1em; margin: 0 0 10px; }
+.pipe-detail li { margin-bottom: .35em; }
+.pipe-detail li::marker { color: var(--accent); content: "— "; }
+.pipe-detail code, .note code { font-size: .88em; color: var(--text); background: var(--bg); border: 1px solid var(--line); padding: 1px 5px; border-radius: 3px; }
+.formula { margin: 12px 0 14px; padding: 10px 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; overflow-x: auto; color: var(--text); }
+svg .ci { stroke: var(--text-2); stroke-width: 1.2; }
+.weekend { border: 1px solid var(--line); border-left: 2px solid var(--accent); background: var(--accent-bg); padding: 16px 20px; color: var(--text-2); font-size: 15px; max-width: 68ch; margin: 0 0 28px; }
+.weekend strong { color: var(--text); font-weight: 500; }
+.formula.sm { font-size: .8em; }
+.formula .katex-display { margin: .2em 0; }

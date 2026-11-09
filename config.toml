@@ -6,7 +6,7 @@
 base_url = "https://igor-millis.github.io"
 base_path = ""
 default_lang = "en"
-updated = "2026-11-08"
+updated = "2026-11-09"
 
 [author]
 name = "Igor Millis"

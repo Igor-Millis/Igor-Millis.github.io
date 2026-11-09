@@ -20,6 +20,7 @@ ROUTES: dict[str, str] = {
     "work": "/work/",
     "edudata": "/work/edudata/",
     "credit": "/work/credit-default-api/",
+    "recommender": "/work/adaptive-recommender/",
     "research": "/research/",
 }
 
@@ -48,7 +49,8 @@ class Site:
             self.content[lang] = _toml(f"content/{lang}.toml")
         self.data = {"credit": _json("data/credit_default.json"), "edudata": _json("data/edudata.json"),
                      "calibration": _json("data/calibration.json"),
-                     "bets": _json("data/bets.json")}
+                     "bets": _json("data/bets.json"),
+                     "recommender": _json("data/recommender.json")}
 
     # ---- languages -------------------------------------------------------
     @property

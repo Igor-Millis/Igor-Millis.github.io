@@ -50,6 +50,7 @@ def build() -> int:
             "work": pages.work(site, lang),
             "edudata": pages.edudata(site, lang),
             "credit": pages.credit(site, lang),
+            "recommender": pages.recommender(site, lang),
             "research": pages.research(site, lang),
         }
         for slug in NOTES:

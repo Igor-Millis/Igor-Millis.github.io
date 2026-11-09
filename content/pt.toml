@@ -274,6 +274,197 @@ s6_body = '''<ul>
 <li>Planejado: deploy, integração da interface com a API hospedada e documentação final.</li>
 </ul>'''
 
+[work.recommender]
+title = "Adaptive Recommender — sistema de recomendação adaptativo B2B, explicado passo a passo"
+description = "Projeto de fim de semana: cinco modelos de recomendação (conteúdo, colaborativo, supervisionado, bayesiano e popularidade) combinados por um motor adaptativo, com aprendizado por feedback, avaliação temporal honesta e teste em dados reais."
+name = "Adaptive Recommender"
+kicker = "sistemas de recomendação · projeto de fim de semana"
+summary = "Um fim de semana brincando com sistemas de recomendação: cinco modelos diferentes, um motor que decide quanto ouvir cada um para cada cliente e uma avaliação que não esconde quando a ideia sofisticada só empata com a simples."
+tags = ["Python", "scikit-learn", "LightGBM", "SciPy", "SQLite", "Streamlit", "pytest"]
+meta = ["NDCG@10 0,313", "300 lojas · + dados reais"]
+spec = [
+  ["motivação", "projeto de fim de semana · aprender e se divertir"],
+  ["dados", "300 lojas sintéticas + Online Retail II (UCI, dados reais)"],
+  ["tarefa", "sugerir produtos que a loja ainda não comprou (próximos 92 dias)"],
+  ["modelos", "conteúdo · colaborativo · supervisionado · bayesiano · popularidade"],
+  ["avaliação", "validação temporal · IC por bootstrap · comparações pareadas"],
+  ["interface", "app Streamlit com 5 páginas · roda 100% local"],
+]
+stats = [
+  ["5", "modelos especialistas combinados"],
+  ["0,313", "NDCG@10 do motor adaptativo (pesos fixos: 0,316)"],
+  ["273", "lojas avaliadas no teste temporal"],
+  ["322", "testes automatizados"],
+]
+weekend = '''<strong>Um projeto de fim de semana.</strong> Fiz este projeto durante um final de semana, simplesmente porque queria testar na prática vários modelos de recomendação e brincar com um sistema que escolhe, sozinho, qual modelo ouvir para cada cliente. O foco foi <strong>me divertir e aprender</strong> coisas que eu ainda não conhecia — sem me preocupar se alguns modelos eram complexos demais para o problema. Esta página explica cada método e cada passo com calma, do jeito que eu gostaria de ter lido antes de começar.'''
+
+model_names = { hybrid_fixed = "Híbrido · pesos fixos", hybrid_learned = "Adaptativo · gating treinado", hybrid_rules = "Adaptativo · regras", hybrid_equal = "Híbrido · pesos iguais", supervised = "Supervisionado", collaborative = "Colaborativo (kNN)", content_based = "Conteúdo", collaborative_mf = "Fatoração (ALS)", bayesian = "Bayesiano", popularity = "Popularidade", random = "Aleatório" }
+results_cols = ["estratégia", "NDCG@10", "IC 95%", "recall@10", "precision@10", "cobertura"]
+paired_cols = ["comparação (A − B)", "Δ NDCG@10", "IC 95%", "leitura"]
+verdict_better = "A melhor — diferença consistente"
+verdict_worse = "B melhor — diferença consistente"
+verdict_tie = "empate — o intervalo inclui zero"
+history_names = ["histórico extenso", "histórico moderado", "pouco histórico", "sem histórico"]
+history_cols = ["lojas", "n", "popularidade", "supervisionado", "pesos fixos", "adaptativo"]
+history_cap = "NDCG@10 no teste por quantidade de histórico da loja no momento da recomendação. Grupos pequenos (n < 20) são indicativos, não conclusivos. Fonte: docs/MODEL_EVALUATION.md."
+synthetic_cap = "Dados sintéticos · teste ago–out/2026 · 273 lojas · barra = IC 95% por bootstrap sobre lojas. Fonte: docs/MODEL_EVALUATION.md."
+real_cap = "Online Retail II (UCI) · teste set–dez/2011 · 218 clientes · barra = IC 95%. Fonte: docs/REAL_DATA_EVALUATION.md."
+
+s1_label = "01 · a ideia"
+s1_title = "Que produto sugerir para cada loja?"
+s1_body = '''<p>Imagine uma distribuidora de roupas que vende no atacado para lojas: camisetas, calças, vestidos, roupas esportivas, acessórios. Cada loja é um cliente com gosto próprio — uma vende moda esportiva, outra só compra o que é barato, outra concentra as compras no verão. O vendedor da distribuidora quer abrir o sistema e ver, para cada loja, <strong>uma lista curta de produtos que ela ainda não comprou e que provavelmente compraria</strong>.</p>
+<p>Isso é um <strong>sistema de recomendação</strong>: um programa que ordena os produtos do mais para o menos provável de interessar a um cliente e mostra os primeiros (aqui, os 10 primeiros). Repare em dois detalhes que mudam tudo:</p>
+<ul>
+<li><strong>Só produtos novos para a loja.</strong> Recomendar o que ela já compra toda semana é fácil e inútil. A tarefa é de <em>descoberta</em>.</li>
+<li><strong>Não existe um único jeito certo de adivinhar.</strong> Dá para olhar o que a loja já comprou, o que lojas parecidas compram, o que está vendendo bem, como ela reagiu a sugestões anteriores… Cada caminho acerta em situações diferentes.</li>
+</ul>
+<p>A pergunta que me motivou foi: <strong>e se, em vez de escolher um método, eu usasse vários e deixasse o sistema decidir quanto confiar em cada um, cliente por cliente?</strong> Isso se chama <em>mixture of experts</em> (mistura de especialistas). O resto da página mostra como construí isso, um passo de cada vez, e o que aconteceu quando testei de verdade.</p>'''
+
+s2_label = "02 · o passo a passo"
+s2_title = "Nove etapas, do dado bruto à recomendação"
+s2_intro = '''<p>Antes dos detalhes, o mapa. O sistema é uma sequência de etapas; cada uma recebe o resultado da anterior. Clique em cada etapa para ver o que ela faz e por quê:</p>'''
+steps = [
+  ["E1", "dados", '''<p><strong>Criar os dados.</strong> Não havia dados reais de uma distribuidora, então escrevi um <strong>gerador de dados sintéticos</strong>: 300 lojas, 200 produtos, cerca de 59 mil itens de pedido e 99 mil interações com recomendações ao longo de dois anos. Os dados não são aleatórios — cada loja tem um "gosto escondido" e as compras seguem esse gosto (detalhes na seção 03).</p><p>Depois, para conferir que eu não estava apenas reencontrando os padrões que eu mesmo inventei, rodei tudo também sobre <strong>dados reais</strong> públicos (seção 08).</p>'''],
+  ["E2", "banco", '''<p><strong>Guardar com organização.</strong> Tudo vai para um banco <strong>SQLite</strong> com 19 tabelas: clientes, produtos, pedidos, itens, interações, versões de modelos, estimativas bayesianas, recomendações exibidas, pesos usados e resultados de avaliação.</p><p>O banco tem regras de integridade (por exemplo, não existe pedido de um cliente inexistente, estoque nunca fica negativo, um peso precisa estar entre 0 e 1). Isso impede que um erro de código corrompa os dados em silêncio.</p>'''],
+  ["E3", "tempo", '''<p><strong>Respeitar o tempo.</strong> Este é o cuidado mais importante do projeto. Um modelo só pode usar o que se sabia <em>no dia</em> em que a recomendação seria feita. Se eu treinar com compras de outubro para "prever" setembro, o resultado fica lindo e é mentira — isso se chama <strong>vazamento de informação</strong>.</p><p>Por isso todo o código trabalha com <strong>fotografias no tempo</strong> (snapshots): "os dados como estavam em 1º de agosto". Se algum registro posterior aparecer num snapshot, o programa para com erro.</p>'''],
+  ["E4", "features", '''<p><strong>Transformar histórico em números.</strong> Modelos não leem pedidos; leem números. Para cada loja calculo características como número de pedidos, ticket médio, frequência, dias desde a última compra e participação de cada categoria nas compras.</p><p>Separo dois tipos: <strong>observado</strong> (contado diretamente, como "fez 44 pedidos") e <strong>inferido</strong> (depende de uma hipótese, como "é sensível a preço" ou "mudou de gosto recentemente"). Na interface, cada número carrega um selo dizendo de qual tipo ele é.</p>'''],
+  ["E5", "especialistas", '''<p><strong>Cinco formas de adivinhar.</strong> Cinco modelos diferentes dão, cada um, uma nota para cada par loja × produto: conteúdo, colaborativo, supervisionado, bayesiano e popularidade (seção 04 explica cada um com calma).</p><p>Todos seguem a mesma "tomada": recebem os dados até uma data, devolvem uma tabela de notas, dizem quanta confiança têm em cada loja e sabem explicar uma nota. Graças a isso, dá para trocar ou acrescentar um modelo sem mexer no resto.</p>'''],
+  ["E6", "motor", '''<p><strong>Decidir quanto ouvir cada um.</strong> As notas dos cinco especialistas vêm em escalas diferentes, então primeiro elas são colocadas numa régua comum de 0 a 1. Depois o <strong>motor adaptativo</strong> escolhe pesos que somam 100% — diferentes para cada loja — e faz uma média ponderada.</p><p>Uma loja nova, sem histórico, recebe muito peso de "popularidade"; uma loja antiga e consistente recebe mais peso de "conteúdo" e "colaborativo" (seção 05).</p>'''],
+  ["E7", "ranking", '''<p><strong>Montar a lista final.</strong> Antes de ordenar, removo o que não pode ser sugerido: produtos sem estoque, ainda não lançados, já comprados ou rejeitados recentemente pela loja. Depois ordeno, opcionalmente diversifico (para não sugerir dez camisetas quase iguais) e escrevo o motivo de cada sugestão.</p><p>A margem de lucro existe como um objetivo <em>separado</em> e opcional: relevância para o cliente e rentabilidade para a empresa nunca são misturadas sem você pedir.</p>'''],
+  ["E8", "feedback", '''<p><strong>Aprender com cada reação.</strong> Quando a loja clica, demonstra interesse, coloca no carrinho, compra ou rejeita uma sugestão, o evento é gravado e o sistema atualiza imediatamente o que acredita sobre aquela loja — sem precisar retreinar tudo.</p><p>Cada tipo de reação pesa diferente: comprar diz muito mais que clicar, e simplesmente ver uma sugestão sem reagir diz quase nada (seção 06).</p>'''],
+  ["E9", "avaliação", '''<p><strong>Testar no futuro.</strong> Os modelos são treinados com dados até abril/2026, ajustados com maio–julho e testados em agosto–outubro, período que nenhum deles viu. Medimos se os produtos sugeridos foram mesmo comprados.</p><p>Todo resultado vem com <strong>intervalo de confiança</strong>: com algumas centenas de lojas, uma diferença pequena entre dois métodos pode ser só sorte (seção 07).</p>'''],
+]
+
+s3_label = "03 · os dados"
+s3_title = "Um mundo de mentira com regras de verdade"
+s3_body = '''<p>Dados inventados só servem para testar um modelo se tiverem <strong>estrutura</strong>: padrões que um bom método consiga encontrar e um método ruim não. Por isso o gerador não sorteia compras ao acaso. Ele funciona assim:</p>
+<p><strong>1. Cada loja ganha um tipo escondido</strong> (um <em>arquétipo</em>): especialista em moda esportiva, sensível a preço, moda social, sazonal (compra muito no verão), diversificada, de alto ticket, "migrante" (muda de gosto aos poucos ao longo do tempo) e "complementar" (compra calça junto com camisa, vestido junto com acessório). O tipo define o gosto por categoria, por estilo e o quanto o preço pesa.</p>
+<p><strong>2. Cada produto tem uma "utilidade" para cada loja</strong> — um número que diz o quanto ela gosta daquele produto naquele mês. De forma simplificada:</p>
+<div class="formula sm">\[ U(\text{loja}, \text{produto}, t) = \underbrace{\log(\text{gosto pela categoria})}_{\text{preferência}} \;-\; \underbrace{\lambda \cdot \log\frac{\text{preço}}{\text{preço típico}}}_{\text{sensibilidade a preço}} \;+\; \underbrace{\text{estação}}_{\text{verão/inverno}} \;+\; \underbrace{\text{qualidade}}_{\text{produto}} \;+\;\dots \]</div>
+<p><strong>3. Os pedidos acontecem no tempo.</strong> Todo mês cada loja faz um número aleatório de pedidos (uma distribuição de Poisson, com mais pedidos na "sua" estação) e escolhe produtos sorteando com probabilidade maior para utilidade maior.</p>
+<p><strong>4. Existe um recomendador antigo</strong> mostrando 6 produtos antes de cada pedido. A loja reage num funil: às vezes clica, às vezes coloca no carrinho, às vezes compra, às vezes rejeita — e, na maioria das vezes, simplesmente ignora. Essas reações viram a tabela de interações.</p>
+<p><strong>5. Clientes novos de propósito.</strong> Algumas lojas se cadastram só no fim do período — algumas nem compram nada. Isso cria o problema do <strong>cold start</strong>: como recomendar para quem não tem histórico?</p>
+<p>O ponto crucial: o tipo escondido de cada loja fica num arquivo separado que <strong>nenhum modelo lê</strong>. Os modelos precisam descobrir os padrões a partir das compras, como fariam no mundo real.</p>'''
+
+s4_label = "04 · os métodos"
+s4_title = "Seis formas de olhar para o mesmo cliente"
+s4_intro = '''<p>Cada método responde a uma pergunta diferente sobre a loja. Para cada um: a intuição, como funciona, a fórmula principal e onde ele brilha ou falha. Clique para alternar:</p>'''
+methods = [
+  ["M1", "popularidade", '''<h4>a intuição</h4><p>"Na dúvida, sugira o que está vendendo bem." É o método mais simples e serve de linha de base: qualquer método sofisticado precisa vencê-lo.</p>
+<h4>como funciona</h4><p>Para cada produto conto quantas lojas diferentes o compraram nos últimos 180 dias, dando mais peso às compras recentes (o peso cai pela metade a cada 60 dias). A lista é a mesma para todas as lojas.</p>
+<div class="formula">\[ \text{pop}(p) = \sum_{\text{lojas que compraram } p} 0{,}5^{\,\text{idade da compra}/60} \]</div>
+<h4>onde brilha e onde falha</h4><p>É ótimo para <strong>lojas novas</strong>, sobre as quais não sabemos nada. Para todas as outras é fraco: ignora completamente o gosto de cada uma.</p>'''],
+  ["M2", "conteúdo", '''<h4>a intuição</h4><p>"Se a loja compra leggings e tops de academia, sugira outros produtos <em>parecidos</em> com esses." O método olha para as características dos produtos.</p>
+<h4>como funciona</h4><p><strong>Passo 1 — transformar cada produto num vetor de números.</strong> Atributos como categoria, subcategoria, público, faixa de preço, material, cor e estação viram colunas 0/1 (one-hot). O texto da descrição vira números com <strong>TF-IDF</strong>, que dá peso alto a palavras raras e informativas ("academia", "corporativo") e peso baixo a palavras comuns.</p>
+<p><strong>Passo 2 — medir semelhança com o cosseno</strong>, que olha o ângulo entre dois vetores: 1 = apontam para o mesmo lado (muito parecidos), 0 = nada em comum.</p>
+<div class="formula">\[ \cos(u, v) = \frac{u \cdot v}{\lVert u \rVert \, \lVert v \rVert} \]</div>
+<p><strong>Passo 3 — criar o perfil da loja</strong>: a soma dos vetores dos produtos que ela comprou, com mais peso para compras recentes e maiores. Interesses e cliques somam um pouco; <strong>rejeições subtraem</strong>. Se a loja mudou de gosto recentemente, o "esquecimento" fica mais rápido (meia-vida de 60 em vez de 180 dias). A nota de um produto é o cosseno entre ele e o perfil.</p>
+<h4>onde brilha e onde falha</h4><p>Funciona bem com histórico consistente e é o único método que recomenda <strong>produtos recém-lançados</strong> (que ninguém comprou ainda). Mas nunca surpreende: só sugere mais do mesmo. Uma vantagem: a explicação é exata — dá para dizer "42% da nota veio da categoria, 18% da faixa de preço".</p>'''],
+  ["M3", "colaborativo", '''<h4>a intuição</h4><p>"Lojas que compram parecido com você também compraram isto." Não olha para o produto em si, só para <em>quem</em> comprou o quê.</p>
+<h4>como funciona</h4><p><strong>Passo 1 — a matriz loja × produto.</strong> Uma tabela com uma linha por loja e uma coluna por produto; cada célula diz o quanto a loja comprou aquele produto (com peso maior para compras recentes). A maioria das células é zero.</p>
+<p><strong>Passo 2 — achar os vizinhos.</strong> Duas lojas são parecidas se suas linhas apontam para o mesmo lado (cosseno). Como lojas com poucos produtos em comum podem parecer parecidas por acaso, a similaridade é "encolhida" quando há pouca sobreposição:</p>
+<div class="formula">\[ s'(a, b) = \cos(a, b) \cdot \frac{n_{ab}}{n_{ab} + 5} \qquad (n_{ab} = \text{produtos em comum}) \]</div>
+<p><strong>Passo 3 — votação dos vizinhos.</strong> Pego as 10 lojas mais parecidas; a nota de um produto é a média do quanto elas o compraram, ponderada pela semelhança.</p>
+<p><strong>Variante testada: fatoração de matrizes (ALS).</strong> Em vez de vizinhos, resume cada loja e cada produto em 12 "fatores escondidos" cujo produto reconstrói a matriz. Funciona bem em matrizes gigantes e esparsas; aqui perdeu para os vizinhos (0,207 × 0,270), por isso ficou só como comparação.</p>
+<h4>onde brilha e onde falha</h4><p>Descobre padrões que nenhuma característica de produto revela. Mas não funciona para lojas sem histórico (não há com quem compará-las) nem para produtos que ninguém comprou.</p>'''],
+  ["M4", "supervisionado", '''<h4>a intuição</h4><p>Transformar a recomendação numa pergunta de sim ou não: <strong>"esta loja vai comprar este produto nos próximos 92 dias?"</strong> — e treinar um modelo de machine learning para responder com uma probabilidade.</p>
+<h4>como montei os exemplos</h4><p>Volto no tempo mês a mês. Em cada data, para cada par loja × produto ainda não comprado, calculo 43 características (do cliente, do produto e da combinação, como "participação da categoria nas compras da loja") usando só dados anteriores àquela data. O rótulo é 1 se a compra aconteceu nos 92 dias seguintes, 0 caso contrário.</p>
+<p><strong>Um cuidado estatístico importante:</strong> "não comprou" não quer dizer "não gosta" — talvez a loja nunca tenha visto o produto. Por isso (a) o rótulo vale só para aquela janela, (b) só entram lojas que fizeram algum pedido na janela, ou seja, que tiveram oportunidade de comprar, e (c) saber se a loja já viu, clicou ou rejeitou o produto entra como característica.</p>
+<p>Como só ~4% dos pares são compras, uso uma amostra dos "não" e dou a cada um peso inverso à taxa de amostragem — isso mantém as probabilidades corretas.</p>
+<h4>os modelos</h4><p>Treino três — <strong>regressão logística</strong> (linear e interpretável), <strong>random forest</strong> (média de muitas árvores) e <strong>LightGBM</strong> (árvores em sequência, cada uma corrigindo os erros da anterior) — e fico com o melhor num período de validação. Depois aplico a <strong>calibração de Platt</strong>, que ajusta as probabilidades para que "30%" signifique de fato cerca de 30% de compras.</p>
+<div class="formula">\[ P(\text{compra}) = \sigma\big(a \cdot \operatorname{logit}(\hat p) + b\big), \qquad \sigma(z) = \frac{1}{1+e^{-z}} \]</div>
+<h4>onde brilha e onde falha</h4><p>É o melhor especialista isolado (NDCG@10 0,289), porque combina todos os sinais e aprende com todas as lojas — inclusive dá palpites razoáveis para lojas novas. O preço é ser mais lento de treinar e menos transparente que os outros.</p>'''],
+  ["M5", "bayesiano", '''<h4>a intuição</h4><p>Responder a "quando sugerimos produtos de <em>vestidos</em> para esta loja, ela costuma reagir bem?" — e, principalmente, <strong>quanta certeza temos disso</strong>. Uma loja que respondeu bem 2 vezes em 2 é muito diferente de uma que respondeu bem 200 vezes em 200.</p>
+<h4>a distribuição Beta</h4><p>A taxa de resposta θ é desconhecida, então ela é tratada como uma variável com distribuição <strong>Beta(α, β)</strong>. Dá para pensar em α como "sucessos imaginários" e β como "fracassos imaginários"; a média é α/(α+β) e, quanto maior α+β, mais estreita (mais certa) a distribuição.</p>
+<p>A grande vantagem é a <strong>atualização conjugada</strong>: observou s sucessos e f fracassos? Basta somar.</p>
+<div class="formula">\[ \theta \sim \text{Beta}(\alpha, \beta) \;\;\Rightarrow\;\; \theta \mid \text{dados} \sim \text{Beta}(\alpha + s,\; \beta + f), \qquad \mathbb{E}[\theta \mid \text{dados}] = \frac{\alpha + s}{\alpha + \beta + s + f} \]</div>
+<h4>dois estágios e evidência com pesos</h4><p>Modelo o funil em dois passos, por loja × categoria: <strong>interesse</strong> (reagiu positivamente à sugestão?) e <strong>conversão</strong> (dado o interesse, comprou?). A probabilidade de compra é o produto dos dois. Cada reação conta diferente:</p>
+<ul><li><strong>compra</strong>: sucesso nos dois estágios — a evidência mais forte;</li><li><strong>clique ou "gostei"</strong>: sucesso no interesse, fracasso na conversão;</li><li><strong>rejeição explícita</strong>: um fracasso inteiro no interesse;</li><li><strong>ver e ignorar</strong>: só 0,25 de fracasso no interesse — talvez a loja nem tenha visto direito. Ignorar <em>não</em> é rejeitar.</li></ul>
+<h4>de onde vem o ponto de partida (prior)</h4><p>Antes de qualquer interação, a estimativa de uma loja parte da média das lojas <em>do mesmo segmento</em> (sem contar ela mesma), puxada para a média geral quando o segmento tem poucos dados. A força desse ponto de partida é estimada dos próprios dados (<strong>Bayes empírico</strong>).</p>
+<h4>onde brilha e onde falha</h4><p>Mostra a incerteza de forma honesta (intervalos de credibilidade na interface) e aprende instantaneamente com cada clique. Mas trabalha por <em>categoria</em>, não por produto: diz "vestidos funcionam com esta loja", não "qual vestido". Sozinho é fraco (0,185) — seu papel é dar um sinal complementar.</p>'''],
+  ["M6", "segmentos", '''<h4>a intuição</h4><p>Agrupar lojas parecidas — "especialistas em roupa esportiva", "sensíveis a preço", "sazonais" — não para recomendar diretamente, mas para dar <strong>contexto</strong> aos outros modelos (o ponto de partida bayesiano e uma das características do supervisionado vêm daqui).</p>
+<h4>como funciona</h4><p>Cada loja vira um ponto com ticket médio, frequência, diversidade de categorias, sensibilidade a preço, recência, sazonalidade e participação de cada categoria — todos padronizados para ficar na mesma escala. O <strong>K-Means</strong> encontra k centros e põe cada loja no grupo do centro mais próximo, minimizando:</p>
+<div class="formula">\[ J = \sum_{\text{lojas}} \lVert x_{\text{loja}} - \mu_{\text{grupo}} \rVert^2 \]</div>
+<h4>quantos grupos?</h4><p>Testo k de 2 a 10 e escolho pelo produto de dois critérios: <strong>silhouette</strong> (os grupos estão bem separados?) e <strong>estabilidade</strong> (se eu reamostrar as lojas e rodar de novo, os grupos se mantêm?). Comparo também com outro algoritmo, o agrupamento hierárquico de Ward. Os nomes dos grupos são gerados automaticamente a partir do que distingue cada centro da média.</p>
+<h4>onde brilha e onde falha</h4><p>Dá vocabulário e contexto. Lojas com menos de 3 pedidos não são agrupadas — recebem "sem histórico suficiente" em vez de um rótulo arbitrário.</p>'''],
+]
+
+s5_label = "05 · o motor"
+s5_title = "Como o sistema decide quanto ouvir cada especialista"
+s5_body = '''<p>Esta é a parte que eu mais queria testar. Em vez de pesos fixos iguais para todo mundo, cada loja recebe <strong>seus próprios pesos</strong>. São cinco passos:</p>
+<p><strong>1. Colocar as notas na mesma régua.</strong> A nota do conteúdo é um cosseno, a do supervisionado é uma probabilidade, a da popularidade é uma contagem — misturá-las direto seria somar metros com quilos. Então, para cada loja, troco cada nota pela sua <em>posição</em> entre os produtos possíveis, convertida para 0–1 (percentil). Um especialista que dá a mesma nota para tudo vira 0,5 em tudo e não atrapalha a ordem.</p>
+<p><strong>2. Medir o que sabemos da loja.</strong> Número de pedidos e de produtos distintos, quantas sugestões já viu, quão parecida ela é com outras lojas, quão consistente é o histórico, se mudou de gosto recentemente, há quantos dias não compra.</p>
+<p><strong>3. Regras de bom senso.</strong> Cada sinal vira uma confiança entre 0 e 1 para cada especialista: poucos pedidos → pouca confiança no colaborativo; histórico consistente → mais conteúdo; muitos vizinhos parecidos → mais colaborativo; muitas interações → mais bayesiano e supervisionado; loja nova → mais popularidade. Os pesos são as confianças divididas pela soma.</p>
+<p><strong>4. Um ajuste aprendido por cima das regras.</strong> As regras são palpites meus. Então um pequeno modelo aprende <em>correções</em> a elas olhando o que funcionou num período passado:</p>
+<div class="formula">\[ z_e = \log r_e + b_e + \theta_e^\top \phi(\text{loja}), \qquad w_e = \frac{e^{z_e}}{\sum_k e^{z_k}}, \qquad \text{nota final} = \sum_e w_e \, \tilde s_e \]</div>
+<p>Aqui \(r_e\) é a confiança dada pela regra, \(b_e\) um ajuste geral por especialista e \(\theta_e\) ajustes que dependem dos sinais \(\phi\) da loja. Se o aprendizado não encontrar nada, \(b = \theta = 0\) e o sistema volta exatamente às regras. O "softmax" garante pesos positivos que somam 100%.</p>
+<p><strong>5. Não confiar cegamente no ajuste.</strong> Com poucas lojas, um modelo de 60 parâmetros pode decorar ruído. Então comparo, por validação cruzada (treinando com parte das lojas e testando nas outras), três versões — só regras, só o ajuste geral, ajuste completo — e fico com a que vai melhor <strong>fora</strong> dos dados de treino. Com 50 lojas, venceram as regras; com 300, venceu o ajuste completo.</p>
+<p>Cada recomendação mostra os pesos usados, a justificativa em português, os especialistas descartados e um nível de confiança (fig. 3).</p>'''
+
+s6_label = "06 · lista e aprendizado"
+s6_title = "Da nota à lista — e o que acontece depois de um clique"
+s6_body = '''<p><strong>Filtrar antes de ordenar.</strong> Ficam de fora produtos sem estoque, ainda não lançados, já comprados pela loja (há uma opção para permitir recompra depois de N dias) e rejeitados nos últimos 180 dias. Produtos mostrados várias vezes sem resposta perdem 15% da nota ("fadiga"), para a lista não ficar repetitiva.</p>
+<p><strong>Diversificar, se quiser.</strong> Com a <em>Maximal Marginal Relevance</em>, cada próximo item é escolhido equilibrando relevância e diferença em relação ao que já está na lista:</p>
+<div class="formula">\[ p^\star = \arg\max_{p \notin L} \Big[\, \lambda \cdot \text{relevância}(p) \;-\; (1-\lambda)\cdot \max_{q \in L} \text{semelhança}(p, q) \Big] \]</div>
+<p>Com λ = 1 a lista é só relevância; valores menores trazem mais variedade.</p>
+<p><strong>Aprender com um clique — um exemplo.</strong> Suponha que, para "vestidos", a estimativa bayesiana de interesse de uma loja seja Beta(3, 7): média 3/10 = 30%. A loja vê uma sugestão de vestido e…</p>
+<ul>
+<li>…<strong>clica</strong>: vira Beta(4, 7), média 4/11 ≈ 36%;</li>
+<li>…<strong>ignora</strong>: vira Beta(3, 7,25), média ≈ 29% — quase nada muda, porque ignorar é uma evidência fraca;</li>
+<li>…<strong>rejeita</strong>: vira Beta(3, 8), média 3/11 ≈ 27%.</li>
+</ul>
+<p>Se depois do clique a mesma loja <em>compra</em> o vestido, o sistema aplica só a <strong>diferença</strong> entre "clicou" e "comprou", para não contar a mesma sugestão duas vezes. Com isso, atualizar um evento por vez dá exatamente o mesmo resultado que recalcular tudo do zero — isso está verificado nos testes.</p>
+<p><strong>O que muda na hora e o que espera o retreino.</strong> Depois de um feedback mudam imediatamente: a estimativa bayesiana, as características da loja, o perfil de conteúdo, a linha da loja na matriz colaborativa e os pesos do motor. Já o modelo supervisionado, a fatoração, os segmentos e o motor treinável só são reajustados numa rotina controlada de retreino, que cria novas versões e nunca apaga dados.</p>'''
+
+s7_label = "07 · avaliação"
+s7_title = "Funcionou? Medindo sem enganar a si mesmo"
+s7_body = '''<p><strong>O protocolo.</strong> Treino com dados até abril/2026, uso maio–julho para escolher hiperparâmetros e treinar o motor, e testo em agosto–outubro. No teste, os modelos são reajustados com tudo até 31 de julho, mas o motor usa os pesos aprendidos <em>antes</em> — ninguém vê o período de teste.</p>
+<p><strong>As métricas</strong>, para a lista dos 10 primeiros de cada loja:</p>
+<ul>
+<li><strong>Precision@10</strong>: dos 10 sugeridos, quantos a loja comprou de fato.</li>
+<li><strong>Recall@10</strong>: dos produtos novos que a loja comprou, quantos estavam na lista.</li>
+<li><strong>NDCG@10</strong>: como o recall, mas premiando acertos no topo — acertar na 1ª posição vale mais que na 10ª. Vai de 0 a 1.</li>
+<li><strong>Cobertura</strong>: que fração do catálogo aparece em alguma lista (sugerir sempre os mesmos 20 produtos é sinal ruim).</li>
+</ul>
+<div class="formula">\[ \text{NDCG@10} = \frac{\sum_{i=1}^{10} \frac{\text{acerto}_i}{\log_2(i+1)}}{\text{o melhor valor possível}} \]</div>
+<p><strong>A incerteza.</strong> Com 273 lojas no teste, parte da diferença entre dois métodos é sorte. O <strong>bootstrap</strong> estima isso: sorteio 2.000 vezes um conjunto de 273 lojas com reposição, recalculo a média e vejo entre que valores ela varia (o intervalo de 95%). Para comparar dois métodos, faço o mesmo com a <em>diferença</em> entre eles loja a loja (bootstrap pareado): se o intervalo da diferença inclui zero, não dá para dizer que um é melhor.</p>'''
+s7_paired = '''<p><strong>As comparações que importam.</strong> A coluna "leitura" aplica a regra acima, sem interpretação minha:</p>'''
+s7_history = '''<p><strong>Por quantidade de histórico.</strong> Uma das promessas do motor adaptativo era ir melhor para lojas novas. Os dados dizem:</p>'''
+s7_after = '''<p><strong>O que eu concluo.</strong> Combinar especialistas ajuda de verdade: os híbridos superam qualquer especialista isolado com folga estatística. Mas o motor adaptativo — a parte mais sofisticada — <strong>empata</strong> com uma combinação simples de pesos fixos bem escolhidos (Δ = −0,003, intervalo de −0,019 a +0,014), e perde para ela nas lojas sem histórico. Por isso ele não é declarado superior.</p>
+<p><strong>A lição de que mais gostei.</strong> Comecei com 50 lojas. Ali, o motor treinável não conseguia aprender nada (a validação cruzada sempre escolhia as regras) e aparecia uma vantagem bonita do adaptativo em "lojas que mudaram de gosto" — com 7 lojas nesse grupo. Ao subir para 300 lojas, os intervalos de confiança ficaram mais de duas vezes mais estreitos, o motor passou a aprender… e a vantagem desapareceu. Era ruído. Se eu tivesse parado nas 50 lojas, teria uma conclusão bonita e falsa.</p>'''
+
+s8_label = "08 · dados reais"
+s8_title = "E fora do mundo que eu mesmo inventei?"
+s8_body = '''<p>Dados sintéticos têm um problema de fundo: fui eu quem criou os padrões. Para checar, rodei <strong>o mesmo código, sem mudar nenhum modelo</strong>, sobre o <strong>Online Retail II</strong> (UCI Machine Learning Repository): transações reais de 2009 a 2011 de um atacadista online do Reino Unido, cujos clientes são em boa parte revendedores — um cenário B2B parecido.</p>
+<ul>
+<li><strong>Limpeza:</strong> de 1.067.371 linhas, removi cancelamentos, devoluções, clientes anônimos e códigos que não são produtos (frete, ajustes, taxas bancárias), ficando 802.632.</li>
+<li><strong>Adaptação:</strong> o dataset não tem categorias, então elas são derivadas das descrições por palavras-chave (bolsas, cozinha, velas, Natal…). Usei os 400 produtos com mais compradores <em>antes</em> do período de validação e uma amostra aleatória de 500 clientes — 58 deles só aparecem no período de teste (cold start real).</li>
+<li><strong>O que falta:</strong> não há registro de recomendações, então o especialista bayesiano fica sem evidência própria.</li>
+</ul>'''
+s8_after = '''<p><strong>Leitura.</strong> Todos os números caem — dados reais são muito mais esparsos (a mediana é de 3 pedidos por cliente) —, mas a história se repete: todos os métodos superam o acaso com folga, e as melhores estratégias (pesos fixos 0,094, supervisionado 0,091, colaborativo 0,085, adaptativo 0,084) ficam estatisticamente empatadas. O conteúdo sofre com descrições curtas e o bayesiano, sem interações, vira quase uma popularidade. Nenhuma mágica — e isso, para mim, é uma boa notícia sobre a honestidade da avaliação.</p>'''
+
+s9_label = "09 · o app"
+s9_title = "Tudo numa interface que dá para explorar"
+s9_intro = "Um app Streamlit com cinco páginas roda tudo localmente: painel de vendas, inteligência de clientes (com dados observados e inferidos marcados de forma diferente), central de recomendações com a explicação dos pesos, simulador de interações (cada clique é gravado e atualiza os modelos de verdade) e um laboratório de avaliação com todos os gráficos acima."
+figs = [
+  ["recommender-dashboard.webp", "Painel geral: indicadores, evolução mensal, categorias e segmentos."],
+  ["recommender-clientes.webp", "Inteligência dos clientes: dados de cadastro, observados e inferidos, cada um com seu selo."],
+  ["recommender-recomendacoes.webp", "“Como o sistema chegou a essa recomendação”: pesos usados, justificativa e sinais da loja."],
+  ["recommender-avaliacao.webp", "Laboratório de avaliação: NDCG@10 de cada estratégia com intervalos de confiança."],
+]
+
+s10_label = "10 · o que aprendi"
+s10_title = "Lições e limites"
+s10_body = '''<ul>
+<li><strong>A estrutura de avaliação vale mais que o modelo.</strong> Separar o tempo, comparar contra linhas de base justas e mostrar a incerteza foi o que me impediu de acreditar numa conclusão falsa.</li>
+<li><strong>Tamanho de amostra decide o que dá para aprender.</strong> O mesmo motor treinável não aprendia nada com 50 lojas e aprendia com 300.</li>
+<li><strong>Sofisticação não é garantia.</strong> Um motor adaptativo com regras, softmax e validação cruzada empatou com cinco pesos fixos bem escolhidos. Em produção, eu começaria pelos pesos fixos.</li>
+<li><strong>Ignorar não é rejeitar.</strong> Tratar ausência de clique como "não gosta" teria distorcido o modelo bayesiano e o supervisionado.</li>
+<li><strong>Limites:</strong> os dados principais são sintéticos (o gerador define a "verdade"); alguns modelos são complexos demais para ~300 clientes — de propósito, era um laboratório; os resultados de grupos pequenos (como cold start) são indicativos; o bayesiano só funciona onde existem registros de interação.</li>
+</ul>
+<p class="cap">Projeto pessoal de fim de semana, feito para aprender. Dados reais: Online Retail II (Chen, D., UCI Machine Learning Repository, CC BY 4.0), baixado em tempo de execução e não redistribuído.</p>'''
+
+
 [research]
 title = "Artigos — Igor Millis"
 description = "Artigos e experimentos de Igor Millis: decisões estatísticas, modelagem, machine learning e implementações computacionais."

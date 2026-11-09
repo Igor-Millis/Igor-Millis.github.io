@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 
-from .charts import hbars, threshold_chart
+from .charts import ci_bars, hbars, threshold_chart
 from .charts import reliability as reliability_svg
 from .bets import COMPONENTS as BETS_COMPONENTS
 from .core import NOTES, ROOT, Site, attr, esc, integer, num
@@ -32,7 +32,7 @@ def tags(items: list[str]) -> str:
 def project_rows(site: Site, lang: str) -> str:
     c = site.content[lang]["work"]
     rows = []
-    for n, key, k in (("01", "edudata", "edudata"), ("02", "credit", "credit")):
+    for n, key, k in (("01", "edudata", "edudata"), ("02", "credit", "credit"), ("03", "recommender", "recommender")):
         p = c[k]
         rows.append(f"""<a class="row rv" href="{site.url(lang, key)}">
   <span class="n">{n}</span>
@@ -386,6 +386,102 @@ def credit(site: Site, lang: str) -> str:
     )
     return page(site, lang, "credit", title=p["title"], description=p["description"], body=body,
                 scripts=("js/threshold.js",), jsonld=_software_ld(site, lang, "credit", p, repo, ["Python"]))
+
+
+def _katex(selector: str = "main") -> str:
+    return (
+        f'<link rel="stylesheet" href="{KATEX}/katex.min.css">'
+        f'<script defer src="{KATEX}/katex.min.js"></script>'
+        f'<script defer src="{KATEX}/contrib/auto-render.min.js"></script>'
+        "<script>document.addEventListener('DOMContentLoaded',function(){if(window.renderMathInElement)"
+        f"renderMathInElement(document.querySelector('{selector}')||document.body,{{delimiters:[{{left:'\\\\[',right:'\\\\]',display:true}},"
+        "{left:'\\\\(',right:'\\\\)',display:false}],throwOnError:false})})</script>"
+    )
+
+
+def _tab_group(gid: str, items: list[list[str]]) -> str:
+    """Accessible tab group reusing the .pipe styles; panels stay visible without JS."""
+    tabs = "".join(
+        f'<button role="tab" id="{gid}-t{i}" aria-controls="{gid}-p{i}" aria-selected="{"true" if i == 0 else "false"}">'
+        f'<b>{esc(code)}</b>{esc(name)}</button>'
+        for i, (code, name, _) in enumerate(items)
+    )
+    panels = "".join(
+        f'<div class="pipe-detail" role="tabpanel" id="{gid}-p{i}" aria-labelledby="{gid}-t{i}">{body}</div>'
+        for i, (_, _, body) in enumerate(items)
+    )
+    return (f'<div class="pipe pipe-{len(items)}" role="tablist" data-pipe="{gid}">{tabs}</div>'
+            f'<div data-pipe-panels="{gid}">{panels}</div>')
+
+
+def recommender(site: Site, lang: str) -> str:
+    p = site.content[lang]["work"]["recommender"]
+    d = site.data["recommender"]
+    repo = d["repo"]
+    names = p["model_names"]
+    f3 = lambda v: num(v, lang, 3)  # noqa: E731
+    ci = lambda lo, hi: f"[{num(lo, lang, 3)}; {num(hi, lang, 3)}]" if lang == "pt" else f"[{num(lo, lang, 3)}, {num(hi, lang, 3)}]"  # noqa: E731
+
+    def results_block(key: str, cap: str) -> str:
+        res = d[key]["results"]
+        chart = ci_bars([[names[r["model"]], r["ndcg"], r["lo"], r["hi"]] for r in res], lang, highlight=2)
+        hl = {i for i, r in enumerate(res) if r["model"] in ("hybrid_learned", "hybrid_fixed")}
+        rows = [[esc(names[r["model"]]), f3(r["ndcg"]), ci(r["lo"], r["hi"]), f3(r["recall"]), f3(r["precision"]),
+                 num(r["coverage"], lang, 2)] for r in res]
+        return (f'<figure class="chart" style="margin:8px 0 20px">{chart}<figcaption>{esc(cap)}</figcaption></figure>'
+                + table(p["results_cols"], rows, hl=hl, cls="l2"))
+
+    def paired_block(key: str) -> str:
+        rows = []
+        for q in d[key]["paired"]:
+            if q["ci_low"] > 0:
+                verdict = p["verdict_better"]
+            elif q["ci_high"] < 0:
+                verdict = p["verdict_worse"]
+            else:
+                verdict = p["verdict_tie"]
+            sign = lambda v: ("+" if v >= 0 else "−") + num(abs(v), lang, 3)  # noqa: E731
+            rows.append([f"{esc(names[q['a']])} − {esc(names[q['b']])}", sign(q["diff"]),
+                         f"[{sign(q['ci_low'])}; {sign(q['ci_high'])}]" if lang == "pt" else f"[{sign(q['ci_low'])}, {sign(q['ci_high'])}]",
+                         esc(verdict)])
+        return table(p["paired_cols"], rows, cls="l2")
+
+    hist = d["synthetic"]["by_history"]
+    order = [("histórico extenso", 0), ("histórico moderado", 1), ("pouco histórico", 2), ("sem histórico", 3)]
+    hist_rows = [[esc(p["history_names"][i]), str(hist[k]["n"]), f3(hist[k]["popularity"]), f3(hist[k]["supervised"]),
+                  f3(hist[k]["hybrid_fixed"]), f3(hist[k]["hybrid_learned"])] for k, i in order]
+    hist_tbl = table(p["history_cols"], hist_rows, cls="l2") + f'<p class="cap">{esc(p["history_cap"])}</p>'
+
+    figs = '<div class="fig-grid">' + "".join(
+        f'<figure><img src="{site.asset("img/" + src)}" width="1440" height="1000" loading="lazy" decoding="async" '
+        f'alt="{attr(cap)}"><figcaption>fig. {i + 1} — {esc(cap)}</figcaption></figure>'
+        for i, (src, cap) in enumerate(p["figs"])
+    ) + "</div>"
+
+    head = _project_head(site, lang, p, repo)
+    weekend = f'<section class="sec" style="padding-top:0"><div class="wrap"><div class="weekend rv">{p["weekend"]}</div></div></section>'
+    body = (
+        head + weekend
+        + section(esc(p["s1_label"]), esc(p["s1_title"]), f'<div class="prose">{p["s1_body"]}</div>')
+        + section(esc(p["s2_label"]), esc(p["s2_title"]), f'<div class="prose">{p["s2_intro"]}</div>' + _tab_group("steps", p["steps"]))
+        + section(esc(p["s3_label"]), esc(p["s3_title"]), f'<div class="prose">{p["s3_body"]}</div>')
+        + section(esc(p["s4_label"]), esc(p["s4_title"]), f'<div class="prose">{p["s4_intro"]}</div>' + _tab_group("methods", p["methods"]))
+        + section(esc(p["s5_label"]), esc(p["s5_title"]), f'<div class="prose">{p["s5_body"]}</div>')
+        + section(esc(p["s6_label"]), esc(p["s6_title"]), f'<div class="prose">{p["s6_body"]}</div>')
+        + section(esc(p["s7_label"]), esc(p["s7_title"]),
+                  f'<div class="prose">{p["s7_body"]}</div>' + results_block("synthetic", p["synthetic_cap"])
+                  + f'<div class="prose" style="margin-top:28px">{p["s7_paired"]}</div>' + paired_block("synthetic")
+                  + f'<div class="prose" style="margin-top:28px">{p["s7_history"]}</div>' + hist_tbl
+                  + f'<div class="prose" style="margin-top:20px">{p["s7_after"]}</div>')
+        + section(esc(p["s8_label"]), esc(p["s8_title"]),
+                  f'<div class="prose">{p["s8_body"]}</div>' + results_block("real", p["real_cap"])
+                  + f'<div class="prose" style="margin-top:20px">{p["s8_after"]}</div>')
+        + section(esc(p["s9_label"]), esc(p["s9_title"]), f'<p class="prose">{esc(p["s9_intro"])}</p>{figs}')
+        + section(esc(p["s10_label"]), esc(p["s10_title"]), f'<div class="prose">{p["s10_body"]}</div>')
+    )
+    return page(site, lang, "recommender", title=p["title"], description=p["description"], body=body,
+                scripts=("js/recommender.js",), head_extra=_katex("main"),
+                jsonld=_software_ld(site, lang, "recommender", p, repo, ["Python", "SQL"]))
 
 
 def research(site: Site, lang: str) -> str:

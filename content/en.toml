@@ -274,6 +274,197 @@ s6_body = '''<ul>
 <li>Planned: deploy, integrate the interface with the hosted API and finalize documentation.</li>
 </ul>'''
 
+[work.recommender]
+title = "Adaptive Recommender — an adaptive B2B recommender system, explained step by step"
+description = "Weekend project: five recommendation models (content, collaborative, supervised, Bayesian and popularity) combined by an adaptive engine, with feedback learning, honest temporal evaluation and a real-data check."
+name = "Adaptive Recommender"
+kicker = "recommender systems · weekend project"
+summary = "A weekend playing with recommender systems: five different models, an engine that decides how much to listen to each one for each customer, and an evaluation that does not hide when the fancy idea only ties the simple one."
+tags = ["Python", "scikit-learn", "LightGBM", "SciPy", "SQLite", "Streamlit", "pytest"]
+meta = ["NDCG@10 0.313", "300 stores · + real data"]
+spec = [
+  ["why", "weekend project · to learn and have fun"],
+  ["data", "300 synthetic stores + Online Retail II (UCI, real data)"],
+  ["task", "suggest products the store has not bought yet (next 92 days)"],
+  ["models", "content · collaborative · supervised · Bayesian · popularity"],
+  ["evaluation", "temporal validation · bootstrap CIs · paired comparisons"],
+  ["interface", "5-page Streamlit app · runs 100% locally"],
+]
+stats = [
+  ["5", "expert models combined"],
+  ["0.313", "NDCG@10 of the adaptive engine (fixed weights: 0.316)"],
+  ["273", "stores evaluated in the temporal test"],
+  ["322", "automated tests"],
+]
+weekend = '''<strong>A weekend project.</strong> I built this over a weekend, simply because I wanted to try several recommendation models in practice and play with a system that decides, on its own, which model to listen to for each customer. The goal was to <strong>have fun and learn</strong> things I didn't know yet — without worrying whether some models were more complex than the problem needed. This page explains every method and every step calmly, the way I wish I had read it before starting.'''
+
+model_names = { hybrid_fixed = "Hybrid · fixed weights", hybrid_learned = "Adaptive · trained gating", hybrid_rules = "Adaptive · rules", hybrid_equal = "Hybrid · equal weights", supervised = "Supervised", collaborative = "Collaborative (kNN)", content_based = "Content", collaborative_mf = "Factorization (ALS)", bayesian = "Bayesian", popularity = "Popularity", random = "Random" }
+results_cols = ["strategy", "NDCG@10", "95% CI", "recall@10", "precision@10", "coverage"]
+paired_cols = ["comparison (A − B)", "Δ NDCG@10", "95% CI", "reading"]
+verdict_better = "A better — consistent difference"
+verdict_worse = "B better — consistent difference"
+verdict_tie = "tie — the interval includes zero"
+history_names = ["long history", "moderate history", "short history", "no history"]
+history_cols = ["stores", "n", "popularity", "supervised", "fixed weights", "adaptive"]
+history_cap = "Test NDCG@10 by how much history the store had at recommendation time. Small groups (n < 20) are indicative, not conclusive. Source: docs/MODEL_EVALUATION.md."
+synthetic_cap = "Synthetic data · test Aug–Oct 2026 · 273 stores · whisker = 95% bootstrap CI over stores. Source: docs/MODEL_EVALUATION.md."
+real_cap = "Online Retail II (UCI) · test Sep–Dec 2011 · 218 customers · whisker = 95% CI. Source: docs/REAL_DATA_EVALUATION.md."
+
+s1_label = "01 · the idea"
+s1_title = "Which product should each store see?"
+s1_body = '''<p>Picture a clothing distributor that sells wholesale to stores: t-shirts, trousers, dresses, sportswear, accessories. Each store is a customer with its own taste — one sells sportswear, another only buys what is cheap, another concentrates its orders in summer. The distributor's sales rep wants to open the system and see, for each store, <strong>a short list of products it hasn't bought yet and probably would</strong>.</p>
+<p>That is a <strong>recommender system</strong>: a program that ranks products from most to least likely to interest a customer and shows the top ones (here, the top 10). Two details change everything:</p>
+<ul>
+<li><strong>Only products that are new to the store.</strong> Recommending what it already buys every week is easy and useless. The task is <em>discovery</em>.</li>
+<li><strong>There is no single right way to guess.</strong> You can look at what the store bought, what similar stores buy, what is selling well, how it reacted to past suggestions… Each route works in different situations.</li>
+</ul>
+<p>The question that got me started: <strong>what if, instead of picking one method, I used several and let the system decide how much to trust each one, customer by customer?</strong> That is called a <em>mixture of experts</em>. The rest of this page shows how I built it, one step at a time, and what happened when I tested it for real.</p>'''
+
+s2_label = "02 · step by step"
+s2_title = "Nine stages, from raw data to a recommendation"
+s2_intro = '''<p>Before the details, the map. The system is a sequence of stages; each one takes the previous one's output. Click each stage to see what it does and why:</p>'''
+steps = [
+  ["S1", "data", '''<p><strong>Create the data.</strong> There was no real distributor data, so I wrote a <strong>synthetic data generator</strong>: 300 stores, 200 products, about 59 thousand order lines and 99 thousand interactions with recommendations over two years. The data is not random — each store has a "hidden taste" and its purchases follow it (details in section 03).</p><p>Then, to check I wasn't just rediscovering patterns I invented myself, I also ran everything on public <strong>real data</strong> (section 08).</p>'''],
+  ["S2", "database", '''<p><strong>Store it properly.</strong> Everything goes into a <strong>SQLite</strong> database with 19 tables: customers, products, orders, order lines, interactions, model versions, Bayesian estimates, displayed recommendations, weights used and evaluation results.</p><p>The database enforces integrity rules (no order for a non-existent customer, stock never negative, a weight must lie between 0 and 1), so a bug cannot silently corrupt the data.</p>'''],
+  ["S3", "time", '''<p><strong>Respect time.</strong> This is the most important care in the whole project. A model may only use what was known <em>on the day</em> the recommendation would be made. Train with October purchases to "predict" September and the result looks great and is a lie — that is called <strong>information leakage</strong>.</p><p>So all the code works with <strong>snapshots</strong>: "the data as it was on August 1st". If any later record shows up in a snapshot, the program stops with an error.</p>'''],
+  ["S4", "features", '''<p><strong>Turn history into numbers.</strong> Models don't read orders; they read numbers. For each store I compute characteristics such as number of orders, average order value, frequency, days since the last purchase and each category's share of purchases.</p><p>I keep two kinds apart: <strong>observed</strong> (counted directly, like "placed 44 orders") and <strong>inferred</strong> (depends on an assumption, like "is price-sensitive" or "changed taste recently"). In the app, each number carries a badge saying which kind it is.</p>'''],
+  ["S5", "experts", '''<p><strong>Five ways to guess.</strong> Five different models each give a score to every store × product pair: content, collaborative, supervised, Bayesian and popularity (section 04 explains each one calmly).</p><p>They all share the same "plug": they take data up to a date, return a table of scores, say how confident they are for each store and can explain a score. That makes it possible to swap or add a model without touching the rest.</p>'''],
+  ["S6", "engine", '''<p><strong>Decide how much to listen to each one.</strong> The five experts' scores live on different scales, so first they are put on a common 0–1 ruler. Then the <strong>adaptive engine</strong> picks weights that add up to 100% — different for each store — and takes a weighted average.</p><p>A brand-new store with no history gets a lot of weight on "popularity"; an old, consistent store gets more weight on "content" and "collaborative" (section 05).</p>'''],
+  ["S7", "ranking", '''<p><strong>Build the final list.</strong> Before ranking, I remove what cannot be suggested: products out of stock, not launched yet, already bought or recently rejected by the store. Then I rank, optionally diversify (so it doesn't suggest ten almost identical t-shirts) and write the reason for each suggestion.</p><p>Profit margin exists as a <em>separate</em>, optional objective: relevance to the customer and profitability for the company are never mixed unless you ask.</p>'''],
+  ["S8", "feedback", '''<p><strong>Learn from every reaction.</strong> When a store clicks, likes, adds to cart, buys or rejects a suggestion, the event is stored and the system immediately updates what it believes about that store — without retraining everything.</p><p>Each kind of reaction weighs differently: buying says much more than clicking, and just seeing a suggestion without reacting says almost nothing (section 06).</p>'''],
+  ["S9", "evaluation", '''<p><strong>Test on the future.</strong> Models are trained on data up to April 2026, tuned on May–July and tested on August–October, a period none of them saw. We measure whether the suggested products were actually bought.</p><p>Every result comes with a <strong>confidence interval</strong>: with a few hundred stores, a small difference between two methods may just be luck (section 07).</p>'''],
+]
+
+s3_label = "03 · the data"
+s3_title = "A fake world with real rules"
+s3_body = '''<p>Made-up data is only useful for testing models if it has <strong>structure</strong>: patterns a good method can find and a bad method can't. So the generator doesn't draw purchases at random. It works like this:</p>
+<p><strong>1. Each store gets a hidden type</strong> (an <em>archetype</em>): sportswear specialist, price-sensitive, formal wear, seasonal (buys a lot in summer), diversified, high-ticket, "drifting" (slowly changes taste over time) and "complementary" (buys trousers together with shirts, dresses with accessories). The type sets its taste for categories and styles and how much price matters.</p>
+<p><strong>2. Each product has a "utility" for each store</strong> — a number saying how much it likes that product in that month. Simplified:</p>
+<div class="formula sm">\[ U(\text{store}, \text{product}, t) = \underbrace{\log(\text{taste for the category})}_{\text{preference}} \;-\; \underbrace{\lambda \cdot \log\frac{\text{price}}{\text{typical price}}}_{\text{price sensitivity}} \;+\; \underbrace{\text{season}}_{\text{summer/winter}} \;+\; \underbrace{\text{quality}}_{\text{product}} \;+\;\dots \]</div>
+<p><strong>3. Orders happen over time.</strong> Every month each store places a random number of orders (a Poisson distribution, with more orders in "its" season) and picks products with higher probability for higher utility.</p>
+<p><strong>4. There is an old recommender</strong> showing 6 products before each order. The store reacts in a funnel: sometimes it clicks, sometimes adds to cart, sometimes buys, sometimes rejects — and most of the time it simply ignores. Those reactions become the interactions table.</p>
+<p><strong>5. New customers on purpose.</strong> Some stores only sign up at the end of the period — some never buy anything. That creates the <strong>cold-start</strong> problem: how do you recommend to someone with no history?</p>
+<p>The crucial point: each store's hidden type lives in a separate file that <strong>no model reads</strong>. The models must discover the patterns from purchases, as they would in the real world.</p>'''
+
+s4_label = "04 · the methods"
+s4_title = "Six ways of looking at the same customer"
+s4_intro = '''<p>Each method answers a different question about the store. For each one: the intuition, how it works, the key formula and where it shines or fails. Click to switch:</p>'''
+methods = [
+  ["M1", "popularity", '''<h4>the intuition</h4><p>"When in doubt, suggest what is selling well." It is the simplest method and the baseline: any sophisticated method has to beat it.</p>
+<h4>how it works</h4><p>For each product I count how many different stores bought it in the last 180 days, giving more weight to recent purchases (the weight halves every 60 days). The list is the same for every store.</p>
+<div class="formula">\[ \text{pop}(p) = \sum_{\text{stores that bought } p} 0.5^{\,\text{purchase age}/60} \]</div>
+<h4>where it shines and fails</h4><p>Great for <strong>new stores</strong> we know nothing about. Weak for everyone else: it completely ignores each store's taste.</p>'''],
+  ["M2", "content", '''<h4>the intuition</h4><p>"If the store buys gym leggings and sports tops, suggest other products <em>similar</em> to those." The method looks at product characteristics.</p>
+<h4>how it works</h4><p><strong>Step 1 — turn each product into a vector of numbers.</strong> Attributes like category, subcategory, audience, price band, material, colour and season become 0/1 columns (one-hot). The description text becomes numbers with <strong>TF-IDF</strong>, which gives high weight to rare, informative words ("gym", "corporate") and low weight to common ones.</p>
+<p><strong>Step 2 — measure similarity with the cosine</strong>, which looks at the angle between two vectors: 1 = pointing the same way (very similar), 0 = nothing in common.</p>
+<div class="formula">\[ \cos(u, v) = \frac{u \cdot v}{\lVert u \rVert \, \lVert v \rVert} \]</div>
+<p><strong>Step 3 — build the store's profile</strong>: the sum of the vectors of the products it bought, weighting recent and larger purchases more. Likes and clicks add a little; <strong>rejections subtract</strong>. If the store changed taste recently, "forgetting" gets faster (a 60-day half-life instead of 180). A product's score is the cosine between it and the profile.</p>
+<h4>where it shines and fails</h4><p>Works well with a consistent history and is the only method that can recommend <strong>brand-new products</strong> (nobody bought them yet). But it never surprises: it only suggests more of the same. A bonus: the explanation is exact — "42% of the score came from the category, 18% from the price band".</p>'''],
+  ["M3", "collaborative", '''<h4>the intuition</h4><p>"Stores that buy like you also bought this." It doesn't look at the product itself, only at <em>who</em> bought what.</p>
+<h4>how it works</h4><p><strong>Step 1 — the store × product matrix.</strong> A table with one row per store and one column per product; each cell says how much the store bought that product (recent purchases weigh more). Most cells are zero.</p>
+<p><strong>Step 2 — find the neighbours.</strong> Two stores are similar if their rows point the same way (cosine). Since stores with few products in common can look similar by chance, the similarity is "shrunk" when the overlap is small:</p>
+<div class="formula">\[ s'(a, b) = \cos(a, b) \cdot \frac{n_{ab}}{n_{ab} + 5} \qquad (n_{ab} = \text{products in common}) \]</div>
+<p><strong>Step 3 — the neighbours vote.</strong> Take the 10 most similar stores; a product's score is the average of how much they bought it, weighted by similarity.</p>
+<p><strong>Variant tested: matrix factorization (ALS).</strong> Instead of neighbours, it summarizes each store and each product as 12 "hidden factors" whose product rebuilds the matrix. It shines on huge, sparse matrices; here it lost to the neighbours (0.207 vs 0.270), so it stayed as a comparison only.</p>
+<h4>where it shines and fails</h4><p>It finds patterns no product attribute reveals. But it doesn't work for stores with no history (nobody to compare them to) or for products nobody has bought.</p>'''],
+  ["M4", "supervised", '''<h4>the intuition</h4><p>Turn recommendation into a yes/no question: <strong>"will this store buy this product in the next 92 days?"</strong> — and train a machine learning model to answer with a probability.</p>
+<h4>how I built the examples</h4><p>I go back in time month by month. At each date, for every store × product pair not yet bought, I compute 43 features (about the customer, the product and the pair, such as "the category's share of the store's purchases") using only data before that date. The label is 1 if the purchase happened in the next 92 days, 0 otherwise.</p>
+<p><strong>An important statistical care:</strong> "didn't buy" doesn't mean "doesn't like" — maybe the store never saw the product. So (a) the label only holds for that window, (b) only stores that placed some order in the window are included, i.e. that had a chance to buy, and (c) whether the store had already seen, clicked or rejected the product is itself a feature.</p>
+<p>Since only ~4% of pairs are purchases, I sample the "no"s and give each one a weight equal to the inverse of the sampling rate — that keeps the probabilities correct.</p>
+<h4>the models</h4><p>I train three — <strong>logistic regression</strong> (linear and interpretable), <strong>random forest</strong> (an average of many trees) and <strong>LightGBM</strong> (trees in sequence, each fixing the previous one's errors) — and keep the best on a validation period. Then I apply <strong>Platt calibration</strong>, which adjusts the probabilities so that "30%" really means about 30% purchases.</p>
+<div class="formula">\[ P(\text{purchase}) = \sigma\big(a \cdot \operatorname{logit}(\hat p) + b\big), \qquad \sigma(z) = \frac{1}{1+e^{-z}} \]</div>
+<h4>where it shines and fails</h4><p>It is the best single expert (NDCG@10 0.289), because it combines all signals and learns from every store — it even makes reasonable guesses for new stores. The price: slower to train and less transparent than the others.</p>'''],
+  ["M5", "bayesian", '''<h4>the intuition</h4><p>Answer "when we suggest <em>dresses</em> to this store, does it usually respond well?" — and, above all, <strong>how sure are we</strong>. A store that responded well 2 times out of 2 is very different from one that did 200 times out of 200.</p>
+<h4>the Beta distribution</h4><p>The response rate θ is unknown, so it is treated as a variable with a <strong>Beta(α, β)</strong> distribution. Think of α as "imaginary successes" and β as "imaginary failures"; the mean is α/(α+β) and the larger α+β, the narrower (more certain) the distribution.</p>
+<p>The big advantage is the <strong>conjugate update</strong>: observed s successes and f failures? Just add them.</p>
+<div class="formula">\[ \theta \sim \text{Beta}(\alpha, \beta) \;\;\Rightarrow\;\; \theta \mid \text{data} \sim \text{Beta}(\alpha + s,\; \beta + f), \qquad \mathbb{E}[\theta \mid \text{data}] = \frac{\alpha + s}{\alpha + \beta + s + f} \]</div>
+<h4>two stages and weighted evidence</h4><p>I model the funnel in two steps, per store × category: <strong>interest</strong> (did it respond positively to the suggestion?) and <strong>conversion</strong> (given interest, did it buy?). The purchase probability is the product of the two. Each reaction counts differently:</p>
+<ul><li><strong>purchase</strong>: success in both stages — the strongest evidence;</li><li><strong>click or "like"</strong>: success in interest, failure in conversion;</li><li><strong>explicit rejection</strong>: a full failure in interest;</li><li><strong>seen and ignored</strong>: only 0.25 of a failure in interest — maybe the store barely noticed it. Ignoring is <em>not</em> rejecting.</li></ul>
+<h4>where the starting point (prior) comes from</h4><p>Before any interaction, a store's estimate starts from the average of stores <em>in the same segment</em> (excluding itself), pulled towards the overall average when the segment has little data. How strong that starting point is gets estimated from the data itself (<strong>empirical Bayes</strong>).</p>
+<h4>where it shines and fails</h4><p>It shows uncertainty honestly (credible intervals in the app) and learns instantly from every click. But it works per <em>category</em>, not per product: it says "dresses work for this store", not "which dress". On its own it is weak (0.185) — its job is to add a complementary signal.</p>'''],
+  ["M6", "segments", '''<h4>the intuition</h4><p>Group similar stores — "sportswear specialists", "price-sensitive", "seasonal" — not to recommend directly, but to give <strong>context</strong> to the other models (the Bayesian starting point and one of the supervised features come from here).</p>
+<h4>how it works</h4><p>Each store becomes a point with average order value, frequency, category diversity, price sensitivity, recency, seasonality and each category's share — all standardized to the same scale. <strong>K-Means</strong> finds k centres and puts each store in the group of the nearest centre, minimizing:</p>
+<div class="formula">\[ J = \sum_{\text{stores}} \lVert x_{\text{store}} - \mu_{\text{group}} \rVert^2 \]</div>
+<h4>how many groups?</h4><p>I try k from 2 to 10 and pick by the product of two criteria: <strong>silhouette</strong> (are the groups well separated?) and <strong>stability</strong> (if I resample the stores and run again, do the groups hold?). I also compare with another algorithm, Ward's hierarchical clustering. Group names are generated automatically from what sets each centre apart from the average.</p>
+<h4>where it shines and fails</h4><p>It gives vocabulary and context. Stores with fewer than 3 orders are not clustered — they get "not enough history" instead of an arbitrary label.</p>'''],
+]
+
+s5_label = "05 · the engine"
+s5_title = "How the system decides how much to listen to each expert"
+s5_body = '''<p>This is the part I most wanted to test. Instead of the same fixed weights for everyone, each store gets <strong>its own weights</strong>. Five steps:</p>
+<p><strong>1. Put the scores on the same ruler.</strong> Content's score is a cosine, supervised's is a probability, popularity's is a count — mixing them directly would be adding metres to kilograms. So, for each store, I replace each score by its <em>rank</em> among the possible products, converted to 0–1 (a percentile). An expert that gives everything the same score becomes 0.5 everywhere and doesn't disturb the order.</p>
+<p><strong>2. Measure what we know about the store.</strong> Number of orders and of distinct products, how many suggestions it has seen, how similar it is to other stores, how consistent its history is, whether it changed taste recently, how many days since it last bought.</p>
+<p><strong>3. Common-sense rules.</strong> Each signal becomes a confidence between 0 and 1 for each expert: few orders → little trust in collaborative; consistent history → more content; many similar neighbours → more collaborative; many interactions → more Bayesian and supervised; new store → more popularity. Weights are the confidences divided by their sum.</p>
+<p><strong>4. A learned adjustment on top of the rules.</strong> The rules are my guesses. So a small model learns <em>corrections</em> to them by looking at what worked in a past period:</p>
+<div class="formula">\[ z_e = \log r_e + b_e + \theta_e^\top \phi(\text{store}), \qquad w_e = \frac{e^{z_e}}{\sum_k e^{z_k}}, \qquad \text{final score} = \sum_e w_e \, \tilde s_e \]</div>
+<p>Here \(r_e\) is the rule's confidence, \(b_e\) a general adjustment per expert and \(\theta_e\) adjustments that depend on the store's signals \(\phi\). If learning finds nothing, \(b = \theta = 0\) and the system falls back exactly to the rules. The "softmax" guarantees positive weights that add up to 100%.</p>
+<p><strong>5. Don't trust the adjustment blindly.</strong> With few stores, a 60-parameter model can memorize noise. So I compare, with cross-validation (training on some stores and testing on the others), three versions — rules only, general adjustment only, full adjustment — and keep the one that does best <strong>outside</strong> the training data. With 50 stores the rules won; with 300 the full adjustment won.</p>
+<p>Every recommendation shows the weights used, the justification in plain language, the discarded experts and a confidence level (fig. 3).</p>'''
+
+s6_label = "06 · list & learning"
+s6_title = "From score to list — and what happens after a click"
+s6_body = '''<p><strong>Filter before ranking.</strong> Left out: products out of stock, not launched yet, already bought by the store (there is an option to allow repurchase after N days) and rejected in the last 180 days. Products shown several times without any response lose 15% of their score ("fatigue"), so the list doesn't get repetitive.</p>
+<p><strong>Diversify, if you want.</strong> With <em>Maximal Marginal Relevance</em>, each next item balances relevance against being different from what is already on the list:</p>
+<div class="formula">\[ p^\star = \arg\max_{p \notin L} \Big[\, \lambda \cdot \text{relevance}(p) \;-\; (1-\lambda)\cdot \max_{q \in L} \text{similarity}(p, q) \Big] \]</div>
+<p>With λ = 1 the list is pure relevance; smaller values bring more variety.</p>
+<p><strong>Learning from a click — an example.</strong> Suppose a store's Bayesian interest estimate for "dresses" is Beta(3, 7): mean 3/10 = 30%. The store sees a dress suggestion and…</p>
+<ul>
+<li>…<strong>clicks</strong>: it becomes Beta(4, 7), mean 4/11 ≈ 36%;</li>
+<li>…<strong>ignores it</strong>: Beta(3, 7.25), mean ≈ 29% — almost nothing changes, because ignoring is weak evidence;</li>
+<li>…<strong>rejects it</strong>: Beta(3, 8), mean 3/11 ≈ 27%.</li>
+</ul>
+<p>If after the click the same store <em>buys</em> the dress, the system applies only the <strong>difference</strong> between "clicked" and "bought", so the same suggestion isn't counted twice. Thanks to that, updating one event at a time gives exactly the same result as recomputing everything from scratch — that is checked in the tests.</p>
+<p><strong>What changes right away and what waits for retraining.</strong> After feedback, these update immediately: the Bayesian estimate, the store's features, its content profile, its row in the collaborative matrix and the engine's weights. The supervised model, the factorization, the segments and the trainable engine are only refitted in a controlled retraining routine, which creates new versions and never deletes data.</p>'''
+
+s7_label = "07 · evaluation"
+s7_title = "Did it work? Measuring without fooling yourself"
+s7_body = '''<p><strong>The protocol.</strong> Train on data up to April 2026, use May–July to choose hyperparameters and train the engine, test on August–October. For the test, the models are refitted with everything up to July 31st, but the engine uses the weights learned <em>before</em> — nobody sees the test period.</p>
+<p><strong>The metrics</strong>, for each store's top-10 list:</p>
+<ul>
+<li><strong>Precision@10</strong>: of the 10 suggested, how many the store actually bought.</li>
+<li><strong>Recall@10</strong>: of the new products the store bought, how many were on the list.</li>
+<li><strong>NDCG@10</strong>: like recall, but rewarding hits at the top — a hit in 1st place is worth more than in 10th. Ranges from 0 to 1.</li>
+<li><strong>Coverage</strong>: what share of the catalogue appears in some list (always suggesting the same 20 products is a bad sign).</li>
+</ul>
+<div class="formula">\[ \text{NDCG@10} = \frac{\sum_{i=1}^{10} \frac{\text{hit}_i}{\log_2(i+1)}}{\text{the best possible value}} \]</div>
+<p><strong>Uncertainty.</strong> With 273 stores in the test, part of the difference between two methods is luck. The <strong>bootstrap</strong> estimates it: draw 2,000 sets of 273 stores with replacement, recompute the average and see the range it moves in (the 95% interval). To compare two methods, do the same with the <em>difference</em> between them store by store (paired bootstrap): if the difference's interval includes zero, you can't say one is better.</p>'''
+s7_paired = '''<p><strong>The comparisons that matter.</strong> The "reading" column applies the rule above, with no interpretation from me:</p>'''
+s7_history = '''<p><strong>By amount of history.</strong> One of the adaptive engine's promises was to do better for new stores. The data says:</p>'''
+s7_after = '''<p><strong>What I conclude.</strong> Combining experts really helps: the hybrids beat every single expert with statistical room to spare. But the adaptive engine — the most sophisticated part — <strong>ties</strong> a simple blend of well-chosen fixed weights (Δ = −0.003, interval −0.019 to +0.014), and loses to it on stores with no history. That is why it is not claimed to be better.</p>
+<p><strong>The lesson I liked most.</strong> I started with 50 stores. There, the trainable engine couldn't learn anything (cross-validation always picked the rules) and a nice advantage for the adaptive engine showed up on "stores that changed taste" — with 7 stores in that group. Going up to 300 stores, the confidence intervals became more than twice as narrow, the engine started learning… and the advantage vanished. It was noise. Had I stopped at 50 stores, I would have had a pretty, false conclusion.</p>'''
+
+s8_label = "08 · real data"
+s8_title = "And outside the world I invented myself?"
+s8_body = '''<p>Synthetic data has a basic problem: I created the patterns. To check, I ran <strong>the same code, without changing any model</strong>, on <strong>Online Retail II</strong> (UCI Machine Learning Repository): real 2009–2011 transactions from a UK online wholesaler whose customers are largely resellers — a similar B2B setting.</p>
+<ul>
+<li><strong>Cleaning:</strong> from 1,067,371 rows I removed cancellations, returns, anonymous customers and codes that aren't products (postage, adjustments, bank charges), keeping 802,632.</li>
+<li><strong>Adaptation:</strong> the dataset has no categories, so they are derived from the descriptions with keywords (bags, kitchen, candles, Christmas…). I used the 400 products with the most buyers <em>before</em> the validation period and a random sample of 500 customers — 58 of them only appear in the test period (real cold start).</li>
+<li><strong>What's missing:</strong> there are no recommendation logs, so the Bayesian expert has no evidence of its own.</li>
+</ul>'''
+s8_after = '''<p><strong>Reading.</strong> All numbers drop — real data is much sparser (the median customer has 3 orders) — but the story repeats: every method beats chance comfortably, and the best strategies (fixed weights 0.094, supervised 0.091, collaborative 0.085, adaptive 0.084) are statistically tied. Content suffers from short descriptions and the Bayesian expert, without interactions, becomes almost a popularity model. No magic — which, to me, is good news about the honesty of the evaluation.</p>'''
+
+s9_label = "09 · the app"
+s9_title = "Everything in an interface you can explore"
+s9_intro = "A five-page Streamlit app runs everything locally: sales dashboard, customer intelligence (with observed and inferred data marked differently), a recommendation center that explains the weights, an interaction simulator (every click is stored and really updates the models) and an evaluation lab with all the charts above."
+figs = [
+  ["recommender-dashboard.webp", "Dashboard: KPIs, monthly revenue, categories and segments."],
+  ["recommender-clientes.webp", "Customer intelligence: registration, observed and inferred data, each with its own badge."],
+  ["recommender-recomendacoes.webp", "“How the system reached this recommendation”: weights used, justification and the store's signals."],
+  ["recommender-avaliacao.webp", "Evaluation lab: NDCG@10 for each strategy with confidence intervals."],
+]
+
+s10_label = "10 · what I learned"
+s10_title = "Lessons and limits"
+s10_body = '''<ul>
+<li><strong>The evaluation setup matters more than the model.</strong> Splitting by time, comparing against fair baselines and showing uncertainty is what kept me from believing a false conclusion.</li>
+<li><strong>Sample size decides what can be learned.</strong> The same trainable engine learned nothing with 50 stores and did with 300.</li>
+<li><strong>Sophistication is no guarantee.</strong> An adaptive engine with rules, softmax and cross-validation tied five well-chosen fixed weights. In production, I would start with fixed weights.</li>
+<li><strong>Ignoring is not rejecting.</strong> Treating a missing click as "dislikes it" would have distorted the Bayesian and supervised models.</li>
+<li><strong>Limits:</strong> the main data is synthetic (the generator defines the "truth"); some models are over-engineered for ~300 customers — on purpose, it was a playground; small-group results (like cold start) are indicative; the Bayesian expert only works where interaction logs exist.</li>
+</ul>
+<p class="cap">Personal weekend project, built to learn. Real data: Online Retail II (Chen, D., UCI Machine Learning Repository, CC BY 4.0), downloaded at runtime and not redistributed.</p>'''
+
+
 [research]
 title = "Articles — Igor Millis"
 description = "Articles and experiments by Igor Millis: statistical decisions, modeling, machine learning and computational implementations."
