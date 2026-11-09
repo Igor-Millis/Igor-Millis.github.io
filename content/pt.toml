@@ -515,3 +515,13 @@ kind = "ia · llms locais"
 date = "2026-11-08"
 minutes = 15
 abstract = "O que é um modelo de linguagem rodando no seu computador, quando ele vale mais que a nuvem, do que você precisa para rodá-lo e qual modelo escolher para cada tarefa — sem pressupor conhecimento em IA."
+
+[research.notes.bootstrap]
+scripts = ["js/bootstrap.js"]
+title = "Bootstrap não paramétrico × paramétrico"
+seo_title = "Bootstrap não paramétrico e paramétrico: guia completo com exemplos e simulações"
+description = "Guia do zero sobre bootstrap para estudantes de Estatística: o princípio plug-in, reamostragem com reposição, bootstrap paramétrico, erro-padrão, viés, intervalos percentil, básico, bootstrap-t e BCa, escolha de B e simulações de cobertura comparando os dois métodos."
+kind = "estatística · bootstrap"
+date = "2026-11-09"
+minutes = 35
+abstract = "Do zero ao rigor: o que é o bootstrap, como funcionam as versões não paramétrica e paramétrica, como construir cada intervalo de confiança e, em simulações com a resposta conhecida, quando cada uma acerta e quando quebra."

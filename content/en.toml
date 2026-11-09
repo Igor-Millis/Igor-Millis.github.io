@@ -515,3 +515,13 @@ kind = "ai · local llms"
 date = "2026-11-08"
 minutes = 15
 abstract = "What a language model running on your own computer is, when it beats the cloud, what you need to run one and which model to pick for each task — no AI background assumed."
+
+[research.notes.bootstrap]
+scripts = ["js/bootstrap.js"]
+title = "Non-parametric vs parametric bootstrap"
+seo_title = "Non-parametric and parametric bootstrap: a complete guide with examples and simulations"
+description = "A from-scratch guide to the bootstrap for statistics students: the plug-in principle, resampling with replacement, the parametric bootstrap, standard error, bias, percentile, basic, bootstrap-t and BCa intervals, choosing B, and coverage simulations comparing the two methods."
+kind = "statistics · bootstrap"
+date = "2026-11-09"
+minutes = 35
+abstract = "From zero to rigour: what the bootstrap is, how the non-parametric and parametric versions work, how to build each confidence interval and, in simulations where the answer is known, when each one gets it right and when it breaks."

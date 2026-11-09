@@ -1,0 +1,375 @@
+<p>Every estimate comes from a sample, and another sample would give another number. The central question of inference is <strong>how much that number would change</strong>. For the mean there is a ready-made formula; for the median, a quantile, a ratio or a correlation, almost never. The <strong>bootstrap</strong> answers the question by simulation, using only the data you have. This article builds the method from scratch in both its versions — <strong>non-parametric</strong> and <strong>parametric</strong> —, works every step by hand, derives the confidence intervals and compares the two versions in simulations where the answer is known. Every number comes from a <a href="https://github.com/Igor-Millis/Igor-Millis.github.io/tree/main/research/bootstrap">reproducible script</a>.</p>
+
+<div class="note"><strong>What you need to know first.</strong> Mean, variance and standard deviation; what a probability distribution and a cumulative distribution function are; the idea of a confidence interval; and, for a few sections, the central limit theorem. Nothing else. Section §12 (theory) and the passages marked “for those who want the rigour” can be skipped on a first read without losing the thread.</div>
+
+<h2><span class="n">§1</span>The problem: the sampling distribution</h2>
+
+<p>Consider observations \(X_1, \dots, X_n\), independent and all with the same distribution \(F\) (in short: <strong>i.i.d.</strong> from \(F\)). \(F\) is unknown — it is the “population”. We want to learn something about it: a <strong>parameter</strong> \(\theta = t(F)\), such as the mean, the median or the 90th percentile. To do so we compute an <strong>estimator</strong>, a function of the data:</p>
+
+<div class="eq">\[ \hat\theta = s(X_1, \dots, X_n). \]<span class="tag-n">(1)</span></div>
+
+<p>Because the \(X_i\) are random, so is \(\hat\theta\). If we could repeat the data collection many times we would get many different \(\hat\theta\); the distribution of those values is the <strong>sampling distribution</strong> of \(\hat\theta\), which we will call \(G_F\). It depends on \(F\), on \(n\) and on the function \(s\). Almost everything we want to report about an estimate is a summary of \(G_F\):</p>
+
+<ul>
+<li><strong>Standard error:</strong> \(\operatorname{se}(\hat\theta) = \sqrt{\operatorname{Var}_F(\hat\theta)}\) — the typical size of the error.</li>
+<li><strong>Bias:</strong> \(\operatorname{bias}(\hat\theta) = \mathbb{E}_F[\hat\theta] - \theta\) — whether the estimator errs systematically to one side.</li>
+<li><strong>Confidence interval:</strong> limits \(L, U\) computed from the data with \(\Pr_F(L \le \theta \le U) \approx 1 - \alpha\).</li>
+</ul>
+
+<p>For the sample mean \(\bar X\), classical theory delivers all of it: \(\operatorname{se}(\bar X) = \sigma/\sqrt n\), zero bias and, by the central limit theorem, \(\bar X \approx \mathcal N(\mu, \sigma^2/n)\). But swap the mean for the median and the asymptotic formula becomes</p>
+
+<div class="eq">\[ \operatorname{se}(\text{median}) \approx \frac{1}{2\,f(m)\sqrt n}, \]<span class="tag-n">(2)</span></div>
+
+<p>which requires the <em>density</em> \(f\) at the median \(m\) — precisely what we do not know. For the coefficient of variation, a ratio of means, a Gini coefficient or the eigenvalue of a covariance matrix, the formulas are worse or do not exist.</p>
+
+<p>If we knew \(F\), the solution would be simple: <strong>simulate</strong>. Draw many samples of size \(n\) from \(F\), compute \(\hat\theta\) on each and look at the histogram. That is Monte Carlo. There is only one obstacle: we do not know \(F\). The bootstrap idea (Efron, 1979) is so simple it feels like cheating: <strong>replace \(F\) by an estimate \(\hat F\) and simulate from that</strong>.</p>
+
+<h2><span class="n">§2</span>The bootstrap principle</h2>
+
+<p>Write the same experiment twice. In the <strong>real world</strong>, nature draws a sample \(\mathbf x = (x_1, \dots, x_n)\) from \(F\) and we compute \(\hat\theta = s(\mathbf x)\). In the <strong>bootstrap world</strong>, we draw samples \(\mathbf x^* = (x_1^*, \dots, x_n^*)\) from \(\hat F\) ourselves and compute \(\hat\theta^* = s(\mathbf x^*)\). The asterisk always marks “something from the bootstrap world”.</p>
+
+<!--boot-worlds-->
+
+<p>The principle is an analogy: <strong>\(\hat F\) is to \(F\) as \(\hat\theta^*\) is to \(\hat\theta\)</strong>. If \(\hat F\) resembles \(F\), the variation of \(\hat\theta^*\) around \(\hat\theta\) mimics the variation of \(\hat\theta\) around \(\theta\). Formally, we approximate the distribution of \(\hat\theta - \theta\) under \(F\) by the distribution of \(\hat\theta^* - \hat\theta\) under \(\hat F\), <em>conditional on the observed data</em>:</p>
+
+<div class="eq">\[ \Pr_F\big(\hat\theta - \theta \le a\big) \;\approx\; \Pr_{\hat F}\big(\hat\theta^* - \hat\theta \le a \;\big|\; \mathbf x\big). \]<span class="tag-n">(3)</span></div>
+
+<p>The right-hand side is still a theoretical probability — the <strong>ideal bootstrap</strong>. It can rarely be computed exactly, so we approximate it by Monte Carlo: draw \(B\) samples from \(\hat F\) and use frequencies. This creates <strong>two layers of error</strong> that must not be confused:</p>
+
+<ol>
+<li><strong>Statistical error</strong> — \(\hat F \ne F\). Depends on \(n\) and on the quality of \(\hat F\). It does <em>not</em> shrink with \(B\).</li>
+<li><strong>Monte Carlo error</strong> — \(B\) is finite. Depends only on \(B\) and vanishes as \(B \to \infty\) (§8).</li>
+</ol>
+
+<p>The whole difference between the two bootstraps lies in <strong>how \(\hat F\) is built</strong>.</p>
+
+<h2><span class="n">§3</span>Two ways to estimate \(F\)</h2>
+
+<h3>Non-parametric: the empirical distribution function</h3>
+
+<p>Assuming nothing about the shape of \(F\), the natural estimator is the <strong>empirical distribution function</strong> (ECDF):</p>
+
+<div class="eq">\[ F_n(t) = \frac1n \sum_{i=1}^{n} \mathbb 1\{x_i \le t\}, \]<span class="tag-n">(4)</span></div>
+
+<p>the proportion of observations less than or equal to \(t\). It is a staircase that rises \(1/n\) at each observed point — that is, a discrete distribution that puts <strong>probability \(1/n\) on each \(x_i\)</strong>. It is a good estimate of \(F\) for precise reasons:</p>
+
+<ul>
+<li>For each fixed \(t\), \(nF_n(t) \sim \text{Binomial}(n, F(t))\); hence \(\mathbb E[F_n(t)] = F(t)\) (unbiased) and \(\operatorname{Var}[F_n(t)] = F(t)(1-F(t))/n \to 0\).</li>
+<li><strong>Glivenko–Cantelli:</strong> \(\sup_t |F_n(t) - F(t)| \to 0\) almost surely — the staircase hugs the true curve everywhere at once.</li>
+<li><strong>DKW inequality:</strong> \(\Pr\big(\sup_t |F_n(t) - F(t)| > \varepsilon\big) \le 2e^{-2n\varepsilon^2}\), a finite-\(n\) guarantee.</li>
+<li>\(F_n\) is the non-parametric maximum likelihood estimator of \(F\).</li>
+</ul>
+
+<p>Drawing one observation from \(F_n\) means picking one of the \(x_i\) at random, each with probability \(1/n\). Drawing a sample of size \(n\) from \(F_n\) means repeating that \(n\) times, <strong>independently</strong> — therefore <strong>with replacement</strong>. That is the famous “resampling with replacement”: it is not a trick, it is simply what i.i.d. sampling from \(F_n\) means. (Without replacement, every resample would be a permutation of the same data and \(\hat\theta^*\) would always equal \(\hat\theta\).)</p>
+
+<h3>Parametric: a fitted model</h3>
+
+<p>If we have reasons to believe that \(F\) belongs to a family \(\{F_\eta\}\) indexed by a few parameters \(\eta\) (normal, exponential, Poisson, gamma…), we estimate \(\eta\) — usually by maximum likelihood — and use \(\hat F = F_{\hat\eta}\). Drawing from \(\hat F\) means generating random numbers from the fitted model: values that were <strong>never observed</strong> appear.</p>
+
+<p>The example we will use throughout: waiting times modelled as <strong>exponential</strong>, density \(f(x) = \lambda e^{-\lambda x}\) for \(x \ge 0\), mean \(\mu = 1/\lambda\) and standard deviation also \(1/\lambda\). The log-likelihood of a sample is</p>
+
+<div class="eq">\[ \ell(\lambda) = \sum_{i=1}^n \log\big(\lambda e^{-\lambda x_i}\big) = n\log\lambda - \lambda\sum_{i=1}^n x_i, \qquad \ell'(\lambda) = \frac n\lambda - \sum x_i = 0 \;\Rightarrow\; \hat\lambda = \frac{1}{\bar x}. \]<span class="tag-n">(5)</span></div>
+
+<p>(\(\ell''(\lambda) = -n/\lambda^2 < 0\), so it is a maximum.) The parametric bootstrap therefore draws from an exponential with mean \(\bar x\).</p>
+
+<!--boot-cdf-->
+
+<p>The data in the figure are the 15 times of the worked example (§7). The two estimates tell different stories: \(F_n\) is faithful to the data and to nothing else; the fitted exponential is smooth, extrapolates into the tail and assumes a shape. <strong>The whole comparison in this article boils down to that dilemma</strong>: flexibility without assumptions versus efficiency with assumptions.</p>
+
+<h2><span class="n">§4</span>Resampling by hand: a toy example</h2>
+
+<p>Take five observations, \(\mathbf x = (2.1,\; 0.4,\; 3.8,\; 1.2,\; 6.5)\), with mean \(2.8\) and median \(2.1\). For an NP resample, we draw five indices between 1 and 5 with replacement and take the corresponding values. For a P resample, we generate five values from an exponential with mean \(2.8\).</p>
+
+<!--boot-toy-->
+
+<p>Three observations that hold for any \(n\):</p>
+
+<ol>
+<li><strong>The number of distinct NP resamples is finite.</strong> A resample is determined by how many times each \(x_i\) appears, \((k_1, \dots, k_n)\) with \(\sum k_i = n\). By the “stars and bars” argument there are \(\binom{2n-1}{n}\) such combinations: 126 for \(n = 5\), 77,558,760 for \(n = 15\), about \(6.9 \times 10^{10}\) for \(n = 20\). They are not equally likely: the combination \((k_1, \dots, k_n)\) has multinomial probability \(\frac{n!}{k_1!\cdots k_n!}\,n^{-n}\). For \(n = 5\) one could enumerate them all and compute the ideal bootstrap exactly; in practice, we sample.</li>
+<li><strong>Each resample leaves observations out.</strong> The chance that a given observation is never drawn is \((1 - 1/n)^n\): 32.8% with \(n = 5\), 35.5% with \(n = 15\), and \(\to e^{-1} \approx 36.8\%\). On average a resample contains only about <strong>63.2% of the distinct observations</strong>; the rest are repeats.</li>
+<li><strong>The NP never leaves the observed set</strong>; the P does. This will matter a lot for statistics that depend on the tail (§11).</li>
+</ol>
+
+<h2><span class="n">§5</span>The algorithms, step by step</h2>
+
+<h3>Non-parametric bootstrap</h3>
+
+<ol>
+<li>Compute the estimate on the original data: \(\hat\theta = s(\mathbf x)\).</li>
+<li>For \(b = 1, \dots, B\):
+  <ol type="a">
+  <li>draw \(n\) indices \(i_1, \dots, i_n\) uniformly from \(\{1, \dots, n\}\), with replacement;</li>
+  <li>form \(\mathbf x^{*b} = (x_{i_1}, \dots, x_{i_n})\);</li>
+  <li>compute \(\hat\theta^{*b} = s(\mathbf x^{*b})\) — <strong>exactly</strong> the same procedure used for \(\hat\theta\).</li>
+  </ol></li>
+<li>Summarise \(\hat\theta^{*1}, \dots, \hat\theta^{*B}\) (§6).</li>
+</ol>
+
+<h3>Parametric bootstrap</h3>
+
+<ol>
+<li>Choose a model \(\{F_\eta\}\) and <strong>check that it fits</strong> the data (ECDF against the model, QQ-plot, goodness-of-fit test).</li>
+<li>Estimate \(\hat\eta\) (maximum likelihood) and compute \(\hat\theta = s(\mathbf x)\).</li>
+<li>For \(b = 1, \dots, B\):
+  <ol type="a">
+  <li>generate \(x_1^{*b}, \dots, x_n^{*b}\) i.i.d. from \(F_{\hat\eta}\) — same size \(n\);</li>
+  <li>compute \(\hat\theta^{*b} = s(\mathbf x^{*b})\), redoing inside the loop <strong>everything</strong> \(s\) does, including any parameter estimation.</li>
+  </ol></li>
+<li>Summarise \(\hat\theta^{*1}, \dots, \hat\theta^{*B}\) in the same way.</li>
+</ol>
+
+<p>Note: the steps are identical except for the line that generates the data. In Python, with NumPy:</p>
+
+<pre class="code">import numpy as np
+rng = np.random.default_rng(42)                 # seed: reproducible results
+x = np.array([0.6, 5.1, 1.7, 2.7, 3.9, 4.3, 5.1, 0.1, 3.6, 2.5, 6.8, 11.1, 5.5, 1.8, 0.7])
+n, B = len(x), 10_000
+s = np.median                                   # the statistic: swap at will
+
+theta_hat = s(x)
+
+# non-parametric: resample the data itself, with replacement
+idx = rng.integers(0, n, size=(B, n))
+theta_np = np.array([s(x[i]) for i in idx])
+
+# parametric: generate from the fitted model (exponential, MLE = mean)
+xs = rng.exponential(scale=x.mean(), size=(B, n))
+theta_p = np.array([s(row) for row in xs])
+
+for name, t in (("NP", theta_np), ("P", theta_p)):
+    se   = t.std(ddof=1)
+    bias = t.mean() - theta_hat
+    lo, hi = np.quantile(t, [0.025, 0.975])
+    print(f"{name}: se={se:.3f}  bias={bias:+.3f}  percentile CI=[{lo:.2f}, {hi:.2f}]")</pre>
+
+<p>And in R, where the <code>boot</code> package does both:</p>
+
+<pre class="code">library(boot)
+x &lt;- c(0.6, 5.1, 1.7, 2.7, 3.9, 4.3, 5.1, 0.1, 3.6, 2.5, 6.8, 11.1, 5.5, 1.8, 0.7)
+
+# NP: the statistic receives the data and the drawn indices
+b_np &lt;- boot(x, statistic = function(d, i) median(d[i]), R = 10000)
+
+# P: sim = "parametric"; ran.gen generates one sample from the fitted model
+b_p  &lt;- boot(x, statistic = median, R = 10000, sim = "parametric",
+             ran.gen = function(d, mle) rexp(length(d), rate = 1 / mle), mle = mean(x))
+
+b_np; b_p                                       # bias and standard error
+boot.ci(b_np, type = c("norm", "basic", "perc", "bca"))</pre>
+
+<h2><span class="n">§6</span>What to get out of the \(B\) replicates</h2>
+
+<p>With the replicates \(\hat\theta^{*1}, \dots, \hat\theta^{*B}\) in hand, write \(\bar\theta^* = \frac1B\sum_b \hat\theta^{*b}\) and \(q^*_p\) for the \(p\)-quantile of the replicates.</p>
+
+<h3>Standard error</h3>
+
+<div class="eq">\[ \widehat{\operatorname{se}}_B = \sqrt{\frac{1}{B-1}\sum_{b=1}^{B}\big(\hat\theta^{*b} - \bar\theta^*\big)^2}. \]<span class="tag-n">(6)</span></div>
+
+<p>It is simply the standard deviation of the replicates. As \(B \to \infty\) it converges to the ideal-bootstrap standard error, \(\operatorname{se}_{\hat F}(\hat\theta^*)\). A case you can check by hand: for the mean under NP, \(\operatorname{Var}_{F_n}(\bar x^*) = \hat\sigma^2/n\) with \(\hat\sigma^2 = \frac1n\sum(x_i - \bar x)^2\) (the variance of \(F_n\), divisor \(n\)), so the ideal bootstrap gives \(\sqrt{(n-1)/n}\; s/\sqrt n\) — practically the classical formula.</p>
+
+<h3>Bias</h3>
+
+<p>By principle (3), \(\mathbb E_F[\hat\theta] - \theta\) is estimated by \(\mathbb E_{\hat F}[\hat\theta^*] - \hat\theta\):</p>
+
+<div class="eq">\[ \widehat{\operatorname{bias}}_B = \bar\theta^* - \hat\theta, \qquad \tilde\theta = \hat\theta - \widehat{\operatorname{bias}}_B = 2\hat\theta - \bar\theta^*. \]<span class="tag-n">(7)</span></div>
+
+<p>Be careful with \(\tilde\theta\): correcting bias increases variance, and the bias estimate itself is noisy. A rule of thumb (Efron and Tibshirani) is to worry only if \(|\widehat{\operatorname{bias}}|/\widehat{\operatorname{se}} > 0.25\). A large estimated bias is, first of all, a <strong>warning sign</strong> — we will see one in §7.</p>
+
+<h3>Confidence intervals</h3>
+
+<p>There are several constructions, all with the same nominal level \(1-\alpha\) and different qualities. We use \(z_p = \Phi^{-1}(p)\).</p>
+
+<p><strong>(a) Normal.</strong> Assumes \(\hat\theta\) is approximately normal and uses only the standard error: \(\hat\theta \pm z_{1-\alpha/2}\,\widehat{\operatorname{se}}_B\) (optionally centred at \(\tilde\theta\)).</p>
+
+<p><strong>(b) Basic (or “reverse percentile”).</strong> Applies principle (3) literally. If \(\hat\theta^* - \hat\theta\) mimics \(\hat\theta - \theta\), then the quantiles of \(\hat\theta - \theta\) are approximately \(a = q^*_{\alpha/2} - \hat\theta\) and \(b = q^*_{1-\alpha/2} - \hat\theta\), and</p>
+
+<div class="eq">\[ 1-\alpha \approx \Pr(a \le \hat\theta - \theta \le b) = \Pr(\hat\theta - b \le \theta \le \hat\theta - a) \;\Rightarrow\; \big[\,2\hat\theta - q^*_{1-\alpha/2},\;\; 2\hat\theta - q^*_{\alpha/2}\,\big]. \]<span class="tag-n">(8)</span></div>
+
+<p>Note the <strong>flip</strong>: the upper quantile becomes the lower limit. If the bootstrap distribution has a long right tail, the basic interval is stretched to the left.</p>
+
+<p><strong>(c) Percentile.</strong> Uses the quantiles directly: \(\big[q^*_{\alpha/2},\; q^*_{1-\alpha/2}\big]\). It is the most used and most intuitive, but its justification is different: it is correct if there is a monotone transformation \(h\) (unknown — we never need to find it) such that \(h(\hat\theta) - h(\theta)\) is symmetric around zero and has the same distribution as \(h(\hat\theta^*) - h(\hat\theta)\). Being transformation-invariant, it is sensible for correlations, ratios and variances; it fails badly when the estimator is strongly biased (§11).</p>
+
+<p><strong>(d) Bootstrap-t (studentised).</strong> Instead of \(\hat\theta - \theta\), it mimics the t statistic, \(T = (\hat\theta - \theta)/\widehat{\operatorname{se}}\). In each resample it computes \(T^{*b} = (\hat\theta^{*b} - \hat\theta)/\widehat{\operatorname{se}}^{*b}\), where \(\widehat{\operatorname{se}}^{*b}\) is the standard error computed <em>within</em> the resample (by formula, like \(s^*/\sqrt n\) for the mean, or by a nested bootstrap). With \(t^*_p\) the quantiles of \(T^*\), by the same reasoning as (8):</p>
+
+<div class="eq">\[ \big[\,\hat\theta - t^*_{1-\alpha/2}\,\widehat{\operatorname{se}},\;\; \hat\theta - t^*_{\alpha/2}\,\widehat{\operatorname{se}}\,\big]. \]<span class="tag-n">(9)</span></div>
+
+<p>It is Student's interval, except that the t table is replaced by a table built from the data itself — which captures skewness.</p>
+
+<p><strong>(e) BCa (bias-corrected and accelerated).</strong> A percentile interval with adjusted levels. Compute</p>
+
+<div class="eq">\[ \hat z_0 = \Phi^{-1}\!\left(\frac{\#\{\hat\theta^{*b} < \hat\theta\}}{B}\right), \qquad \hat a = \frac{\sum_i (\bar\theta_{(\cdot)} - \hat\theta_{(i)})^3}{6\,\big[\sum_i (\bar\theta_{(\cdot)} - \hat\theta_{(i)})^2\big]^{3/2}}, \]<span class="tag-n">(10)</span></div>
+
+<p>where \(\hat\theta_{(i)}\) is the estimate without observation \(i\) (jackknife) and \(\bar\theta_{(\cdot)}\) their mean. \(\hat z_0\) measures median bias; \(\hat a\) measures how fast the standard error changes with the parameter (skewness). The interval is \(\big[q^*_{\alpha_1},\, q^*_{\alpha_2}\big]\) with</p>
+
+<div class="eq">\[ \alpha_{1} = \Phi\!\left(\hat z_0 + \frac{\hat z_0 + z_{\alpha/2}}{1 - \hat a(\hat z_0 + z_{\alpha/2})}\right), \qquad \alpha_{2} = \Phi\!\left(\hat z_0 + \frac{\hat z_0 + z_{1-\alpha/2}}{1 - \hat a(\hat z_0 + z_{1-\alpha/2})}\right). \]<span class="tag-n">(11)</span></div>
+
+<p>With \(\hat z_0 = \hat a = 0\) it reduces to the percentile.</p>
+
+<p><strong>For those who want the rigour.</strong> For smooth statistics, the coverage error of a <em>one-sided</em> limit is \(O(n^{-1/2})\) for the normal, basic and percentile intervals (“first-order accurate”) and \(O(n^{-1})\) for bootstrap-t and BCa (“second-order”) — Hall (1992). In equal-tailed two-sided intervals the \(n^{-1/2}\) terms of the two sides cancel and all of them have error \(O(n^{-1})\), but the constants differ a lot when the data are skewed. The simulation in §10 shows this in practice.</p>
+
+<h2><span class="n">§7</span>Worked example: 15 waiting times</h2>
+
+<p>A service desk records the interval, in minutes, between the arrivals of 15 consecutive customers:</p>
+
+<p style="font-family:var(--f-mono);font-size:14px">0.6 · 5.1 · 1.7 · 2.7 · 3.9 · 4.3 · 5.1 · 0.1 · 3.6 · 2.5 · 6.8 · 11.1 · 5.5 · 1.8 · 0.7</p>
+
+<p>Mean \(\bar x = 3.70\), standard deviation \(s = 2.85\), median \(3.6\). These data were <strong>generated by me</strong> from an exponential with mean 4. That is on purpose: because we know \(F\), we can compute the true sampling distribution (by drawing 100,000 fresh samples) and <strong>grade</strong> each method. In real life you do not have that dashed line.</p>
+
+<p>Inter-arrival times are the textbook case for the exponential model (a Poisson process), and the ECDF in §3 does not contradict the fit. We will estimate the mean and the median, with \(B = 10{,}000\).</p>
+
+<h3>The mean</h3>
+
+<!--boot-dist-mean-->
+
+<p>Both bootstrap distributions have the right shape — slightly right-skewed, like the true one — but different widths. The NP is <strong>too narrow</strong>: \(\widehat{\operatorname{se}} = 0.71\) against a true 1.03. The reason is not the bootstrap, it is the sample: the observed standard deviation, 2.85, came out well below the true one, 4. The NP only knows what the sample shows. The P does much better (0.96) because it uses a piece of information from the model: <strong>in the exponential, \(\sigma = \mu\)</strong>, so it estimates the spread by \(\bar x = 3.7\), which in this case is closer to 4 than \(s\) is. This is called “borrowing strength” from the model: with \(n = 15\), estimating \(\sigma\) directly from skewed data is very imprecise.</p>
+
+<h3>The median</h3>
+
+<!--boot-dist-median-->
+
+<p>Two lessons appear here.</p>
+
+<p><strong>The NP bootstrap of the median is discrete.</strong> With \(n = 15\) (odd), the median of a resample is always one of the observed values — in practice one of those in the middle of the sample. Across the 10,000 resamples only 12 different values appear. The histogram becomes a set of isolated bars; the standard error is still reasonable (0.93 against 1.05), but the quantiles, and therefore the percentile interval, jump from one data point to another.</p>
+
+<p><strong>The P is centred in the “wrong” place — and that is informative.</strong> In the parametric bootstrap world, the true median is that of \(\text{Exp}(\bar x)\), namely \(\bar x \ln 2 = 2.56\). The observed median is 3.6. Hence the estimated bias of \(-0.93\): huge, almost a full standard error. The bootstrap is saying that, <em>if the model is true</em>, the observed sample median is atypical. And indeed the true median is \(4\ln 2 = 2.77\). The practical lesson: if you are going to assume the exponential model, the natural estimator of the median is not the sample median, it is \(\hat m = \bar x \ln 2\) (by invariance of maximum likelihood). It is much more efficient: \(\operatorname{Var}(\bar x \ln 2) = (\ln 2)^2\mu^2/n \approx 0.48\,\mu^2/n\), whereas, by (2), the sample median has asymptotic variance \(1/(4nf(m)^2) = \mu^2/n\) (since \(f(m) = \lambda e^{-\ln 2} = 1/(2\mu)\)). The sample median would need about <strong>twice as much data</strong> for the same precision — provided the model is right.</p>
+
+<!--boot-worked-->
+
+<p>In the table, both percentile CIs for the mean contain the true value 4. The P one, [2.05, 5.83], is 35% wider than the NP one, [2.41, 5.19] — again because the NP inherits this sample's low \(s\). Neither matches the exact interval of the exponential model, [2.36, 6.61], which is shifted to the right: the percentile is only a first-order approximation (§6). A single sample cannot decide which method is better: for that we need to repeat the experiment thousands of times (§10).</p>
+
+<h2><span class="n">§8</span>How many resamples? Choosing \(B\)</h2>
+
+<p>\(B\) only controls the Monte Carlo error. For the standard error, a delta-method argument gives</p>
+
+<div class="eq">\[ \operatorname{CV}\big(\widehat{\operatorname{se}}_B\big) \approx \sqrt{\frac{\hat\kappa + 2}{4B}}, \]<span class="tag-n">(12)</span></div>
+
+<p>where \(\hat\kappa\) is the excess kurtosis of the bootstrap distribution (\(\approx 0\) if it is nearly normal, giving \(1/\sqrt{2B}\)). With \(B = 200\), about 5%. Checking empirically, repeating the whole bootstrap 400 times for each \(B\):</p>
+
+<!--boot-b-->
+
+<p>The “relative error” column follows \(1/\sqrt{2B}\) closely. But the last column shows the important point: <strong>extreme quantiles are much less stable</strong> than the standard deviation. Rules of thumb: \(B \approx 1{,}000\) is enough for a standard error; for intervals use at least 2,000, and preferably something like 9,999 (with \(B + 1\) a multiple of \(1/\alpha\), the quantiles land on exact replicates). Computing is cheap today: when in doubt, increase \(B\) until the result stops changing in the decimal place you will report. And fix the seed.</p>
+
+<p>What \(B\) does <strong>not</strong> do: no value of \(B\) fixes the statistical error. With \(B = 10^6\), the NP bootstrap of the mean in §7 still says 0.71.</p>
+
+<h2><span class="n">§9</span>Try it yourself</h2>
+
+<p>The panel below runs the two algorithms of §5 on the 15 waiting times. Click once and follow a single resample; then click +1,000 and watch the histograms converge to the bootstrap distributions of §7.</p>
+
+<!--boot-demo-->
+
+<h2><span class="n">§10</span>Simulation: who gets it right, and when</h2>
+
+<p>To compare interval methods, the right metric is <strong>coverage</strong>: the fraction of times the 95% interval contains the true value when the whole experiment is repeated. The study design:</p>
+
+<ol>
+<li>Fix a true distribution \(F\) and a size \(n \in \{10, 20, 50, 100, 250\}\).</li>
+<li>Draw \(M = 2{,}000\) samples from \(F\). On each, run the bootstraps with \(B = 999\) and build seven 95% intervals for the mean: NP percentile, NP basic, NP bootstrap-t, NP BCa, P percentile, P basic and, as a reference, the classical Student t.</li>
+<li>Estimated coverage = proportion of the \(M\) samples whose interval contains \(\mu\). Its Monte Carlo error is \(\sqrt{0.95 \times 0.05/2000} \approx 0.5\) pp.</li>
+</ol>
+
+<p>The parametric model is always the exponential. Two scenarios: in the first, the data <strong>are</strong> exponential (model right); in the second, they come from a <strong>lognormal</strong>(0, 1) — also positive and skewed, plausible for times, but with coefficient of variation \(\sqrt{e - 1} \approx 1.31\) instead of the exponential's 1 (model wrong).</p>
+
+<!--boot-coverage-->
+
+<!--boot-coverage-table-->
+
+<p>What the numbers say:</p>
+
+<ol>
+<li><strong>With the model right and small \(n\), the parametric wins.</strong> With \(n = 10\), the P percentile covers 91.3%, against 86.5% for the NP percentile and 89.8% for Student t. The NP underestimates variability because small samples of skewed data rarely show the tail; the P recovers it through the model. From \(n \approx 50\) on the differences vanish: both converge to 95%.</li>
+<li><strong>The interval method matters as much as the NP × P choice.</strong> The NP bootstrap-t is the best in both scenarios (94.4% with \(n = 10\) when the model is right, 90.0% when it is wrong), exactly as second-order theory predicts. BCa improves on the percentile, but only a little with \(n\) this small. The basic interval is the worst: it flips the skewness (8) to the wrong side.</li>
+<li><strong>With the model wrong, the parametric converges to the wrong answer.</strong> We can compute where to. Under the exponential model, the bootstrap standard error of the mean is \(\bar x/\sqrt n \to \mu/\sqrt n\), but the true one is \(\sigma/\sqrt n = 1.31\,\mu/\sqrt n\). The interval is 1.31 times narrower than it should be, and its coverage tends to</li>
+</ol>
+
+<div class="eq">\[ 2\,\Phi\!\left(\frac{1.96}{1.31}\right) - 1 \approx 86.5\%, \]<span class="tag-n">(13)</span></div>
+
+<p>no matter how much data you have. The simulation confirms it: 88.5% with \(n = 50\), 87.8% with 100, 85.0% with 250 — already at the limit. Meanwhile the NP methods climb with \(n\) into the 92–93% range (the percentile goes from 80.0% to 92.5%). This is the heart of the comparison: <strong>the NP error shrinks with \(n\); the error of a wrong model does not</strong>. More data only make the P more confident in the wrong answer.</p>
+
+<ol start="4">
+<li><strong>With \(n = 10\) and very skewed data, nobody is good.</strong> With the wrong model, the P percentile (86.7%) still beats the NP percentile (80.0%) — with 10 observations the sample almost never contains the heavy tail of the lognormal, and a slightly wrong model beats no model. The bootstrap does not create information the sample does not have.</li>
+</ol>
+
+<h2><span class="n">§11</span>Where the non-parametric bootstrap breaks: the maximum</h2>
+
+<p>Let \(X_i \sim \text{Uniform}(0, \theta)\) and \(\hat\theta = X_{(n)} = \max_i X_i\), the maximum likelihood estimator of \(\theta\). Its distribution is exact: \(\Pr(X_{(n)} \le t) = (t/\theta)^n\) for \(0 \le t \le \theta\), with bias \(-\theta/(n+1)\). Since \(\hat\theta < \theta\) always, the sign of the error is known.</p>
+
+<p>In the NP bootstrap, a resample contains the observed maximum whenever it is drawn at least once:</p>
+
+<div class="eq">\[ \Pr\nolimits_*\big(\hat\theta^* = \hat\theta\big) = 1 - \left(1 - \frac1n\right)^{n} \;\xrightarrow[n\to\infty]{}\; 1 - e^{-1} \approx 63.2\%. \]<span class="tag-n">(14)</span></div>
+
+<p>The true distribution of \(n(\theta - \hat\theta)/\theta\) converges to an Exponential(1), which is continuous. The bootstrap distribution of \(n(\hat\theta - \hat\theta^*)/\hat\theta\) has an <strong>atom of mass 63.2% at zero</strong>, for every \(n\). The NP bootstrap is <strong>inconsistent</strong> here: more data do not help. The reason is structural: the maximum depends on the right tail of \(F\), and \(F_n\) has no information beyond the largest observed point.</p>
+
+<!--boot-max-->
+
+<p>The parametric bootstrap solves it elegantly. Under \(\text{U}(0, \hat\theta)\), the ratio \(\hat\theta^*/\hat\theta\) has a \(\text{Beta}(n, 1)\) distribution — <strong>exactly</strong> the same as \(\hat\theta/\theta\) in the real world. That is a <strong>pivot</strong>: a quantity whose distribution does not depend on the parameter. Using it as in (8), but with a ratio instead of a difference,</p>
+
+<div class="eq">\[ 1 - \alpha = \Pr\!\left(c_{\alpha/2} \le \frac{\hat\theta}{\theta} \le c_{1-\alpha/2}\right) \;\Rightarrow\; \theta \in \left[\frac{\hat\theta}{c_{1-\alpha/2}},\; \frac{\hat\theta}{c_{\alpha/2}}\right], \qquad c_p = p^{1/n}. \]<span class="tag-n">(15)</span></div>
+
+<p>For the sample in the figure (\(\hat\theta = 0.965\), \(n = 30\)): [0.966, 1.092], which contains \(\theta = 1\). The coverage of each construction over 2,000 repetitions:</p>
+
+<!--boot-max-table-->
+
+<p>Two general lessons. First: the percentile interval has <strong>zero</strong> coverage — in both bootstraps — because every replicate lies below \(\hat\theta\), which lies below \(\theta\). Strong bias destroys the percentile interval. Second: the NP bootstrap requires the statistic to be a “smooth” function of \(F\). It fails (or needs corrections) for maxima and minima, extreme quantiles, parameters on the boundary of the parameter space, means of distributions with infinite variance and statistics that are not differentiable at critical points. A common fix is the <em>m-out-of-n</em> bootstrap, which resamples \(m \ll n\) observations.</p>
+
+<h2><span class="n">§12</span>Why it works: the theory on one page</h2>
+
+<p><strong>Consistency.</strong> The bootstrap is consistent if the conditional distribution of \(\sqrt n(\hat\theta^* - \hat\theta)\) and the distribution of \(\sqrt n(\hat\theta - \theta)\) get close as \(n \to \infty\) (for example, the Kolmogorov distance between them goes to zero in probability). For the mean this holds whenever \(\operatorname{Var}(X) < \infty\) (Bickel and Freedman, 1981): by the CLT applied in the bootstrap world, \(\sqrt n(\bar x^* - \bar x) \Rightarrow \mathcal N(0, \hat\sigma^2)\), and \(\hat\sigma^2 \to \sigma^2\). For statistics that are smooth (Hadamard-differentiable) functionals of \(F\), the functional delta method extends the result. The maximum of §11 is not smooth, which is why it fails.</p>
+
+<p><strong>Why the bootstrap can beat the normal approximation.</strong> The Edgeworth expansion of the standardised mean is</p>
+
+<div class="eq">\[ \Pr\!\left(\frac{\sqrt n(\bar X - \mu)}{\sigma} \le x\right) = \Phi(x) - \frac{\gamma}{6\sqrt n}\,(x^2 - 1)\,\phi(x) + O(n^{-1}), \]<span class="tag-n">(16)</span></div>
+
+<p>where \(\gamma\) is the skewness of \(F\). The normal approximation ignores the second term and errs by \(O(n^{-1/2})\). The bootstrap reproduces the same expansion with \(\hat\gamma\) in place of \(\gamma\); since \(\hat\gamma - \gamma = O_p(n^{-1/2})\), the difference between the two expansions is \(O_p(n^{-1})\). This holds in full only for <strong>pivotal</strong> (studentised) statistics, like \(T\) in the bootstrap-t: for \(\bar X - \mu\) without dividing by the standard error, the gap between \(\hat\sigma\) and \(\sigma\) reintroduces an error of order \(n^{-1/2}\). That is why the bootstrap-t was the best in the simulation.</p>
+
+<p><strong>The parametric case.</strong> If the model is true and \(\hat\eta\) is consistent, \(F_{\hat\eta} \to F_\eta\), and the bootstrap distribution converges to the right one under regularity conditions (continuity of \(G_{F_\eta}\) in \(\eta\)). If the model is false, \(\hat\eta\) converges to the <strong>pseudo-true parameter</strong> \(\eta^\dagger\), the one minimising the Kullback–Leibler divergence to \(F\), and the bootstrap converges to \(G_{F_{\eta^\dagger}}\) — the sampling distribution of a world that does not exist. That is exactly what (13) quantified.</p>
+
+<h2><span class="n">§13</span>Side by side</h2>
+
+<div class="tbl-wrap"><table class="txt"><thead><tr><th scope=col></th><th scope=col>Non-parametric</th><th scope=col>Parametric</th></tr></thead><tbody>
+<tr><td>\(\hat F\)</td><td>ECDF \(F_n\): mass \(1/n\) on each observation</td><td>Fitted model \(F_{\hat\eta}\)</td></tr>
+<tr><td>How \(\mathbf x^*\) is generated</td><td>Resample the data with replacement</td><td>Generate random numbers from the model</td></tr>
+<tr><td>Assumptions</td><td>i.i.d. observations; smooth statistic</td><td>The same + the model family is right</td></tr>
+<tr><td>New values?</td><td>No: only repeats observed ones</td><td>Yes: extrapolates, including into the tail</td></tr>
+<tr><td>Small \(n\)</td><td>Weak: the sample poorly represents \(F\)</td><td>Strong, <em>if</em> the model is right</td></tr>
+<tr><td>Wrong model</td><td>Not applicable — that is the advantage</td><td>Bias that does not vanish with \(n\) (§10)</td></tr>
+<tr><td>Tail statistics / maximum</td><td>Inconsistent (§11)</td><td>Works, sometimes exactly</td></tr>
+<tr><td>Discrete statistics (median, small \(n\))</td><td>“Jumpy” bootstrap distribution</td><td>Smooth</td></tr>
+<tr><td>Typical uses</td><td>Standard errors and CIs for almost any statistic; regression (resampling pairs); model validation</td><td>Generalised linear models, survival with censoring, goodness-of-fit tests with estimated parameters (e.g. Kolmogorov–Smirnov/Lilliefors), likelihood-ratio tests outside the usual conditions (number of components in a mixture)</td></tr>
+</tbody></table></div>
+
+<p>Between the two extremes there are intermediate options: the <strong>residual bootstrap</strong> in regression (the model for the mean is parametric, the errors are resampled without assuming a distribution), the <strong>wild bootstrap</strong> (for heteroscedasticity) and the <strong>smoothed bootstrap</strong> (resampling from a kernel density estimate instead of \(F_n\), useful precisely for quantiles and medians).</p>
+
+<h2><span class="n">§14</span>Common mistakes</h2>
+
+<ul>
+<li><strong>Thinking the bootstrap creates data.</strong> It estimates variability from what the sample shows. If the sample is small or unrepresentative, the bootstrap inherits that (§7, §10).</li>
+<li><strong>Resampling the wrong unit.</strong> The NP assumes i.i.d. observations. With clustered data (students in schools, repeated measures on the same patient), resample whole clusters. With time series, use a block bootstrap or a model for the dependence. Resampling dependent observations underestimates the standard error.</li>
+<li><strong>Not redoing the whole procedure inside the loop.</strong> If the analysis includes outlier removal, variable selection, hyperparameter tuning or parameter estimation, all of it goes inside \(s(\cdot)\). Otherwise the variability of those steps disappears from the standard error.</li>
+<li><strong>Using the percentile interval with a strongly biased estimator</strong> (§11). Look at the estimated bias first: if \(|\widehat{\operatorname{bias}}|/\widehat{\operatorname{se}}\) is large, prefer BCa, bootstrap-t or a pivot.</li>
+<li><strong>Running a parametric bootstrap without checking the model.</strong> The result is only as good as the model. Compare the ECDF with the fitted model, make a QQ-plot and, if possible, run the NP alongside: if the two disagree a lot, investigate before reporting.</li>
+<li><strong>Small \(B\) for intervals.</strong> \(B = 100\) gives a reasonable standard error but unstable interval limits (§8).</li>
+<li><strong>Confusing the standard deviation of the data with that of the replicates.</strong> The standard error is the standard deviation of \(\hat\theta^*\), not of the \(x_i\).</li>
+<li><strong>Statistics without finite variance.</strong> The mean of very heavy-tailed data (e.g. Cauchy, Pareto with index \(\le 2\)): the bootstrap of the mean does not converge to anything useful.</li>
+</ul>
+
+<h2><span class="n">§15</span>Summary</h2>
+
+<ol>
+<li>The goal of the bootstrap is to approximate the <strong>sampling distribution</strong> of an estimator — and from it get the standard error, bias and intervals — when there is no formula.</li>
+<li>The principle: replace the population \(F\) by an estimate \(\hat F\) and simulate. There is a statistical error (\(\hat F \ne F\)) and a Monte Carlo error (finite \(B\)); only the second shrinks with \(B\).</li>
+<li><strong>Non-parametric:</strong> \(\hat F = F_n\), resample the data with replacement. Almost no assumptions; needs a reasonable \(n\) and smooth statistics.</li>
+<li><strong>Parametric:</strong> \(\hat F = F_{\hat\eta}\), generate from the fitted model. More accurate with small \(n\) and for tail statistics if the model is right; converges to the wrong answer if the model is wrong.</li>
+<li>The interval type matters: percentile and basic are first-order; bootstrap-t and BCa second-order. With biased estimators the percentile can fail completely.</li>
+<li>When in doubt, run both. If they agree, good. If they disagree, the disagreement is the most valuable information in the analysis.</li>
+</ol>
+
+<h2><span class="n">§16</span>Further reading</h2>
+
+<ul>
+<li>B. Efron (1979). <em>Bootstrap methods: another look at the jackknife</em>. Annals of Statistics, 7(1). The original paper.</li>
+<li>B. Efron and R. Tibshirani (1993). <em>An Introduction to the Bootstrap</em>. Chapman &amp; Hall. The textbook reference.</li>
+<li>A. C. Davison and D. V. Hinkley (1997). <em>Bootstrap Methods and their Application</em>. Cambridge. Practical and thorough; the basis of R's <code>boot</code> package.</li>
+<li>P. Hall (1992). <em>The Bootstrap and Edgeworth Expansion</em>. Springer. The second-order theory.</li>
+<li>P. J. Bickel and D. A. Freedman (1981). <em>Some asymptotic theory for the bootstrap</em>. Annals of Statistics, 9(6).</li>
+<li>L. Wasserman (2004). <em>All of Statistics</em>, ch. 8. A good summary in a few pages.</li>
+</ul>
