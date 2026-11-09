@@ -114,7 +114,7 @@
     const io = new IntersectionObserver((es) => {
       fired = true;
       es.forEach((en) => { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } });
-    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.04 });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0 });
     rv.forEach((el) => io.observe(el));
     // Safety net: never leave content invisible if the observer does not run (e.g. throttled tabs).
     setTimeout(() => { if (!fired) revealAll(); }, 1500);

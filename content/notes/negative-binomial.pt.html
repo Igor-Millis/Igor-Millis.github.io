@@ -1,0 +1,333 @@
+<p>Você ajusta um MLG de Poisson a dados de contagem, olha o diagnóstico e descobre que a variância dos dados é três, cinco, dez vezes a média. O manual diz: “há <strong>sobredispersão</strong>, use a <strong>binomial negativa</strong>”. Este artigo explica <em>por quê</em> — não como receita, mas como consequência de um raciocínio. A ideia central é escrever a contagem em duas etapas: primeiro a natureza sorteia uma taxa \(Z\) para cada unidade; depois, dada a taxa, a contagem é Poisson. Com duas ferramentas — a <strong>esperança iterada</strong> \(\mathbb E[\mathbb E[Y \mid Z]]\) e a <strong>variância total</strong> — e uma integral, a binomial negativa aparece sozinha. No fim, ajustamos os dois modelos a um mesmo conjunto de dados e medimos, por simulação, quanto custa ignorar a sobredispersão. Todos os números saem de um <a href="https://github.com/Igor-Millis/Igor-Millis.github.io/tree/main/research/negbin">script reprodutível</a>.</p>
+
+<div class="note"><strong>O que você precisa saber antes.</strong> As distribuições de Poisson e Gama, esperança e variância, e a estrutura de um MLG (componente aleatório, preditor linear, função de ligação). Familiaridade com máxima verossimilhança ajuda nas §10–§11. As demonstrações são feitas linha a linha; dá para lê-las com lápis na mão.</div>
+
+<h2><span class="n">§1</span>O ponto de partida: o MLG de Poisson</h2>
+
+<p>Dados de contagem — consultas médicas por ano, sinistros por apólice, defeitos por peça, gols por jogo — são inteiros não negativos. O modelo mais simples para eles é a <strong>Poisson</strong>:</p>
+
+<div class="eq">\[ \Pr(Y = y) = \frac{e^{-\mu}\mu^{y}}{y!}, \qquad y = 0, 1, 2, \dots \]<span class="tag-n">(1)</span></div>
+
+<p>Num MLG de Poisson, cada observação \(i\) tem sua própria média, ligada às covariáveis pelo logaritmo:</p>
+
+<div class="eq">\[ Y_i \sim \text{Poisson}(\mu_i), \qquad \log \mu_i = \beta_0 + \beta_1 x_{i1} + \dots + \beta_p x_{ip} = \mathbf x_i^\top \boldsymbol\beta. \]<span class="tag-n">(2)</span></div>
+
+<p>A Poisson tem uma propriedade que define tudo o que vem a seguir: <strong>a variância é igual à média</strong>,</p>
+
+<div class="eq">\[ \mathbb E[Y_i] = \mu_i, \qquad \operatorname{Var}(Y_i) = \mu_i. \]<span class="tag-n">(3)</span></div>
+
+<p>Isso se chama <strong>equidispersão</strong>. É uma restrição forte: o modelo não tem nenhum parâmetro livre para a variância. Uma vez escolhida a média, a variância está decidida. Na prática, dados reais quase sempre têm variância <em>maior</em> que a média. Esse é o fenômeno da <strong>sobredispersão</strong>.</p>
+
+<h2><span class="n">§2</span>Como a sobredispersão aparece</h2>
+
+<p>Se o modelo (2) estiver certo, os resíduos de Pearson \(r_i = (y_i - \hat\mu_i)/\sqrt{\hat\mu_i}\) têm variância perto de 1, e a soma dos seus quadrados fica perto dos graus de liberdade. Daí a estatística de dispersão:</p>
+
+<div class="eq">\[ \hat\phi = \frac{X^2}{n - p} = \frac{1}{n-p}\sum_{i=1}^{n} \frac{(y_i - \hat\mu_i)^2}{\hat\mu_i}, \]<span class="tag-n">(4)</span></div>
+
+<p>em que \(p\) é o número de coeficientes. Sob o modelo Poisson, \(\hat\phi \approx 1\). Um \(\hat\phi\) bem acima de 1 indica sobredispersão (a razão deviance/graus de liberdade conta a mesma história). No exemplo que vamos analisar na §11 — 500 contagens com uma covariável — o ajuste de Poisson dá <strong>\(\hat\phi = 3{,}20\)</strong>: a variância dos dados é cerca de três vezes o que a Poisson admite.</p>
+
+<p>Um gráfico ajuda mais que um número. Ordene as observações pela média ajustada, separe em grupos e, em cada grupo, compare a média com a variância amostral. Sob Poisson, os pontos ficariam em torno da reta \(\operatorname{Var} = \mu\):</p>
+
+<!--nb-mv-->
+
+<p>Os pontos estão todos acima da reta, e cada vez mais acima conforme a média cresce. A curva cheia,\(\mu + \mu^2/\theta\), é a variância da binomial negativa — chegaremos a ela na §9. Antes, a pergunta importante: <em>por que</em> os dados se comportam assim?</p>
+
+<div class="note"><strong>Por que isso importa.</strong> Na Poisson, a variância entra direto nos erros-padrão. Se a variância verdadeira é três vezes maior, os erros-padrão do MLG de Poisson ficam cerca de \(\sqrt 3 \approx 1{,}7\) vezes pequenos demais, os intervalos de confiança estreitos demais e os p-valores pequenos demais. Você “descobre” efeitos que não existem. A §12 mede esse estrago.</div>
+
+<h2><span class="n">§3</span>De onde vem a sobredispersão: heterogeneidade não observada</h2>
+
+<p>A Poisson surge naturalmente quando eventos raros acontecem independentemente, todos com <strong>a mesma taxa</strong>. É essa última condição que costuma falhar. Pense em consultas médicas por ano: duas pessoas com a mesma idade, o mesmo sexo e a mesma renda (as covariáveis do modelo) <em>não</em> têm a mesma propensão a ir ao médico. Uma tem uma doença crônica, a outra mora longe do posto, uma terceira é mais ansiosa. Nada disso está nos dados. O modelo atribui às duas a mesma \(\mu_i\), mas as taxas verdadeiras são diferentes.</p>
+
+<p>A forma de formalizar isso é dar a cada unidade uma <strong>taxa aleatória</strong>. Chame de \(Z\) a taxa que a natureza sorteia para uma unidade. O modelo passa a ter dois andares:</p>
+
+<div class="eq">\[ \underbrace{Z \sim \text{Gama}(\alpha, \beta)}_{\text{1º: sorteia a taxa da unidade}} \qquad\longrightarrow\qquad \underbrace{Y \mid Z = z \;\sim\; \text{Poisson}(z)}_{\text{2º: dada a taxa, conta os eventos}} \]<span class="tag-n">(5)</span></div>
+
+<p>Condicionalmente a \(Z\), tudo continua sendo Poisson: a variância é igual à média. Mas nós <strong>não observamos</strong> \(Z\); observamos só \(Y\). A distribuição que os dados seguem é a <strong>marginal</strong> de \(Y\) — a Poisson “misturada” sobre todas as taxas possíveis. Toda a pergunta se reduz a: quais são a média, a variância e a distribuição dessa marginal?</p>
+
+<p>Sobre a Gama, uma convenção: usamos <strong>forma \(\alpha\)</strong> e <strong>taxa \(\beta\)</strong>, com densidade</p>
+
+<div class="eq">\[ f_Z(z) = \frac{\beta^{\alpha}}{\Gamma(\alpha)}\, z^{\alpha-1} e^{-\beta z}, \quad z > 0, \qquad \mathbb E[Z] = \frac{\alpha}{\beta}, \qquad \operatorname{Var}(Z) = \frac{\alpha}{\beta^{2}}. \]<span class="tag-n">(6)</span></div>
+
+<p>(Alguns livros e o <code>numpy</code> usam a escala \(1/\beta\) em vez da taxa. As contas são as mesmas, trocando \(\beta\) por \(1/\text{escala}\).) Por que Gama e não outra distribuição? Por enquanto, aceite que ela é flexível (assume valores positivos, com assimetria ajustável) — a §8 mostra a razão mais profunda.</p>
+
+<h2><span class="n">§4</span>Ferramenta 1: a esperança iterada, \(\mathbb E[\mathbb E[Y \mid Z]]\)</h2>
+
+<p>A primeira ferramenta é a <strong>lei da esperança total</strong> (ou esperança iterada):</p>
+
+<div class="eq">\[ \mathbb E[Y] = \mathbb E\big[\,\mathbb E[Y \mid Z]\,\big]. \]<span class="tag-n">(7)</span></div>
+
+<p>Leia de dentro para fora. \(\mathbb E[Y \mid Z]\) é a média de \(Y\) <em>se soubéssemos</em> a taxa \(Z\). Como \(Z\) é aleatória, \(\mathbb E[Y \mid Z]\) é uma <strong>variável aleatória</strong> — uma função de \(Z\). A esperança de fora tira a média dessa função sobre todos os valores possíveis de \(Z\). Em palavras: <em>a média geral é a média das médias condicionais</em>.</p>
+
+<p><strong>Demonstração</strong> (para \(Y\) discreta e \(Z\) contínua, nosso caso). Escreva \(p(y \mid z) = \Pr(Y = y \mid Z = z)\). Então \(\mathbb E[Y \mid Z = z] = \sum_y y\, p(y \mid z)\) e</p>
+
+<div class="eq">\[ \begin{aligned}
+\mathbb E\big[\mathbb E[Y \mid Z]\big] &amp;= \int_0^\infty \Big(\sum_{y} y\, p(y \mid z)\Big) f_Z(z)\, dz \\
+&amp;= \sum_{y} y \int_0^\infty p(y \mid z)\, f_Z(z)\, dz \\
+&amp;= \sum_{y} y\, \Pr(Y = y) \;=\; \mathbb E[Y].
+\end{aligned} \]<span class="tag-n">(8)</span></div>
+
+<p>Na segunda linha trocamos a soma com a integral (pode, porque todos os termos são não negativos — teorema de Tonelli). O passo seguinte usa a <strong>lei da probabilidade total</strong>: \(\Pr(Y = y) = \int p(y \mid z) f_Z(z)\,dz\). Guarde essa integral — ela vai reaparecer na §7 para dar a distribuição inteira de \(Y\).</p>
+
+<h2><span class="n">§5</span>Ferramenta 2: a lei da variância total</h2>
+
+<p>A média sozinha não revela sobredispersão; precisamos da variância. A <strong>lei da variância total</strong> diz:</p>
+
+<div class="eq">\[ \operatorname{Var}(Y) = \underbrace{\mathbb E\big[\operatorname{Var}(Y \mid Z)\big]}_{\text{variação dentro}} + \underbrace{\operatorname{Var}\big(\mathbb E[Y \mid Z]\big)}_{\text{variação entre}}. \]<span class="tag-n">(9)</span></div>
+
+<p><strong>Demonstração.</strong> Parta de \(\operatorname{Var}(Y) = \mathbb E[Y^2] - (\mathbb E[Y])^2\) e aplique (7) aos dois termos — a esperança iterada vale para qualquer função de \(Y\), inclusive \(Y^2\):</p>
+
+<div class="eq">\[ \begin{aligned}
+\operatorname{Var}(Y) &amp;= \mathbb E\big[\mathbb E[Y^2 \mid Z]\big] - \big(\mathbb E\big[\mathbb E[Y \mid Z]\big]\big)^2 \\
+&amp;= \mathbb E\Big[\operatorname{Var}(Y \mid Z) + \big(\mathbb E[Y \mid Z]\big)^2\Big] - \big(\mathbb E\big[\mathbb E[Y \mid Z]\big]\big)^2 \\
+&amp;= \mathbb E\big[\operatorname{Var}(Y \mid Z)\big] + \Big\{\mathbb E\big[(\mathbb E[Y \mid Z])^2\big] - \big(\mathbb E\big[\mathbb E[Y \mid Z]\big]\big)^2\Big\} \\
+&amp;= \mathbb E\big[\operatorname{Var}(Y \mid Z)\big] + \operatorname{Var}\big(\mathbb E[Y \mid Z]\big).
+\end{aligned} \]<span class="tag-n">(10)</span></div>
+
+<p>Na segunda linha usamos, condicionalmente a \(Z\), a identidade \(\mathbb E[Y^2 \mid Z] = \operatorname{Var}(Y \mid Z) + (\mathbb E[Y \mid Z])^2\). Na terceira, a chave é reconhecer que a expressão entre chaves é a variância da variável aleatória \(\mathbb E[Y \mid Z]\).</p>
+
+<p>A interpretação é o coração do argumento. A variância de \(Y\) tem duas fontes: o <strong>ruído dentro</strong> de cada unidade (mesmo sabendo a taxa, a contagem varia — é o ruído Poisson) e a <strong>diferença entre</strong> as unidades (as taxas variam de uma unidade para outra). O MLG de Poisson só enxerga a primeira.</p>
+
+<h2><span class="n">§6</span>Aplicando as duas leis: a sobredispersão aparece sozinha</h2>
+
+<p>No modelo (5), dado \(Z\), \(Y\) é Poisson com média \(Z\). Então</p>
+
+<div class="eq">\[ \mathbb E[Y \mid Z] = Z, \qquad \operatorname{Var}(Y \mid Z) = Z. \]<span class="tag-n">(11)</span></div>
+
+<p><strong>A média.</strong> Pela esperança iterada (7):</p>
+
+<div class="eq">\[ \mathbb E[Y] = \mathbb E\big[\mathbb E[Y \mid Z]\big] = \mathbb E[Z] = \frac{\alpha}{\beta}. \]<span class="tag-n">(12)</span></div>
+
+<p><strong>A variância.</strong> Pela variância total (9):</p>
+
+<div class="eq">\[ \operatorname{Var}(Y) = \mathbb E[\underbrace{\operatorname{Var}(Y \mid Z)}_{=\,Z}] + \operatorname{Var}(\underbrace{\mathbb E[Y \mid Z]}_{=\,Z}) = \mathbb E[Z] + \operatorname{Var}(Z) = \frac{\alpha}{\beta} + \frac{\alpha}{\beta^2}. \]<span class="tag-n">(13)</span></div>
+
+<p>Compare com a média:</p>
+
+<div class="eq">\[ \operatorname{Var}(Y) - \mathbb E[Y] = \operatorname{Var}(Z) = \frac{\alpha}{\beta^2} \;\gt\; 0. \]<span class="tag-n">(14)</span></div>
+
+<p>Esse é o resultado principal do artigo, e vale a pena lê-lo devagar. <strong>O excesso de variância é exatamente a variância das taxas.</strong> Se todas as unidades tivessem a mesma taxa (\(\operatorname{Var}(Z) = 0\)), voltaríamos à equidispersão. Qualquer heterogeneidade não observada, por menor que seja, empurra a variância para cima da média. Repare também que (14) não usou nada específico da Gama além de \(\operatorname{Var}(Z)\): <em>toda</em> mistura de Poissons é sobredispersa. A Gama só vai entrar para darmos nome à distribuição resultante.</p>
+
+<p>Dá para conferir isso sem acreditar em nenhuma conta: basta simular o experimento em duas etapas. Com \(\alpha = 2\) e \(\beta = 0{,}5\), as fórmulas preveem \(\mathbb E[Y] = 4\) e \(\operatorname{Var}(Y) = 4 + 8 = 12\):</p>
+
+<pre class="code">import numpy as np
+rng = np.random.default_rng(20261109)
+alpha, beta = 2.0, 0.5
+z = rng.gamma(shape=alpha, scale=1/beta, size=1_000_000)   # 1ª etapa: uma taxa por unidade
+y = rng.poisson(z)                                          # 2ª etapa: Poisson dada a taxa
+print(y.mean(), y.var())                                    # ≈ 4 e ≈ 12</pre>
+
+<!--nb-mixture-table-->
+
+<h2><span class="n">§7</span>A distribuição marginal: a integral que dá a binomial negativa</h2>
+
+<p>Média e variância já explicam a sobredispersão, mas para ajustar um modelo por máxima verossimilhança precisamos da <strong>distribuição</strong> de \(Y\). Ela vem da lei da probabilidade total — a mesma integral que apareceu dentro da demonstração (8):</p>
+
+<div class="eq">\[ \begin{aligned} \Pr(Y = y) &amp;= \int_0^\infty \Pr(Y = y \mid Z = z)\, f_Z(z)\, dz \\ &amp;= \int_0^\infty \frac{e^{-z} z^{y}}{y!} \cdot \frac{\beta^{\alpha}}{\Gamma(\alpha)}\, z^{\alpha-1} e^{-\beta z}\, dz. \end{aligned} \]<span class="tag-n">(15)</span></div>
+
+<p><strong>Passo 1 — tire da integral o que não depende de \(z\) e junte as potências:</strong></p>
+
+<div class="eq">\[ \Pr(Y = y) = \frac{\beta^{\alpha}}{y!\,\Gamma(\alpha)} \int_0^\infty z^{\,y + \alpha - 1}\, e^{-(\beta + 1) z}\, dz. \]<span class="tag-n">(16)</span></div>
+
+<p><strong>Passo 2 — reconheça o núcleo de uma Gama.</strong> O integrando é, a menos da constante, a densidade de uma \(\text{Gama}(y + \alpha,\; \beta + 1)\). Como toda densidade integra 1,</p>
+
+<div class="eq">\[ \int_0^\infty z^{\,a - 1} e^{-b z}\, dz = \frac{\Gamma(a)}{b^{a}} \qquad\Longrightarrow\qquad \int_0^\infty z^{\,y + \alpha - 1} e^{-(\beta+1) z}\, dz = \frac{\Gamma(y + \alpha)}{(\beta + 1)^{y + \alpha}}. \]<span class="tag-n">(17)</span></div>
+
+<p><strong>Passo 3 — substitua e reorganize:</strong></p>
+
+<div class="eq">\[ \begin{aligned} \Pr(Y = y) &amp;= \frac{\Gamma(y + \alpha)}{\Gamma(\alpha)\, y!} \cdot \frac{\beta^{\alpha}}{(\beta+1)^{\alpha}} \cdot \frac{1}{(\beta+1)^{y}} \\ &amp;= \frac{\Gamma(y + \alpha)}{\Gamma(\alpha)\, y!} \left(\frac{\beta}{\beta+1}\right)^{\!\alpha} \left(\frac{1}{\beta+1}\right)^{\!y}. \end{aligned} \]<span class="tag-n">(18)</span></div>
+
+<p><strong>Passo 4 — dê nome.</strong> Defina \(p = \beta/(\beta + 1)\), de modo que \(1 - p = 1/(\beta+1)\), e \(r = \alpha\). Então</p>
+
+<div class="eq">\[ \boxed{\;\Pr(Y = y) = \frac{\Gamma(y + r)}{\Gamma(r)\, y!}\; p^{\,r} (1 - p)^{y}, \qquad y = 0, 1, 2, \dots\;} \]<span class="tag-n">(19)</span></div>
+
+<p>Essa é a <strong>binomial negativa</strong> \(\text{BN}(r, p)\). Quando \(r\) é inteiro, \(\Gamma(y + r)/(\Gamma(r)\,y!) = \binom{y + r - 1}{y}\) e (19) é a distribuição clássica do número de fracassos antes do \(r\)-ésimo sucesso em ensaios de Bernoulli com probabilidade \(p\). Aqui \(r = \alpha\) pode ser qualquer real positivo; a fórmula com funções Gama é a extensão natural. O nome “negativa” vem da série binomial com expoente negativo, \((1 - q)^{-r} = \sum_y \binom{y + r - 1}{y} q^y\), que mostra de uma vez que (19) soma 1.</p>
+
+<p>Conferindo os momentos com as fórmulas da BN, \(\mathbb E[Y] = r(1-p)/p\) e \(\operatorname{Var}(Y) = r(1-p)/p^2\):</p>
+
+<div class="eq">\[ \begin{aligned} \mathbb E[Y] &amp;= \alpha \cdot \frac{1/(\beta+1)}{\beta/(\beta+1)} = \frac{\alpha}{\beta}, \\ \operatorname{Var}(Y) &amp;= \alpha \cdot \frac{1/(\beta+1)}{\beta^2/(\beta+1)^2} = \frac{\alpha(\beta+1)}{\beta^2} = \frac{\alpha}{\beta} + \frac{\alpha}{\beta^2}, \end{aligned} \]<span class="tag-n">(20)</span></div>
+
+<p>exatamente (12) e (13). Os dois caminhos — momentos pela esperança iterada e distribuição pela integral — chegam ao mesmo lugar. E a simulação concorda, ponto a ponto:</p>
+
+<!--nb-mixture-->
+
+<h3>Um atalho: a função geradora de probabilidades</h3>
+
+<p>A esperança iterada dá também um caminho sem integrar densidades. A função geradora de probabilidades de \(Y\) é \(G_Y(s) = \mathbb E[s^{Y}]\). Condicionando em \(Z\) e usando a da Poisson, \(\mathbb E[s^{Y} \mid Z] = e^{Z(s-1)}\):</p>
+
+<div class="eq">\[ \begin{aligned} G_Y(s) &amp;= \mathbb E\big[\mathbb E[s^{Y} \mid Z]\big] = \mathbb E\big[e^{(s-1) Z}\big] = M_Z(s - 1) \\ &amp;= \left(\frac{\beta}{\beta - (s-1)}\right)^{\!\alpha} = \left(\frac{p}{1 - (1-p)s}\right)^{\!\alpha}, \end{aligned} \]<span class="tag-n">(21)</span></div>
+
+<p>em que \(M_Z(t) = (\beta/(\beta - t))^{\alpha}\) é a geradora de momentos da Gama. O último termo é a geradora da \(\text{BN}(\alpha, p)\). Mesmo resultado, agora com \(\mathbb E[\mathbb E[\,\cdot \mid Z]]\) fazendo todo o trabalho.</p>
+
+<h2><span class="n">§8</span>Por que justamente a Gama?</h2>
+
+<p>A §6 mostrou que qualquer distribuição para \(Z\) gera sobredispersão. A Gama é escolhida porque ela é a <strong>conjugada</strong> da Poisson: o produto “Poisson × Gama” dentro da integral (15) é outra Gama, e a integral tem forma fechada. Com uma lognormal para \(Z\), por exemplo, o modelo Poisson-lognormal é perfeitamente razoável, mas \(\Pr(Y = y)\) só sai por integração numérica.</p>
+
+<p>A conjugação tem um bônus. Pela regra de Bayes, a distribuição da taxa de uma unidade <em>depois</em> de observar sua contagem é</p>
+
+<div class="eq">\[ \begin{gathered} f(z \mid y) \;\propto\; \underbrace{e^{-z} z^{y}}_{\text{Poisson}}\cdot\underbrace{z^{\alpha-1}e^{-\beta z}}_{\text{Gama}} = z^{\,\alpha + y - 1} e^{-(\beta+1) z} \\ \Longrightarrow\quad Z \mid Y = y \;\sim\; \text{Gama}(\alpha + y,\; \beta + 1), \end{gathered} \]<span class="tag-n">(22)</span></div>
+
+<p>com média</p>
+
+<div class="eq">\[ \mathbb E[Z \mid Y = y] = \frac{\alpha + y}{\beta + 1} = \underbrace{\frac{1}{\beta+1}}_{w}\, y + \underbrace{\frac{\beta}{\beta+1}}_{1 - w}\, \frac{\alpha}{\beta}. \]<span class="tag-n">(23)</span></div>
+
+<p>A melhor estimativa da taxa de uma unidade é uma média ponderada entre o que ela mostrou (\(y\)) e a média da população (\(\alpha/\beta\)). É o princípio da <strong>credibilidade</strong> em seguros: um segurado com muitos sinistros paga mais, mas não proporcionalmente ao seu histórico curto.</p>
+
+<h2><span class="n">§9</span>Do modelo de mistura ao MLG binomial negativo</h2>
+
+<p>Até aqui havia uma única população. Num MLG cada observação tem sua média \(\mu_i = \exp(\mathbf x_i^\top \boldsymbol\beta)\). Para acomodar isso, escreva a taxa da unidade \(i\) como <strong>a média do modelo vezes um efeito multiplicativo não observado</strong>:</p>
+
+<div class="eq">\[ Y_i \mid \varepsilon_i \sim \text{Poisson}(\mu_i\, \varepsilon_i), \quad \varepsilon_i \sim \text{Gama}(\theta, \theta), \quad \mathbb E[\varepsilon_i] = 1, \quad \operatorname{Var}(\varepsilon_i) = \frac{1}{\theta}. \]<span class="tag-n">(24)</span></div>
+
+<p>Forma e taxa iguais a \(\theta\) fazem \(\mathbb E[\varepsilon_i] = 1\). Isso não é arbitrário: se \(\varepsilon_i\) tivesse média \(c \ne 1\), \(c\) seria absorvido pelo intercepto \(\beta_0\) e não daria para separá-los. Fixar a média em 1 garante que \(\mu_i\) continua sendo <em>a média de \(Y_i\)</em>. Note que \(Z_i = \mu_i \varepsilon_i \sim \text{Gama}(\theta, \theta/\mu_i)\): é o modelo (5) com \(\alpha = \theta\) e \(\beta = \theta/\mu_i\). Substituindo em (12), (13) e (19):</p>
+
+<div class="eq">\[ \begin{gathered} \mathbb E[Y_i] = \mu_i, \qquad \operatorname{Var}(Y_i) = \mu_i + \frac{\mu_i^2}{\theta}, \\ \Pr(Y_i = y) = \frac{\Gamma(y + \theta)}{\Gamma(\theta)\, y!}\left(\frac{\theta}{\theta + \mu_i}\right)^{\!\theta}\left(\frac{\mu_i}{\theta + \mu_i}\right)^{\!y}. \end{gathered} \]<span class="tag-n">(25)</span></div>
+
+<p>A conta da variância, de novo pela lei da variância total: \(\mathbb E[\mu_i\varepsilon_i] + \operatorname{Var}(\mu_i\varepsilon_i) = \mu_i + \mu_i^2/\theta\). O termo \(\mu_i^2/\theta\) é o excesso; ele cresce com o <strong>quadrado</strong> da média, por isso a curva cheia da figura da §2 se afasta da reta. Essa versão se chama <strong>NB2</strong> (variância quadrática na média) e é a padrão em quase todo software.</p>
+
+<p>O parâmetro \(\theta\) controla a heterogeneidade. Muitos textos usam \(\kappa = 1/\theta\) (o <code>alpha</code> do <code>statsmodels</code>; o R reporta <code>theta</code>). \(\theta\) pequeno = taxas muito diferentes entre unidades = muita sobredispersão. E quando \(\theta \to \infty\), \(\operatorname{Var}(\varepsilon_i) \to 0\), todas as unidades têm a mesma taxa e deveríamos recuperar a Poisson. De fato, reescrevendo (25):</p>
+
+<div class="eq">\[ \Pr(Y_i = y) = \underbrace{\frac{\theta(\theta+1)\cdots(\theta+y-1)}{(\theta + \mu_i)^{y}}}_{\to\, 1} \cdot \frac{\mu_i^{\,y}}{y!} \cdot \underbrace{\Big(1 + \frac{\mu_i}{\theta}\Big)^{-\theta}}_{\to\, e^{-\mu_i}} \;\xrightarrow[\theta \to \infty]{}\; \frac{e^{-\mu_i}\mu_i^{\,y}}{y!}. \]<span class="tag-n">(26)</span></div>
+
+<p>A Poisson é um caso-limite da binomial negativa. Essa relação de “modelos encaixados” vai nos dar um teste na §11.</p>
+
+<h2><span class="n">§10</span>A binomial negativa é um MLG?</h2>
+
+<p>Um MLG exige que a distribuição pertença à família exponencial. Com \(\theta\) <strong>fixo</strong>, a BN pertence. Tome o logaritmo de (25):</p>
+
+<div class="eq">\[ \log \Pr(Y = y) = y \underbrace{\log\frac{\mu}{\mu + \theta}}_{\vartheta} \;+\; \theta \log\frac{\theta}{\mu + \theta} \;+\; \log\frac{\Gamma(y+\theta)}{\Gamma(\theta)\,y!}. \]<span class="tag-n">(27)</span></div>
+
+<p>Com o parâmetro canônico \(\vartheta = \log(\mu/(\mu+\theta))\), temos \(1 - e^{\vartheta} = \theta/(\mu + \theta)\), e a forma é \(y\vartheta - b(\vartheta) + c(y)\) com \(b(\vartheta) = -\theta \log(1 - e^{\vartheta})\). As derivadas de \(b\) devolvem média e variância, como deve ser numa família exponencial:</p>
+
+<div class="eq">\[ b'(\vartheta) = \frac{\theta e^{\vartheta}}{1 - e^{\vartheta}} = \mu, \qquad b''(\vartheta) = \frac{\theta e^{\vartheta}}{(1 - e^{\vartheta})^2} = \mu + \frac{\mu^2}{\theta} = V(\mu). \]<span class="tag-n">(28)</span></div>
+
+<p>A ligação canônica seria \(\log(\mu/(\mu+\theta))\), que depende de \(\theta\) e é pouco interpretável; na prática usa-se a <strong>ligação log</strong>, \(\log\mu_i = \mathbf x_i^\top\boldsymbol\beta\), a mesma da Poisson. Assim os coeficientes têm a mesma leitura nos dois modelos: \(e^{\beta_j}\) é a razão de médias para um aumento de uma unidade em \(x_j\).</p>
+
+<h3>Estimação</h3>
+
+<p>Para \(\theta\) fixo, \(\boldsymbol\beta\) sai pelo algoritmo usual dos MLGs, mínimos quadrados reponderados iterativamente (IRLS). Com ligação log, \(d\mu/d\eta = \mu\), e os pesos e as equações de escore ficam</p>
+
+<div class="eq">\[ w_i = \frac{(d\mu_i/d\eta_i)^2}{V(\mu_i)} = \frac{\mu_i}{1 + \mu_i/\theta}, \qquad U(\boldsymbol\beta) = \sum_{i=1}^n \frac{y_i - \mu_i}{1 + \mu_i/\theta}\, \mathbf x_i = \mathbf 0. \]<span class="tag-n">(29)</span></div>
+
+<p>Compare com a Poisson, cujo escore é \(\sum_i (y_i - \mu_i)\,\mathbf x_i = \mathbf 0\) e cujos pesos são \(w_i = \mu_i\). A BN <strong>dá menos peso às observações de média alta</strong>, justamente as mais ruidosas. Para \(\theta\), maximiza-se a log-verossimilhança com \(\boldsymbol\beta\) fixo e alterna-se entre os dois passos até convergir (é o que faz o <code>MASS::glm.nb</code> do R). Como \(\mathbb E[\partial^2\ell/\partial\boldsymbol\beta\,\partial\theta] = 0\), as estimativas de \(\boldsymbol\beta\) e \(\theta\) são assintoticamente independentes, e a matriz de covariância de \(\hat{\boldsymbol\beta}\) é \((\mathbf X^\top \mathbf W \mathbf X)^{-1}\) com os pesos (29).</p>
+
+<h3>O que exatamente a Poisson erra</h3>
+
+<p>A equação de escore da Poisson tem esperança zero sempre que a <em>média</em> estiver certa, \(\mathbb E[Y_i] = \mu_i\) — não importa a variância. Por isso \(\hat{\boldsymbol\beta}_{\text{Poisson}}\) continua <strong>consistente</strong> sob sobredispersão. O erro está na incerteza. O MLG de Poisson reporta \((\mathbf X^\top \operatorname{diag}(\mu_i)\,\mathbf X)^{-1}\), que pressupõe \(\operatorname{Var}(Y_i) = \mu_i\). A covariância verdadeira do estimador é o “sanduíche”</p>
+
+<div class="eq">\[ \operatorname{Cov}(\hat{\boldsymbol\beta}_{\text{P}}) \approx (\mathbf X^\top \mathbf M \mathbf X)^{-1}\; \mathbf X^\top \operatorname{diag}\!\Big(\mu_i + \frac{\mu_i^2}{\theta}\Big) \mathbf X\; (\mathbf X^\top \mathbf M \mathbf X)^{-1}, \]<span class="tag-n">(30)</span></div>
+
+<p>com \(\mathbf M = \operatorname{diag}(\mu_i)\), maior que a reportada. Há três caminhos para corrigir:</p>
+
+<ol>
+<li><strong>Quasi-Poisson:</strong> supõe \(\operatorname{Var}(Y_i) = \phi\,\mu_i\) e multiplica os erros-padrão por \(\sqrt{\hat\phi}\). Mantém as estimativas da Poisson. Simples, mas a forma da variância (proporcional à média) pode estar errada, e não há verossimilhança (sem AIC, sem probabilidades previstas).</li>
+<li><strong>Erros-padrão robustos (sanduíche):</strong> estimam (30) sem supor forma para a variância. Bons com \(n\) grande.</li>
+<li><strong>Binomial negativa:</strong> modela a variância explicitamente com (25). Tem verossimilhança completa, dá probabilidades para cada contagem e é mais eficiente quando o modelo está certo.</li>
+</ol>
+
+<h2><span class="n">§11</span>Um exemplo completo</h2>
+
+<p>Simulamos \(n = 500\) contagens exatamente pelo caminho de (24): uma covariável \(x_i \sim \mathcal N(0, 1)\), \(\log\mu_i = 1 + 0{,}5\,x_i\), um efeito \(\varepsilon_i \sim \text{Gama}(1{,}5;\ 1{,}5)\) para cada unidade e \(Y_i \mid \varepsilon_i \sim \text{Poisson}(\mu_i\varepsilon_i)\). Como a simulação é nossa, sabemos a resposta: \(\beta_0 = 1\), \(\beta_1 = 0{,}5\), \(\theta = 1{,}5\). Depois ajustamos Poisson, quasi-Poisson e binomial negativa:</p>
+
+<!--nb-fit-->
+
+<p>Leia a tabela por linhas:</p>
+
+<ul>
+<li><strong>As estimativas pontuais quase coincidem</strong> (\(\hat\beta_1 = 0{,}463\) na Poisson, \(0{,}478\) na BN). Era o esperado: as duas equações de escore são não viesadas quando a média está certa.</li>
+<li><strong>Os erros-padrão não.</strong> O da Poisson para \(\beta_1\) é \(0{,}028\); o da BN, \(0{,}053\) — quase o dobro. O intervalo de 95% da Poisson, \([0{,}407;\ 0{,}518]\), contém o valor verdadeiro 0,5, mas tem pouco mais da metade da largura do intervalo da BN, \([0{,}375;\ 0{,}581]\): promete uma precisão que os dados não têm. Nesta amostra deu certo; a §12 mostra quantas vezes falha.</li>
+<li><strong>O diagnóstico de dispersão</strong> vai de 3,20 na Poisson para 1,02 na BN: depois de modelar a heterogeneidade, os resíduos de Pearson voltam a ter variância 1.</li>
+<li><strong>\(\hat\theta = 1{,}29\)</strong> (erro-padrão 0,13), compatível com o verdadeiro 1,5.</li>
+<li><strong>AIC</strong> cai de 2594,9 para 2146,9 — uma diferença enorme por um único parâmetro extra.</li>
+</ul>
+
+<h3>Teste da razão de verossimilhanças: \(H_0\colon\) Poisson</h3>
+
+<p>Como a Poisson é o limite \(\theta \to \infty\) da BN (26), podemos testar \(H_0\colon \kappa = 1/\theta = 0\) pela razão de verossimilhanças:</p>
+
+<div class="eq">\[ \text{RV} = 2\big(\ell_{\text{BN}} - \ell_{\text{P}}\big) = 2\big(-1070{,}4 - (-1295{,}4)\big) = 450{,}0. \]<span class="tag-n">(31)</span></div>
+
+<p>Um detalhe que muitos esquecem: \(\kappa = 0\) está na <strong>fronteira</strong> do espaço paramétrico (\(\kappa\) não pode ser negativo). Nesse caso a distribuição nula de RV não é \(\chi^2_1\), e sim uma mistura meio a meio de uma massa em zero e de \(\chi^2_1\). Na prática: <strong>divida por 2 o p-valor da \(\chi^2_1\)</strong>. Aqui isso não muda nada — o p-valor fica abaixo de \(10^{-99}\) —, mas em casos limítrofes muda.</p>
+
+<h3>As frequências</h3>
+
+<p>O teste mais concreto é comparar quantas observações de cada valor o modelo previa com quantas apareceram:</p>
+
+<!--nb-freq-->
+
+<p>A Poisson erra exatamente onde a teoria diz que erraria. A mistura espalha massa para os <strong>dois lados</strong>: unidades com taxa baixa geram zeros demais, unidades com taxa alta geram valores altos demais. A Poisson, presa a \(\operatorname{Var} = \mu\), não consegue fazer as duas coisas e concentra tudo no meio. Muito do que se chama “excesso de zeros” é só isso — sobredispersão — e a BN resolve sem precisar de um modelo inflacionado de zeros.</p>
+
+<h2><span class="n">§12</span>Quanto custa ignorar a sobredispersão</h2>
+
+<p>Um exemplo é uma amostra. Para medir o comportamento dos métodos, repetimos o experimento 2.000 vezes para cada nível de heterogeneidade: geramos dados com \(n = 200\), ajustamos os três modelos e verificamos se o intervalo de Wald de 95% para \(\beta_1\) contém o valor verdadeiro 0,5. Um bom método acerta 95% das vezes.</p>
+
+<!--nb-coverage-->
+
+<p>Quatro conclusões:</p>
+
+<ol>
+<li><strong>Com dados Poisson (\(\theta = \infty\)), os três acertam.</strong> A BN não custa nada aqui: \(\hat\theta\) simplesmente vai para valores enormes e o modelo vira Poisson. Usar BN “por precaução” é barato.</li>
+<li><strong>A Poisson piora rapidamente com a heterogeneidade.</strong> Com \(\theta = 2\) (taxas com desvio-padrão de 71% em torno da média), o intervalo de “95%” cobre 73%; com \(\theta = 0{,}5\), menos da metade das vezes. Um teste de nível 5% rejeitaria \(H_0\) verdadeira mais de 50% das vezes.</li>
+<li><strong>A quasi-Poisson ajuda muito, mas não totalmente.</strong> Ela corrige o tamanho médio da variância, não a forma: supõe \(\operatorname{Var} \propto \mu\) quando a verdadeira é \(\mu + \mu^2/\theta\). Com \(\theta = 0{,}5\), cobre 88,6%.</li>
+<li><strong>A BN fica perto de 95% em todos os casos</strong> e, além disso, é mais <strong>eficiente</strong>: o desvio-padrão real de \(\hat\beta_1\) é menor com a BN (0,116 contra 0,132 da Poisson com \(\theta = 0{,}5\)) porque os pesos (29) dão menos importância às observações mais ruidosas.</li>
+</ol>
+
+<h2><span class="n">§13</span>Na prática: Python e R</h2>
+
+<pre class="code">import statsmodels.api as sm
+import statsmodels.formula.api as smf
+
+pois = smf.glm("y ~ x", data=df, family=sm.families.Poisson()).fit()
+phi = pois.pearson_chi2 / pois.df_resid                 # dispersão (4): perto de 1?
+
+quasi = smf.glm("y ~ x", data=df, family=sm.families.Poisson()).fit(scale="X2")   # quasi-Poisson
+robust = smf.glm("y ~ x", data=df, family=sm.families.Poisson()).fit(cov_type="HC0")  # sanduíche (30)
+
+nb = smf.negativebinomial("y ~ x", data=df).fit()      # NB2; reporta alpha = 1/theta
+lr = 2 * (nb.llf - pois.llf)                            # p-valor: chi2(1) dividido por 2
+print(nb.summary())</pre>
+
+<pre class="code">pois  &lt;- glm(y ~ x, family = poisson, data = d)
+sum(residuals(pois, type = "pearson")^2) / df.residual(pois)   # dispersão
+
+quasi &lt;- glm(y ~ x, family = quasipoisson, data = d)
+
+library(MASS)
+nb &lt;- glm.nb(y ~ x, data = d)          # reporta theta (= 1/alpha)
+lr &lt;- 2 * (logLik(nb) - logLik(pois))
+pchisq(lr, df = 1, lower.tail = FALSE) / 2   # teste na fronteira</pre>
+
+<p>Atenção às parametrizações: o R reporta \(\theta\); o <code>statsmodels</code> reporta \(\alpha = 1/\theta\); alguns textos chamam \(1/\theta\) de \(k\) ou \(\kappa\). É sempre o mesmo modelo (25).</p>
+
+<h2><span class="n">§14</span>Cuidados</h2>
+
+<ul>
+<li><strong>Primeiro acerte a média.</strong> Uma covariável importante esquecida, uma interação ausente ou uma relação não linear também produzem \(\hat\phi \gt 1\). A sobredispersão pode ser sintoma de um preditor linear errado; a BN “absorve” o problema, mas os coeficientes continuam errados.</li>
+<li><strong>Excesso de zeros de verdade.</strong> Se há um processo que gera zeros estruturais (quem nunca fuma tem zero cigarros, sempre), nem a BN dá conta; modelos inflacionados de zeros ou <em>hurdle</em> separam os dois processos. Compare as frequências de zero, como na §11, antes de concluir.</li>
+<li><strong>Dependência.</strong> Observações agrupadas (alunos na mesma escola, medidas repetidas no mesmo paciente) geram sobredispersão que não é heterogeneidade individual. Aí o caminho é um modelo misto (efeito aleatório por grupo) ou GEE.</li>
+<li><strong>NB1 × NB2.</strong> Se a variância cresce linearmente com a média, \(\operatorname{Var} = \mu(1 + \delta)\), a NB1 ou a quasi-Poisson descrevem melhor. Um gráfico como o da §2 indica qual forma é mais compatível com os dados.</li>
+<li><strong>Subdispersão</strong> (\(\hat\phi \lt 1\)) existe, mas é rara; a mistura nunca a produz, por (14). Quando aparece, pense em processos regulares (contagens com teto, eventos que se inibem) e em modelos como Conway–Maxwell–Poisson ou binomial.</li>
+</ul>
+
+<h2><span class="n">§15</span>Resumo</h2>
+
+<ol>
+<li>O MLG de Poisson impõe \(\operatorname{Var}(Y_i) = \mu_i\). Dados reais costumam ter variância maior; o diagnóstico é \(\hat\phi = X^2/(n-p) \gt 1\).</li>
+<li>A causa mais comum é <strong>heterogeneidade não observada</strong>: unidades com as mesmas covariáveis têm taxas diferentes. Modelamos isso em dois andares: \(Z \sim \text{Gama}(\alpha, \beta)\) e \(Y \mid Z \sim \text{Poisson}(Z)\).</li>
+<li>A <strong>esperança iterada</strong> dá \(\mathbb E[Y] = \mathbb E[\mathbb E[Y \mid Z]] = \mathbb E[Z]\). A <strong>variância total</strong> dá \(\operatorname{Var}(Y) = \mathbb E[Z] + \operatorname{Var}(Z)\). Logo \(\operatorname{Var}(Y) - \mathbb E[Y] = \operatorname{Var}(Z) \gt 0\): <em>o excesso de variância é a variância das taxas</em>.</li>
+<li>Integrando a Poisson contra a Gama, a marginal é a <strong>binomial negativa</strong> \(\text{BN}(r = \alpha,\; p = \beta/(1+\beta))\). A Gama é escolhida por ser conjugada: a integral tem forma fechada.</li>
+<li>Para o MLG, \(Y_i \mid \varepsilon_i \sim \text{Poisson}(\mu_i\varepsilon_i)\) com \(\varepsilon_i \sim \text{Gama}(\theta, \theta)\), o que dá \(\mathbb E[Y_i] = \mu_i\) e \(\operatorname{Var}(Y_i) = \mu_i + \mu_i^2/\theta\). Quando \(\theta \to \infty\), volta-se à Poisson.</li>
+<li>Com \(\theta\) fixo a BN é família exponencial, então é um MLG. Usa-se ligação log, os coeficientes têm a mesma leitura da Poisson, e \(\theta\) é estimado por máxima verossimilhança.</li>
+<li>Ignorar a sobredispersão não vicia as estimativas, mas encolhe os erros-padrão: na simulação, o IC de “95%” da Poisson cobriu 48% das vezes com \(\theta = 0{,}5\). A BN ficou perto de 95% em todos os cenários e não custou nada quando os dados eram Poisson.</li>
+</ol>
+
+<h2><span class="n">§16</span>Para ir além</h2>
+
+<ul>
+<li>M. Greenwood e G. U. Yule (1920). <em>An inquiry into the nature of frequency distributions representative of multiple happenings…</em> Journal of the Royal Statistical Society, 83(2). A origem da mistura Poisson–Gama, com dados de acidentes.</li>
+<li>P. McCullagh e J. A. Nelder (1989). <em>Generalized Linear Models</em>, 2ª ed., cap. 6. Chapman &amp; Hall. Quasi-verossimilhança e sobredispersão.</li>
+<li>J. F. Lawless (1987). <em>Negative binomial and mixed Poisson regression</em>. Canadian Journal of Statistics, 15(3).</li>
+<li>A. C. Cameron e P. K. Trivedi (2013). <em>Regression Analysis of Count Data</em>, 2ª ed. Cambridge. A referência completa sobre modelos de contagem.</li>
+<li>J. M. Hilbe (2011). <em>Negative Binomial Regression</em>, 2ª ed. Cambridge. Prático, com muitos exemplos e as variantes NB1, NB2 e outras.</li>
+<li>A. Agresti (2015). <em>Foundations of Linear and Generalized Linear Models</em>, cap. 7. Wiley.</li>
+<li>W. N. Venables e B. D. Ripley (2002). <em>Modern Applied Statistics with S</em>, 4ª ed., seção 7.4. Springer. A base do <code>glm.nb</code>.</li>
+</ul>

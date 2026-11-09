@@ -1,0 +1,333 @@
+<p>You fit a Poisson GLM to count data, check the diagnostics and find that the variance of the data is three, five, ten times the mean. The textbook says: “there is <strong>overdispersion</strong>, use the <strong>negative binomial</strong>”. This article explains <em>why</em> — not as a recipe but as the consequence of an argument. The central idea is to write the count in two stages: first nature draws a rate \(Z\) for each unit; then, given the rate, the count is Poisson. With two tools — the <strong>iterated expectation</strong> \(\mathbb E[\mathbb E[Y \mid Z]]\) and the <strong>law of total variance</strong> — and one integral, the negative binomial appears on its own. At the end we fit both models to the same dataset and measure, by simulation, what ignoring overdispersion costs. Every number comes from a <a href="https://github.com/Igor-Millis/Igor-Millis.github.io/tree/main/research/negbin">reproducible script</a>.</p>
+
+<div class="note"><strong>What you need beforehand.</strong> The Poisson and Gamma distributions, expectation and variance, and the structure of a GLM (random component, linear predictor, link function). Familiarity with maximum likelihood helps in §10–§11. Proofs are written line by line; you can follow them with a pencil.</div>
+
+<h2><span class="n">§1</span>The starting point: the Poisson GLM</h2>
+
+<p>Count data — doctor visits per year, claims per policy, defects per part, goals per match — are non-negative integers. The simplest model for them is the <strong>Poisson</strong>:</p>
+
+<div class="eq">\[ \Pr(Y = y) = \frac{e^{-\mu}\mu^{y}}{y!}, \qquad y = 0, 1, 2, \dots \]<span class="tag-n">(1)</span></div>
+
+<p>In a Poisson GLM each observation \(i\) has its own mean, linked to the covariates through the logarithm:</p>
+
+<div class="eq">\[ Y_i \sim \text{Poisson}(\mu_i), \qquad \log \mu_i = \beta_0 + \beta_1 x_{i1} + \dots + \beta_p x_{ip} = \mathbf x_i^\top \boldsymbol\beta. \]<span class="tag-n">(2)</span></div>
+
+<p>The Poisson has one property that drives everything that follows: <strong>the variance equals the mean</strong>,</p>
+
+<div class="eq">\[ \mathbb E[Y_i] = \mu_i, \qquad \operatorname{Var}(Y_i) = \mu_i. \]<span class="tag-n">(3)</span></div>
+
+<p>This is called <strong>equidispersion</strong>. It is a strong restriction: the model has no free parameter for the variance. Once the mean is chosen, the variance is decided. In practice, real data almost always have a variance <em>larger</em> than the mean. That is <strong>overdispersion</strong>.</p>
+
+<h2><span class="n">§2</span>How overdispersion shows up</h2>
+
+<p>If model (2) is right, the Pearson residuals \(r_i = (y_i - \hat\mu_i)/\sqrt{\hat\mu_i}\) have variance close to 1, and the sum of their squares is close to the degrees of freedom. Hence the dispersion statistic:</p>
+
+<div class="eq">\[ \hat\phi = \frac{X^2}{n - p} = \frac{1}{n-p}\sum_{i=1}^{n} \frac{(y_i - \hat\mu_i)^2}{\hat\mu_i}, \]<span class="tag-n">(4)</span></div>
+
+<p>where \(p\) is the number of coefficients. Under the Poisson model, \(\hat\phi \approx 1\). A \(\hat\phi\) well above 1 signals overdispersion (the deviance-to-df ratio tells the same story). In the example we analyse in §11 — 500 counts with one covariate — the Poisson fit gives <strong>\(\hat\phi = 3.20\)</strong>: the variance of the data is about three times what the Poisson allows.</p>
+
+<p>A plot helps more than a number. Sort the observations by fitted mean, split them into groups and, in each group, compare the mean with the sample variance. Under Poisson the points would sit around the line \(\operatorname{Var} = \mu\):</p>
+
+<!--nb-mv-->
+
+<p>Every point is above the line, and further above as the mean grows. The solid curve, \(\mu + \mu^2/\theta\), is the variance of the negative binomial — we will get there in §9. First the important question: <em>why</em> do data behave like this?</p>
+
+<div class="note"><strong>Why it matters.</strong> In the Poisson model the variance feeds straight into the standard errors. If the true variance is three times larger, the Poisson GLM's standard errors are about \(\sqrt 3 \approx 1.7\) times too small, confidence intervals too narrow and p-values too small. You “discover” effects that are not there. §12 measures the damage.</div>
+
+<h2><span class="n">§3</span>Where overdispersion comes from: unobserved heterogeneity</h2>
+
+<p>The Poisson arises naturally when rare events occur independently, all with <strong>the same rate</strong>. That last condition is the one that usually fails. Think of doctor visits per year: two people with the same age, sex and income (the model's covariates) do <em>not</em> have the same propensity to see a doctor. One has a chronic condition, another lives far from the clinic, a third is more anxious. None of that is in the data. The model gives both the same \(\mu_i\), but their true rates differ.</p>
+
+<p>The way to formalise this is to give each unit a <strong>random rate</strong>. Call \(Z\) the rate nature draws for a unit. The model now has two layers:</p>
+
+<div class="eq">\[ \underbrace{Z \sim \text{Gamma}(\alpha, \beta)}_{\text{1st: draw the unit's rate}} \qquad\longrightarrow\qquad \underbrace{Y \mid Z = z \;\sim\; \text{Poisson}(z)}_{\text{2nd: given the rate, count events}} \]<span class="tag-n">(5)</span></div>
+
+<p>Conditionally on \(Z\), everything is still Poisson: variance equals mean. But we <strong>do not observe</strong> \(Z\); we only observe \(Y\). The distribution the data follow is the <strong>marginal</strong> of \(Y\) — the Poisson “mixed” over all possible rates. The whole question reduces to: what are the mean, the variance and the distribution of that marginal?</p>
+
+<p>A convention for the Gamma: we use <strong>shape \(\alpha\)</strong> and <strong>rate \(\beta\)</strong>, with density</p>
+
+<div class="eq">\[ f_Z(z) = \frac{\beta^{\alpha}}{\Gamma(\alpha)}\, z^{\alpha-1} e^{-\beta z}, \quad z > 0, \qquad \mathbb E[Z] = \frac{\alpha}{\beta}, \qquad \operatorname{Var}(Z) = \frac{\alpha}{\beta^{2}}. \]<span class="tag-n">(6)</span></div>
+
+<p>(Some books and <code>numpy</code> use the scale \(1/\beta\) instead of the rate. The algebra is the same with \(\beta\) replaced by \(1/\text{scale}\).) Why Gamma and not some other distribution? For now, accept that it is flexible (positive values, adjustable skewness) — §8 gives the deeper reason.</p>
+
+<h2><span class="n">§4</span>Tool 1: the iterated expectation, \(\mathbb E[\mathbb E[Y \mid Z]]\)</h2>
+
+<p>The first tool is the <strong>law of total expectation</strong> (or iterated expectation):</p>
+
+<div class="eq">\[ \mathbb E[Y] = \mathbb E\big[\,\mathbb E[Y \mid Z]\,\big]. \]<span class="tag-n">(7)</span></div>
+
+<p>Read it from the inside out. \(\mathbb E[Y \mid Z]\) is the mean of \(Y\) <em>if we knew</em> the rate \(Z\). Since \(Z\) is random, \(\mathbb E[Y \mid Z]\) is a <strong>random variable</strong> — a function of \(Z\). The outer expectation averages that function over all possible values of \(Z\). In words: <em>the overall mean is the mean of the conditional means</em>.</p>
+
+<p><strong>Proof</strong> (for discrete \(Y\) and continuous \(Z\), our case). Write \(p(y \mid z) = \Pr(Y = y \mid Z = z)\). Then \(\mathbb E[Y \mid Z = z] = \sum_y y\, p(y \mid z)\) and</p>
+
+<div class="eq">\[ \begin{aligned}
+\mathbb E\big[\mathbb E[Y \mid Z]\big] &amp;= \int_0^\infty \Big(\sum_{y} y\, p(y \mid z)\Big) f_Z(z)\, dz \\
+&amp;= \sum_{y} y \int_0^\infty p(y \mid z)\, f_Z(z)\, dz \\
+&amp;= \sum_{y} y\, \Pr(Y = y) \;=\; \mathbb E[Y].
+\end{aligned} \]<span class="tag-n">(8)</span></div>
+
+<p>The second line swaps sum and integral (allowed because every term is non-negative — Tonelli's theorem). The next step uses the <strong>law of total probability</strong>: \(\Pr(Y = y) = \int p(y \mid z) f_Z(z)\,dz\). Keep that integral in mind — it comes back in §7 to give the whole distribution of \(Y\).</p>
+
+<h2><span class="n">§5</span>Tool 2: the law of total variance</h2>
+
+<p>The mean alone does not reveal overdispersion; we need the variance. The <strong>law of total variance</strong> says:</p>
+
+<div class="eq">\[ \operatorname{Var}(Y) = \underbrace{\mathbb E\big[\operatorname{Var}(Y \mid Z)\big]}_{\text{within}} + \underbrace{\operatorname{Var}\big(\mathbb E[Y \mid Z]\big)}_{\text{between}}. \]<span class="tag-n">(9)</span></div>
+
+<p><strong>Proof.</strong> Start from \(\operatorname{Var}(Y) = \mathbb E[Y^2] - (\mathbb E[Y])^2\) and apply (7) to both terms — the iterated expectation holds for any function of \(Y\), including \(Y^2\):</p>
+
+<div class="eq">\[ \begin{aligned}
+\operatorname{Var}(Y) &amp;= \mathbb E\big[\mathbb E[Y^2 \mid Z]\big] - \big(\mathbb E\big[\mathbb E[Y \mid Z]\big]\big)^2 \\
+&amp;= \mathbb E\Big[\operatorname{Var}(Y \mid Z) + \big(\mathbb E[Y \mid Z]\big)^2\Big] - \big(\mathbb E\big[\mathbb E[Y \mid Z]\big]\big)^2 \\
+&amp;= \mathbb E\big[\operatorname{Var}(Y \mid Z)\big] + \Big\{\mathbb E\big[(\mathbb E[Y \mid Z])^2\big] - \big(\mathbb E\big[\mathbb E[Y \mid Z]\big]\big)^2\Big\} \\
+&amp;= \mathbb E\big[\operatorname{Var}(Y \mid Z)\big] + \operatorname{Var}\big(\mathbb E[Y \mid Z]\big).
+\end{aligned} \]<span class="tag-n">(10)</span></div>
+
+<p>The second line uses, conditionally on \(Z\), the identity \(\mathbb E[Y^2 \mid Z] = \operatorname{Var}(Y \mid Z) + (\mathbb E[Y \mid Z])^2\). In the third, the key is to recognise the expression in braces as the variance of the random variable \(\mathbb E[Y \mid Z]\).</p>
+
+<p>The interpretation is the heart of the argument. The variance of \(Y\) has two sources: the <strong>noise within</strong> each unit (even knowing the rate, the count varies — that is the Poisson noise) and the <strong>differences between</strong> units (rates vary from unit to unit). The Poisson GLM only sees the first.</p>
+
+<h2><span class="n">§6</span>Applying both laws: overdispersion appears on its own</h2>
+
+<p>In model (5), given \(Z\), \(Y\) is Poisson with mean \(Z\). So</p>
+
+<div class="eq">\[ \mathbb E[Y \mid Z] = Z, \qquad \operatorname{Var}(Y \mid Z) = Z. \]<span class="tag-n">(11)</span></div>
+
+<p><strong>The mean.</strong> By the iterated expectation (7):</p>
+
+<div class="eq">\[ \mathbb E[Y] = \mathbb E\big[\mathbb E[Y \mid Z]\big] = \mathbb E[Z] = \frac{\alpha}{\beta}. \]<span class="tag-n">(12)</span></div>
+
+<p><strong>The variance.</strong> By total variance (9):</p>
+
+<div class="eq">\[ \operatorname{Var}(Y) = \mathbb E[\underbrace{\operatorname{Var}(Y \mid Z)}_{=\,Z}] + \operatorname{Var}(\underbrace{\mathbb E[Y \mid Z]}_{=\,Z}) = \mathbb E[Z] + \operatorname{Var}(Z) = \frac{\alpha}{\beta} + \frac{\alpha}{\beta^2}. \]<span class="tag-n">(13)</span></div>
+
+<p>Compare with the mean:</p>
+
+<div class="eq">\[ \operatorname{Var}(Y) - \mathbb E[Y] = \operatorname{Var}(Z) = \frac{\alpha}{\beta^2} \;\gt\; 0. \]<span class="tag-n">(14)</span></div>
+
+<p>This is the main result of the article, and it is worth reading slowly. <strong>The excess variance is exactly the variance of the rates.</strong> If all units had the same rate (\(\operatorname{Var}(Z) = 0\)) we would be back to equidispersion. Any unobserved heterogeneity, however small, pushes the variance above the mean. Note too that (14) used nothing specific to the Gamma beyond \(\operatorname{Var}(Z)\): <em>every</em> mixture of Poissons is overdispersed. The Gamma only comes in to give the resulting distribution a name.</p>
+
+<p>You can check this without trusting any algebra: just simulate the two-stage experiment. With \(\alpha = 2\) and \(\beta = 0.5\), the formulas predict \(\mathbb E[Y] = 4\) and \(\operatorname{Var}(Y) = 4 + 8 = 12\):</p>
+
+<pre class="code">import numpy as np
+rng = np.random.default_rng(20261109)
+alpha, beta = 2.0, 0.5
+z = rng.gamma(shape=alpha, scale=1/beta, size=1_000_000)   # stage 1: one rate per unit
+y = rng.poisson(z)                                          # stage 2: Poisson given the rate
+print(y.mean(), y.var())                                    # ≈ 4 and ≈ 12</pre>
+
+<!--nb-mixture-table-->
+
+<h2><span class="n">§7</span>The marginal distribution: the integral that gives the negative binomial</h2>
+
+<p>Mean and variance already explain overdispersion, but to fit a model by maximum likelihood we need the <strong>distribution</strong> of \(Y\). It comes from the law of total probability — the same integral that appeared inside proof (8):</p>
+
+<div class="eq">\[ \begin{aligned} \Pr(Y = y) &amp;= \int_0^\infty \Pr(Y = y \mid Z = z)\, f_Z(z)\, dz \\ &amp;= \int_0^\infty \frac{e^{-z} z^{y}}{y!} \cdot \frac{\beta^{\alpha}}{\Gamma(\alpha)}\, z^{\alpha-1} e^{-\beta z}\, dz. \end{aligned} \]<span class="tag-n">(15)</span></div>
+
+<p><strong>Step 1 — take out of the integral whatever does not depend on \(z\) and collect powers:</strong></p>
+
+<div class="eq">\[ \Pr(Y = y) = \frac{\beta^{\alpha}}{y!\,\Gamma(\alpha)} \int_0^\infty z^{\,y + \alpha - 1}\, e^{-(\beta + 1) z}\, dz. \]<span class="tag-n">(16)</span></div>
+
+<p><strong>Step 2 — recognise a Gamma kernel.</strong> Up to a constant, the integrand is the density of a \(\text{Gamma}(y + \alpha,\; \beta + 1)\). Since every density integrates to 1,</p>
+
+<div class="eq">\[ \int_0^\infty z^{\,a - 1} e^{-b z}\, dz = \frac{\Gamma(a)}{b^{a}} \qquad\Longrightarrow\qquad \int_0^\infty z^{\,y + \alpha - 1} e^{-(\beta+1) z}\, dz = \frac{\Gamma(y + \alpha)}{(\beta + 1)^{y + \alpha}}. \]<span class="tag-n">(17)</span></div>
+
+<p><strong>Step 3 — substitute and rearrange:</strong></p>
+
+<div class="eq">\[ \begin{aligned} \Pr(Y = y) &amp;= \frac{\Gamma(y + \alpha)}{\Gamma(\alpha)\, y!} \cdot \frac{\beta^{\alpha}}{(\beta+1)^{\alpha}} \cdot \frac{1}{(\beta+1)^{y}} \\ &amp;= \frac{\Gamma(y + \alpha)}{\Gamma(\alpha)\, y!} \left(\frac{\beta}{\beta+1}\right)^{\!\alpha} \left(\frac{1}{\beta+1}\right)^{\!y}. \end{aligned} \]<span class="tag-n">(18)</span></div>
+
+<p><strong>Step 4 — name it.</strong> Let \(p = \beta/(\beta + 1)\), so that \(1 - p = 1/(\beta+1)\), and \(r = \alpha\). Then</p>
+
+<div class="eq">\[ \boxed{\;\Pr(Y = y) = \frac{\Gamma(y + r)}{\Gamma(r)\, y!}\; p^{\,r} (1 - p)^{y}, \qquad y = 0, 1, 2, \dots\;} \]<span class="tag-n">(19)</span></div>
+
+<p>This is the <strong>negative binomial</strong> \(\text{NB}(r, p)\). When \(r\) is an integer, \(\Gamma(y + r)/(\Gamma(r)\,y!) = \binom{y + r - 1}{y}\) and (19) is the classical distribution of the number of failures before the \(r\)-th success in Bernoulli trials with probability \(p\). Here \(r = \alpha\) can be any positive real; the Gamma-function form is the natural extension. The name “negative” comes from the binomial series with a negative exponent, \((1 - q)^{-r} = \sum_y \binom{y + r - 1}{y} q^y\), which also shows at once that (19) sums to 1.</p>
+
+<p>Checking the moments with the NB formulas, \(\mathbb E[Y] = r(1-p)/p\) and \(\operatorname{Var}(Y) = r(1-p)/p^2\):</p>
+
+<div class="eq">\[ \begin{aligned} \mathbb E[Y] &amp;= \alpha \cdot \frac{1/(\beta+1)}{\beta/(\beta+1)} = \frac{\alpha}{\beta}, \\ \operatorname{Var}(Y) &amp;= \alpha \cdot \frac{1/(\beta+1)}{\beta^2/(\beta+1)^2} = \frac{\alpha(\beta+1)}{\beta^2} = \frac{\alpha}{\beta} + \frac{\alpha}{\beta^2}, \end{aligned} \]<span class="tag-n">(20)</span></div>
+
+<p>exactly (12) and (13). The two routes — moments through the iterated expectation and the distribution through the integral — arrive at the same place. And the simulation agrees, point by point:</p>
+
+<!--nb-mixture-->
+
+<h3>A shortcut: the probability generating function</h3>
+
+<p>The iterated expectation also gives a route that avoids integrating densities. The probability generating function of \(Y\) is \(G_Y(s) = \mathbb E[s^{Y}]\). Conditioning on \(Z\) and using the Poisson one, \(\mathbb E[s^{Y} \mid Z] = e^{Z(s-1)}\):</p>
+
+<div class="eq">\[ \begin{aligned} G_Y(s) &amp;= \mathbb E\big[\mathbb E[s^{Y} \mid Z]\big] = \mathbb E\big[e^{(s-1) Z}\big] = M_Z(s - 1) \\ &amp;= \left(\frac{\beta}{\beta - (s-1)}\right)^{\!\alpha} = \left(\frac{p}{1 - (1-p)s}\right)^{\!\alpha}, \end{aligned} \]<span class="tag-n">(21)</span></div>
+
+<p>where \(M_Z(t) = (\beta/(\beta - t))^{\alpha}\) is the Gamma moment generating function. The last expression is the generating function of \(\text{NB}(\alpha, p)\). Same result, with \(\mathbb E[\mathbb E[\,\cdot \mid Z]]\) doing all the work.</p>
+
+<h2><span class="n">§8</span>Why the Gamma, specifically?</h2>
+
+<p>§6 showed that any distribution for \(Z\) produces overdispersion. The Gamma is chosen because it is <strong>conjugate</strong> to the Poisson: the product “Poisson × Gamma” inside integral (15) is another Gamma, so the integral has a closed form. With a lognormal \(Z\), for instance, the Poisson-lognormal model is perfectly reasonable, but \(\Pr(Y = y)\) only comes out by numerical integration.</p>
+
+<p>Conjugacy has a bonus. By Bayes' rule, the distribution of a unit's rate <em>after</em> seeing its count is</p>
+
+<div class="eq">\[ \begin{gathered} f(z \mid y) \;\propto\; \underbrace{e^{-z} z^{y}}_{\text{Poisson}}\cdot\underbrace{z^{\alpha-1}e^{-\beta z}}_{\text{Gamma}} = z^{\,\alpha + y - 1} e^{-(\beta+1) z} \\ \Longrightarrow\quad Z \mid Y = y \;\sim\; \text{Gamma}(\alpha + y,\; \beta + 1), \end{gathered} \]<span class="tag-n">(22)</span></div>
+
+<p>with mean</p>
+
+<div class="eq">\[ \mathbb E[Z \mid Y = y] = \frac{\alpha + y}{\beta + 1} = \underbrace{\frac{1}{\beta+1}}_{w}\, y + \underbrace{\frac{\beta}{\beta+1}}_{1 - w}\, \frac{\alpha}{\beta}. \]<span class="tag-n">(23)</span></div>
+
+<p>The best estimate of a unit's rate is a weighted average of what it showed (\(y\)) and the population mean (\(\alpha/\beta\)). This is the <strong>credibility</strong> principle in insurance: a policyholder with many claims pays more, but not in proportion to a short history.</p>
+
+<h2><span class="n">§9</span>From the mixture model to the negative binomial GLM</h2>
+
+<p>So far there was a single population. In a GLM each observation has its own mean \(\mu_i = \exp(\mathbf x_i^\top \boldsymbol\beta)\). To accommodate that, write unit \(i\)'s rate as <strong>the model mean times an unobserved multiplicative effect</strong>:</p>
+
+<div class="eq">\[ Y_i \mid \varepsilon_i \sim \text{Poisson}(\mu_i\, \varepsilon_i), \quad \varepsilon_i \sim \text{Gamma}(\theta, \theta), \quad \mathbb E[\varepsilon_i] = 1, \quad \operatorname{Var}(\varepsilon_i) = \frac{1}{\theta}. \]<span class="tag-n">(24)</span></div>
+
+<p>Shape and rate both equal to \(\theta\) make \(\mathbb E[\varepsilon_i] = 1\). That is not arbitrary: if \(\varepsilon_i\) had mean \(c \ne 1\), \(c\) would be absorbed into the intercept \(\beta_0\) and the two could not be separated. Fixing the mean at 1 keeps \(\mu_i\) as <em>the mean of \(Y_i\)</em>. Note that \(Z_i = \mu_i \varepsilon_i \sim \text{Gamma}(\theta, \theta/\mu_i)\): this is model (5) with \(\alpha = \theta\) and \(\beta = \theta/\mu_i\). Substituting into (12), (13) and (19):</p>
+
+<div class="eq">\[ \begin{gathered} \mathbb E[Y_i] = \mu_i, \qquad \operatorname{Var}(Y_i) = \mu_i + \frac{\mu_i^2}{\theta}, \\ \Pr(Y_i = y) = \frac{\Gamma(y + \theta)}{\Gamma(\theta)\, y!}\left(\frac{\theta}{\theta + \mu_i}\right)^{\!\theta}\left(\frac{\mu_i}{\theta + \mu_i}\right)^{\!y}. \end{gathered} \]<span class="tag-n">(25)</span></div>
+
+<p>The variance, again by total variance: \(\mathbb E[\mu_i\varepsilon_i] + \operatorname{Var}(\mu_i\varepsilon_i) = \mu_i + \mu_i^2/\theta\). The term \(\mu_i^2/\theta\) is the excess; it grows with the <strong>square</strong> of the mean, which is why the solid curve in the §2 figure pulls away from the line. This version is called <strong>NB2</strong> (variance quadratic in the mean) and is the default in almost all software.</p>
+
+<p>The parameter \(\theta\) controls heterogeneity. Many texts use \(\kappa = 1/\theta\) (<code>statsmodels</code>' <code>alpha</code>; R reports <code>theta</code>). Small \(\theta\) = very different rates across units = a lot of overdispersion. And as \(\theta \to \infty\), \(\operatorname{Var}(\varepsilon_i) \to 0\), all units share the same rate and we should recover the Poisson. Indeed, rewriting (25):</p>
+
+<div class="eq">\[ \Pr(Y_i = y) = \underbrace{\frac{\theta(\theta+1)\cdots(\theta+y-1)}{(\theta + \mu_i)^{y}}}_{\to\, 1} \cdot \frac{\mu_i^{\,y}}{y!} \cdot \underbrace{\Big(1 + \frac{\mu_i}{\theta}\Big)^{-\theta}}_{\to\, e^{-\mu_i}} \;\xrightarrow[\theta \to \infty]{}\; \frac{e^{-\mu_i}\mu_i^{\,y}}{y!}. \]<span class="tag-n">(26)</span></div>
+
+<p>The Poisson is a limiting case of the negative binomial. That nesting gives us a test in §11.</p>
+
+<h2><span class="n">§10</span>Is the negative binomial a GLM?</h2>
+
+<p>A GLM requires the distribution to belong to the exponential family. With \(\theta\) <strong>fixed</strong>, the NB does. Take the log of (25):</p>
+
+<div class="eq">\[ \log \Pr(Y = y) = y \underbrace{\log\frac{\mu}{\mu + \theta}}_{\vartheta} \;+\; \theta \log\frac{\theta}{\mu + \theta} \;+\; \log\frac{\Gamma(y+\theta)}{\Gamma(\theta)\,y!}. \]<span class="tag-n">(27)</span></div>
+
+<p>With canonical parameter \(\vartheta = \log(\mu/(\mu+\theta))\) we have \(1 - e^{\vartheta} = \theta/(\mu + \theta)\), and the form is \(y\vartheta - b(\vartheta) + c(y)\) with \(b(\vartheta) = -\theta \log(1 - e^{\vartheta})\). The derivatives of \(b\) return the mean and the variance, as they must in an exponential family:</p>
+
+<div class="eq">\[ b'(\vartheta) = \frac{\theta e^{\vartheta}}{1 - e^{\vartheta}} = \mu, \qquad b''(\vartheta) = \frac{\theta e^{\vartheta}}{(1 - e^{\vartheta})^2} = \mu + \frac{\mu^2}{\theta} = V(\mu). \]<span class="tag-n">(28)</span></div>
+
+<p>The canonical link would be \(\log(\mu/(\mu+\theta))\), which depends on \(\theta\) and is hard to interpret; in practice one uses the <strong>log link</strong>, \(\log\mu_i = \mathbf x_i^\top\boldsymbol\beta\), the same as the Poisson. Coefficients then read the same way in both models: \(e^{\beta_j}\) is the ratio of means for a one-unit increase in \(x_j\).</p>
+
+<h3>Estimation</h3>
+
+<p>For fixed \(\theta\), \(\boldsymbol\beta\) comes from the usual GLM algorithm, iteratively reweighted least squares (IRLS). With the log link, \(d\mu/d\eta = \mu\), and the weights and score equations are</p>
+
+<div class="eq">\[ w_i = \frac{(d\mu_i/d\eta_i)^2}{V(\mu_i)} = \frac{\mu_i}{1 + \mu_i/\theta}, \qquad U(\boldsymbol\beta) = \sum_{i=1}^n \frac{y_i - \mu_i}{1 + \mu_i/\theta}\, \mathbf x_i = \mathbf 0. \]<span class="tag-n">(29)</span></div>
+
+<p>Compare with the Poisson, whose score is \(\sum_i (y_i - \mu_i)\,\mathbf x_i = \mathbf 0\) and whose weights are \(w_i = \mu_i\). The NB <strong>gives less weight to high-mean observations</strong>, precisely the noisiest ones. For \(\theta\), maximise the log-likelihood with \(\boldsymbol\beta\) fixed and alternate the two steps until convergence (this is what R's <code>MASS::glm.nb</code> does). Since \(\mathbb E[\partial^2\ell/\partial\boldsymbol\beta\,\partial\theta] = 0\), the estimates of \(\boldsymbol\beta\) and \(\theta\) are asymptotically independent, and the covariance of \(\hat{\boldsymbol\beta}\) is \((\mathbf X^\top \mathbf W \mathbf X)^{-1}\) with weights (29).</p>
+
+<h3>What exactly the Poisson gets wrong</h3>
+
+<p>The Poisson score equation has expectation zero whenever the <em>mean</em> is right, \(\mathbb E[Y_i] = \mu_i\) — whatever the variance. That is why \(\hat{\boldsymbol\beta}_{\text{Poisson}}\) remains <strong>consistent</strong> under overdispersion. The error is in the uncertainty. The Poisson GLM reports \((\mathbf X^\top \operatorname{diag}(\mu_i)\,\mathbf X)^{-1}\), which assumes \(\operatorname{Var}(Y_i) = \mu_i\). The estimator's true covariance is the “sandwich”</p>
+
+<div class="eq">\[ \operatorname{Cov}(\hat{\boldsymbol\beta}_{\text{P}}) \approx (\mathbf X^\top \mathbf M \mathbf X)^{-1}\; \mathbf X^\top \operatorname{diag}\!\Big(\mu_i + \frac{\mu_i^2}{\theta}\Big) \mathbf X\; (\mathbf X^\top \mathbf M \mathbf X)^{-1}, \]<span class="tag-n">(30)</span></div>
+
+<p>with \(\mathbf M = \operatorname{diag}(\mu_i)\), larger than the reported one. There are three ways to fix it:</p>
+
+<ol>
+<li><strong>Quasi-Poisson:</strong> assumes \(\operatorname{Var}(Y_i) = \phi\,\mu_i\) and multiplies the standard errors by \(\sqrt{\hat\phi}\). Keeps the Poisson estimates. Simple, but the shape of the variance (proportional to the mean) may be wrong, and there is no likelihood (no AIC, no predicted probabilities).</li>
+<li><strong>Robust (sandwich) standard errors:</strong> estimate (30) without assuming a form for the variance. Good with large \(n\).</li>
+<li><strong>Negative binomial:</strong> models the variance explicitly through (25). Full likelihood, probabilities for every count, and more efficient when the model is right.</li>
+</ol>
+
+<h2><span class="n">§11</span>A complete example</h2>
+
+<p>We simulate \(n = 500\) counts exactly along the path of (24): one covariate \(x_i \sim \mathcal N(0, 1)\), \(\log\mu_i = 1 + 0.5\,x_i\), an effect \(\varepsilon_i \sim \text{Gamma}(1.5,\ 1.5)\) for each unit and \(Y_i \mid \varepsilon_i \sim \text{Poisson}(\mu_i\varepsilon_i)\). Since the simulation is ours, we know the answer: \(\beta_0 = 1\), \(\beta_1 = 0.5\), \(\theta = 1.5\). Then we fit Poisson, quasi-Poisson and negative binomial:</p>
+
+<!--nb-fit-->
+
+<p>Read the table row by row:</p>
+
+<ul>
+<li><strong>Point estimates nearly coincide</strong> (\(\hat\beta_1 = 0.463\) for Poisson, \(0.478\) for NB). As expected: both score equations are unbiased when the mean is right.</li>
+<li><strong>Standard errors do not.</strong> Poisson's for \(\beta_1\) is \(0.028\); the NB's is \(0.053\) — almost double. The Poisson 95% interval, \([0.407,\ 0.518]\), contains the true value 0.5, but it is little more than half as wide as the NB interval, \([0.375,\ 0.581]\): it promises a precision the data do not have. It worked in this sample; §12 shows how often it fails.</li>
+<li><strong>The dispersion diagnostic</strong> goes from 3.20 under Poisson to 1.02 under NB: once heterogeneity is modelled, Pearson residuals have variance 1 again.</li>
+<li><strong>\(\hat\theta = 1.29\)</strong> (standard error 0.13), compatible with the true 1.5.</li>
+<li><strong>AIC</strong> drops from 2594.9 to 2146.9 — a huge difference for a single extra parameter.</li>
+</ul>
+
+<h3>Likelihood-ratio test: \(H_0\colon\) Poisson</h3>
+
+<p>Since the Poisson is the \(\theta \to \infty\) limit of the NB (26), we can test \(H_0\colon \kappa = 1/\theta = 0\) with a likelihood ratio:</p>
+
+<div class="eq">\[ \text{LR} = 2\big(\ell_{\text{NB}} - \ell_{\text{P}}\big) = 2\big(-1070.4 - (-1295.4)\big) = 450.0. \]<span class="tag-n">(31)</span></div>
+
+<p>A detail many forget: \(\kappa = 0\) is on the <strong>boundary</strong> of the parameter space (\(\kappa\) cannot be negative). The null distribution of LR is then not \(\chi^2_1\) but a 50:50 mixture of a point mass at zero and a \(\chi^2_1\). In practice: <strong>halve the \(\chi^2_1\) p-value</strong>. Here it changes nothing — the p-value is below \(10^{-99}\) — but in borderline cases it does.</p>
+
+<h3>The frequencies</h3>
+
+<p>The most concrete check is to compare how many observations of each value the model expected with how many showed up:</p>
+
+<!--nb-freq-->
+
+<p>The Poisson fails exactly where the theory says it would. The mixture spreads mass to <strong>both sides</strong>: low-rate units produce too many zeros, high-rate units produce too many large values. The Poisson, tied to \(\operatorname{Var} = \mu\), cannot do both and piles everything in the middle. Much of what is called “excess zeros” is just this — overdispersion — and the NB handles it without a zero-inflated model.</p>
+
+<h2><span class="n">§12</span>What ignoring overdispersion costs</h2>
+
+<p>One example is one sample. To measure how the methods behave, we repeat the experiment 2,000 times for each level of heterogeneity: generate data with \(n = 200\), fit all three models and check whether the 95% Wald interval for \(\beta_1\) contains the true value 0.5. A good method succeeds 95% of the time.</p>
+
+<!--nb-coverage-->
+
+<p>Four conclusions:</p>
+
+<ol>
+<li><strong>With Poisson data (\(\theta = \infty\)), all three are right.</strong> The NB costs nothing here: \(\hat\theta\) simply goes to huge values and the model becomes Poisson. Using NB “just in case” is cheap.</li>
+<li><strong>Poisson deteriorates quickly with heterogeneity.</strong> With \(\theta = 2\) (rates with a 71% standard deviation around the mean), the “95%” interval covers 73%; with \(\theta = 0.5\), less than half the time. A 5% test would reject a true \(H_0\) more than 50% of the time.</li>
+<li><strong>Quasi-Poisson helps a lot, but not fully.</strong> It fixes the average size of the variance, not its shape: it assumes \(\operatorname{Var} \propto \mu\) when the truth is \(\mu + \mu^2/\theta\). With \(\theta = 0.5\) it covers 88.6%.</li>
+<li><strong>The NB stays close to 95% in every case</strong> and is also more <strong>efficient</strong>: the actual standard deviation of \(\hat\beta_1\) is smaller with the NB (0.116 versus 0.132 for Poisson at \(\theta = 0.5\)) because the weights (29) downweight the noisiest observations.</li>
+</ol>
+
+<h2><span class="n">§13</span>In practice: Python and R</h2>
+
+<pre class="code">import statsmodels.api as sm
+import statsmodels.formula.api as smf
+
+pois = smf.glm("y ~ x", data=df, family=sm.families.Poisson()).fit()
+phi = pois.pearson_chi2 / pois.df_resid                 # dispersion (4): close to 1?
+
+quasi = smf.glm("y ~ x", data=df, family=sm.families.Poisson()).fit(scale="X2")   # quasi-Poisson
+robust = smf.glm("y ~ x", data=df, family=sm.families.Poisson()).fit(cov_type="HC0")  # sandwich (30)
+
+nb = smf.negativebinomial("y ~ x", data=df).fit()      # NB2; reports alpha = 1/theta
+lr = 2 * (nb.llf - pois.llf)                            # p-value: chi2(1) halved
+print(nb.summary())</pre>
+
+<pre class="code">pois  &lt;- glm(y ~ x, family = poisson, data = d)
+sum(residuals(pois, type = "pearson")^2) / df.residual(pois)   # dispersion
+
+quasi &lt;- glm(y ~ x, family = quasipoisson, data = d)
+
+library(MASS)
+nb &lt;- glm.nb(y ~ x, data = d)          # reports theta (= 1/alpha)
+lr &lt;- 2 * (logLik(nb) - logLik(pois))
+pchisq(lr, df = 1, lower.tail = FALSE) / 2   # boundary test</pre>
+
+<p>Watch the parameterisations: R reports \(\theta\); <code>statsmodels</code> reports \(\alpha = 1/\theta\); some texts call \(1/\theta\) \(k\) or \(\kappa\). It is always the same model (25).</p>
+
+<h2><span class="n">§14</span>Caveats</h2>
+
+<ul>
+<li><strong>Get the mean right first.</strong> A missing important covariate, a missing interaction or a non-linear relationship also produce \(\hat\phi \gt 1\). Overdispersion can be a symptom of a wrong linear predictor; the NB “absorbs” the problem, but the coefficients stay wrong.</li>
+<li><strong>Genuine excess zeros.</strong> If a separate process produces structural zeros (non-smokers smoke zero cigarettes, always), even the NB will not cope; zero-inflated or <em>hurdle</em> models separate the two processes. Compare zero frequencies, as in §11, before concluding.</li>
+<li><strong>Dependence.</strong> Clustered observations (students in the same school, repeated measures on the same patient) produce overdispersion that is not individual heterogeneity. There the route is a mixed model (a random effect per group) or GEE.</li>
+<li><strong>NB1 vs NB2.</strong> If the variance grows linearly with the mean, \(\operatorname{Var} = \mu(1 + \delta)\), NB1 or quasi-Poisson describe it better. A plot like the one in §2 shows which shape the data support.</li>
+<li><strong>Underdispersion</strong> (\(\hat\phi \lt 1\)) exists but is rare; a mixture never produces it, by (14). When you see it, think of regular processes (capped counts, events that inhibit each other) and of models such as Conway–Maxwell–Poisson or the binomial.</li>
+</ul>
+
+<h2><span class="n">§15</span>Summary</h2>
+
+<ol>
+<li>The Poisson GLM imposes \(\operatorname{Var}(Y_i) = \mu_i\). Real data usually have a larger variance; the diagnostic is \(\hat\phi = X^2/(n-p) \gt 1\).</li>
+<li>The most common cause is <strong>unobserved heterogeneity</strong>: units with the same covariates have different rates. We model it in two layers: \(Z \sim \text{Gamma}(\alpha, \beta)\) and \(Y \mid Z \sim \text{Poisson}(Z)\).</li>
+<li>The <strong>iterated expectation</strong> gives \(\mathbb E[Y] = \mathbb E[\mathbb E[Y \mid Z]] = \mathbb E[Z]\). The <strong>law of total variance</strong> gives \(\operatorname{Var}(Y) = \mathbb E[Z] + \operatorname{Var}(Z)\). So \(\operatorname{Var}(Y) - \mathbb E[Y] = \operatorname{Var}(Z) \gt 0\): <em>the excess variance is the variance of the rates</em>.</li>
+<li>Integrating the Poisson against the Gamma, the marginal is the <strong>negative binomial</strong> \(\text{NB}(r = \alpha,\; p = \beta/(1+\beta))\). The Gamma is chosen because it is conjugate: the integral has a closed form.</li>
+<li>For the GLM, \(Y_i \mid \varepsilon_i \sim \text{Poisson}(\mu_i\varepsilon_i)\) with \(\varepsilon_i \sim \text{Gamma}(\theta, \theta)\), giving \(\mathbb E[Y_i] = \mu_i\) and \(\operatorname{Var}(Y_i) = \mu_i + \mu_i^2/\theta\). As \(\theta \to \infty\) we are back to the Poisson.</li>
+<li>With \(\theta\) fixed the NB is an exponential family, so it is a GLM. It uses the log link, its coefficients read like Poisson ones, and \(\theta\) is estimated by maximum likelihood.</li>
+<li>Ignoring overdispersion does not bias the estimates but shrinks the standard errors: in the simulation the Poisson “95%” interval covered 48% of the time at \(\theta = 0.5\). The NB stayed close to 95% in every scenario and cost nothing when the data were Poisson.</li>
+</ol>
+
+<h2><span class="n">§16</span>Further reading</h2>
+
+<ul>
+<li>M. Greenwood and G. U. Yule (1920). <em>An inquiry into the nature of frequency distributions representative of multiple happenings…</em> Journal of the Royal Statistical Society, 83(2). The origin of the Poisson–Gamma mixture, with accident data.</li>
+<li>P. McCullagh and J. A. Nelder (1989). <em>Generalized Linear Models</em>, 2nd ed., ch. 6. Chapman &amp; Hall. Quasi-likelihood and overdispersion.</li>
+<li>J. F. Lawless (1987). <em>Negative binomial and mixed Poisson regression</em>. Canadian Journal of Statistics, 15(3).</li>
+<li>A. C. Cameron and P. K. Trivedi (2013). <em>Regression Analysis of Count Data</em>, 2nd ed. Cambridge. The complete reference on count models.</li>
+<li>J. M. Hilbe (2011). <em>Negative Binomial Regression</em>, 2nd ed. Cambridge. Practical, with many examples and the NB1, NB2 and other variants.</li>
+<li>A. Agresti (2015). <em>Foundations of Linear and Generalized Linear Models</em>, ch. 7. Wiley.</li>
+<li>W. N. Venables and B. D. Ripley (2002). <em>Modern Applied Statistics with S</em>, 4th ed., section 7.4. Springer. The basis of <code>glm.nb</code>.</li>
+</ul>

@@ -525,3 +525,12 @@ kind = "estatística · bootstrap"
 date = "2026-11-09"
 minutes = 35
 abstract = "Do zero ao rigor: o que é o bootstrap, como funcionam as versões não paramétrica e paramétrica, como construir cada intervalo de confiança e, em simulações com a resposta conhecida, quando cada uma acerta e quando quebra."
+
+[research.notes.negative-binomial]
+title = "Da Poisson à binomial negativa"
+seo_title = "Sobredispersão em MLG: por que trocar a Poisson pela binomial negativa"
+description = "Por que a sobredispersão num MLG de Poisson leva à binomial negativa: o modelo Y|Z com Z ~ Gama, esperança iterada E[E[Y|Z]], lei da variância total, a integral que dá a binomial negativa, o MLG NB2, estimação e simulações de cobertura."
+kind = "estatística · mlg"
+date = "2026-11-09"
+minutes = 30
+abstract = "Escreva a contagem em dois andares — uma taxa Gama para cada unidade, depois Poisson dada a taxa — e a esperança iterada, a variância total e uma integral mostram de onde vem a sobredispersão e por que a resposta é a binomial negativa. Depois, ajuste e simulação para medir o custo de ignorá-la."

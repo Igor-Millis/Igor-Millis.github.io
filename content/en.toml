@@ -525,3 +525,12 @@ kind = "statistics · bootstrap"
 date = "2026-11-09"
 minutes = 35
 abstract = "From zero to rigour: what the bootstrap is, how the non-parametric and parametric versions work, how to build each confidence interval and, in simulations where the answer is known, when each one gets it right and when it breaks."
+
+[research.notes.negative-binomial]
+title = "From Poisson to the negative binomial"
+seo_title = "Overdispersion in GLMs: why the Poisson gives way to the negative binomial"
+description = "Why overdispersion in a Poisson GLM leads to the negative binomial: the Y|Z model with Z ~ Gamma, the iterated expectation E[E[Y|Z]], the law of total variance, the integral that yields the negative binomial, the NB2 GLM, estimation and coverage simulations."
+kind = "statistics · glm"
+date = "2026-11-09"
+minutes = 30
+abstract = "Write the count in two layers — a Gamma rate for each unit, then Poisson given the rate — and the iterated expectation, the law of total variance and one integral show where overdispersion comes from and why the answer is the negative binomial. Then a fit and a simulation measure the cost of ignoring it."
