@@ -67,10 +67,10 @@ edu_title = "Degree and courses"
 edu_intro = "Formal training in Statistics, complemented by courses on taking machine learning to production."
 edu = [
   { when = "2020 — 2027", title = "B.Sc. in Statistics", place = "Universidade Federal do Espírito Santo (UFES)", text = "", now = true },
-  { when = "2026 — 2027", title = "MLOps and the Machine Learning Model Lifecycle", place = "Data Science Academy", text = "" },
-  { when = "2026 — 2027", title = "CI/CD Pipelines for Machine Learning and AI Operations", place = "Data Science Academy", text = "" },
   { when = "2026", title = "Software Engineering for Machine Learning", place = "Data Science Academy", text = "" },
   { when = "2026", title = "Development and Deployment of ML Models", place = "Data Science Academy", text = "" },
+  { when = "2026 — 2027", title = "MLOps and the Machine Learning Model Lifecycle", place = "Data Science Academy", text = "" },
+  { when = "2026 — 2027", title = "CI/CD Pipelines for Machine Learning and AI Operations", place = "Data Science Academy", text = "" },
 ]
 exp_label = "experience"
 exp_title = "Where I've applied it"
@@ -86,11 +86,11 @@ exp = [
     "Built a <strong>stock, orders and CRM platform</strong> with Lovable, structuring and digitizing B2B and B2C processes.",
     "Centralized commercial and operational information into one base to track stock, orders and customer behavior.",
   ], now = true },
-  { when = "2022 — 2024", org = "Junior Enterprise Movement", roles = ["Projects Director · CONSTAT", "President · CONSTAT", "Development Director · JUNIORES"], items = [
-    "Organized and quality-assured the delivery of statistical products, with <strong>high NPS</strong>.",
-    "<strong>Won a national case competition and award</strong> on management, data and planning.",
+  { when = "2021 — 2024", org = "Junior Enterprise Movement", roles = ["Projects Director · CONSTAT", "President · CONSTAT", "Development Director · JUNIORES"], items = [
+    "Organized, helped execute and quality-assured statistical products, with <strong>high NPS</strong>.",
+    "Created the plan and wrote a case that <strong>won a national competition and award</strong> on management, data and planning.",
     "Took part in two strategic plans, with KPIs and OKRs, for JUNIORES and CONSTAT.",
-    "Established a culture of data-driven decisions in management.",
+    "Began establishing a culture of data-driven decisions in management.",
   ] },
 ]
 focus_label = "focus"
