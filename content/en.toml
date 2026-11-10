@@ -475,7 +475,7 @@ title = "Articles — Igor Millis"
 description = "Articles and experiments by Igor Millis: statistical decisions, modeling, machine learning and computational implementations."
 label = "articles / 03"
 h1 = '''Notes from the <em class="voice">bench.</em>'''
-lede = "Studies, statistical experiments, mathematical modeling and implementations. Written to understand, not to impress — every number is reproducible from a linked source."
+lede = "Studies, class notes, computational and statistical experiments, implementations and tests. The posts below hold part of what I have been thinking since this blog was created. They may help you learn, apply or correct something, but the real purpose is the simple act of writing."
 list_label = "articles"
 format_label = "format"
 format = "Each note: a question, the math, real data, and what it changes in practice."

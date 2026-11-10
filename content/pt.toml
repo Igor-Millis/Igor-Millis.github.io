@@ -475,7 +475,7 @@ title = "Artigos — Igor Millis"
 description = "Artigos e experimentos de Igor Millis: decisões estatísticas, modelagem, machine learning e implementações computacionais."
 label = "artigos / 03"
 h1 = '''Notas da <em class="voice">bancada.</em>'''
-lede = "Estudos, experimentos estatísticos, modelagem matemática e implementações. Escritas para entender, não para impressionar — todo número é reproduzível a partir de uma fonte linkada."
+lede = "Estudos, anotações de aula, experimentos computacionais e estatísticos, implementações e testes. Os conteúdos abaixo guardam parte do que penso a partir do momento em que esse blog foi criado. Pode te ajudar a aprender, aplicar ou corrigir algo, mas o intuito verdadeiro é o simples ato de escrever."
 list_label = "artigos"
 format_label = "formato"
 format = "Cada nota: uma pergunta, a matemática, dados reais e o que isso muda na prática."
