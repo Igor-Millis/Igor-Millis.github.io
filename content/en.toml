@@ -82,8 +82,8 @@ exp = [
     "Implementing AI agents in the team's workflow.",
   ], now = true },
   { when = "2024 — present", org = "Cetti", roles = ["Management and Data Consulting"], items = [
-    "In practice, the company's management and data consultant: turning commercial and operational questions into structured information and decisions.",
-    "Built a <strong>stock, orders and CRM platform</strong> with Lovable, structuring and digitizing B2B and B2C processes.",
+    "The company's management and data consultant: turning commercial and operational questions into structured information and decisions.",
+    "Built a <strong>stock, orders and CRM platform</strong>, structuring and digitizing B2B and B2C processes.",
     "Centralized commercial and operational information into one base to track stock, orders and customer behavior.",
   ], now = true },
   { when = "2021 — 2024", org = "Junior Enterprise Movement", roles = ["Projects Director · CONSTAT", "President · CONSTAT", "Development Director · JUNIORES"], items = [

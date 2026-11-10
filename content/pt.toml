@@ -82,8 +82,8 @@ exp = [
     "Implementando agentes de IA no fluxo de trabalho da equipe.",
   ], now = true },
   { when = "2024 — atual", org = "Cetti", roles = ["Consultoria em Gestão e Dados"], items = [
-    "Na prática, o consultor de gestão e dados da empresa: transformo questões comerciais e operacionais em informação estruturada e decisão.",
-    "Desenvolvi uma <strong>plataforma de estoque, pedidos e CRM</strong> com Lovable, estruturando e digitalizando processos B2B e B2C.",
+    "Consultor de gestão e dados da empresa: transformo questões comerciais e operacionais em informação estruturada e decisão.",
+    "Desenvolvi uma <strong>plataforma de estoque, pedidos e CRM</strong>, estruturando e digitalizando processos B2B e B2C.",
     "Centralizei informações comerciais e operacionais numa base única para acompanhar estoque, pedidos e comportamento dos clientes.",
   ], now = true },
   { when = "2021 — 2024", org = "Movimento Empresa Júnior", roles = ["Diretor de Projetos · CONSTAT", "Diretor-Presidente · CONSTAT", "Diretor de Desenvolvimento · JUNIORES"], items = [
