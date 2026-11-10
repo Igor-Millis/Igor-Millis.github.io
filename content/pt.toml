@@ -53,10 +53,12 @@ description = "Sobre Igor Millis: graduando em Estatística na UFES com foco em 
 label = "sobre / 01"
 h1 = '''Rigor primeiro. <em class="voice">Depois,</em> escala.'''
 paragraphs = [
-  "Vejo a Estatística como uma forma de entender fenômenos: investigar padrões, quantificar incertezas e construir modelos que representem problemas reais. Gosto de saber o que há por trás dos métodos — do fundamento matemático à implementação.",
+  "Vejo a Estatística como uma forma de entender fenômenos: investigar padrões, quantificar incertezas e construir modelos que representem problemas reais, isso é a explicação bonita. A verdadeira explicação é que a estatística e a computação são minhas ferramentas preferidas para encontrar soluções sobre problemas que eu gosto.",
+  "<strong>Quem eu sou?</strong>",
   "Sou graduando em Estatística na UFES e direciono meus projetos para Data Science, Machine Learning, IA e Engenharia de Dados, combinando rigor estatístico e desenvolvimento de software.",
-  "Penso em produto de ponta a ponta: requisitos, usuários, fraquezas e uso real — tudo no papel antes do código. Curiosidade, constância e intensidade (minha principal característica) guiam o que construo. Não demonstrações de ferramentas: projetos que testam hipóteses, expõem seus limites e resolvem algo de fato.",
-  "Aqui é onde matemática, dados e tecnologia se encontram — projetos, experimentos e estudos que acompanham minha evolução.",
+  "Gosto de pensar em produto de ponta a ponta: requisitos, usuários, fraquezas e uso real — tudo no papel antes do código (mesmo que eu não execute sozinho!). Curiosidade, constância e intensidade (minha principal característica) guiam o que construo. Não demonstrações de ferramentas: projetos que testam hipóteses, expõem seus limites e resolvem algo de fato.",
+  "Aqui é uma união entre matemática, dados e tecnologia - projetos, experimentos e estudos que acompanham minha evolução.",
+  "Mantenho aqui também os posts/projetos/textos dos quais discordo, já atualizei e/ou estou atualizando, aqui é apenas um breve resumo do que construo.",
 ]
 portrait_alt = "Igor Millis falando ao microfone em um evento"
 portrait_cap = ["fig. 1 — igor millis", ""]

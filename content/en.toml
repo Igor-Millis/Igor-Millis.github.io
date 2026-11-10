@@ -53,10 +53,12 @@ description = "About Igor Millis: Statistics student at UFES focused on data sci
 label = "about / 01"
 h1 = '''Rigor first. <em class="voice">Then</em> scale.'''
 paragraphs = [
-  "I see Statistics as a way to understand phenomena: finding patterns, quantifying uncertainty and building models that represent real problems. I care about what sits beneath the methods — from the mathematical foundations to the implementation.",
+  "I see Statistics as a way to understand phenomena: finding patterns, quantifying uncertainty and building models that represent real problems — that is the pretty explanation. The real one is that statistics and computing are my favourite tools for finding solutions to problems I enjoy.",
+  "<strong>Who am I?</strong>",
   "I'm an undergraduate Statistics student at UFES, focused on Data Science, Machine Learning, AI and Data Engineering, combining statistical rigor with software engineering.",
-  "I think in products, end to end: requirements, users, weaknesses and real-world use — everything on paper before any code. Curiosity, consistency and intensity (my defining trait) drive what I build. Not tool demos: projects that test hypotheses, expose their limits and actually solve something.",
-  "This is where math, data and technology meet — projects, experiments and studies that track how I'm evolving.",
+  "I like to think in products, end to end: requirements, users, weaknesses and real-world use — everything on paper before any code (even if I don't build it all on my own!). Curiosity, consistency and intensity (my defining trait) drive what I build. Not tool demos: projects that test hypotheses, expose their limits and actually solve something.",
+  "This is a meeting point of math, data and technology — projects, experiments and studies that track how I'm evolving.",
+  "I also keep here the posts, projects and texts I now disagree with, have already updated or am still updating; this is just a brief summary of what I build.",
 ]
 portrait_alt = "Igor Millis speaking into a microphone at an event"
 portrait_cap = ["fig. 1 — igor millis", ""]
