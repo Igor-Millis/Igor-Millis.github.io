@@ -76,10 +76,13 @@ exp_label = "experiência"
 exp_title = "Onde coloquei em prática"
 exp = [
   { when = "jan 2026 — atual", org = "Instituto Jones dos Santos Neves (IJSN)", roles = ["Estagiário de pesquisa"], items = [
-    "Conduzo a construção, a previsão e a análise dos indicadores que apoiam o <strong>Plano Estadual de Educação 2026–2036</strong>.",
-    "Trabalho de análise, engenharia e predição de dados públicos.",
-    "Implantei <strong>Git + GitHub</strong> para versionar, documentar e armazenar os projetos da equipe.",
-    "Implementando agentes de IA no fluxo de trabalho da equipe.",
+    "Construção de Skills e Agentes de IA.",
+    "Modelagem de séries temporais.",
+    "Machine Learning.",
+    "Criação de indicadores sintéticos.",
+    "Engenharia de dados para ETL e organização interna.",
+    "Implementação de <strong>Git + GitHub</strong> para versionar, documentar e armazenar os projetos da equipe.",
+    "Construção, previsão e análise dos indicadores que apoiam o <strong>Plano Estadual de Educação 2026–2036</strong>.",
   ], now = true },
   { when = "2024 — atual", org = "Cetti", roles = ["Consultoria em Gestão e Dados"], items = [
     "Consultor de gestão e dados da empresa: transformo questões comerciais e operacionais em informação estruturada e decisão.",

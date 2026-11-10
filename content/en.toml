@@ -76,10 +76,13 @@ exp_label = "experience"
 exp_title = "Where I've applied it"
 exp = [
   { when = "jan 2026 — present", org = "Instituto Jones dos Santos Neves (IJSN)", roles = ["Research intern"], items = [
-    "Build, forecast and analyze the indicators that support Espírito Santo's <strong>State Education Plan 2026–2036</strong>.",
-    "Analysis, engineering and prediction work on public data.",
-    "Introduced <strong>Git + GitHub</strong> to version, document and store the team's projects.",
-    "Implementing AI agents in the team's workflow.",
+    "Building AI skills and agents.",
+    "Time series modeling.",
+    "Machine learning.",
+    "Building composite indicators.",
+    "Data engineering for ETL and internal organization.",
+    "Introducing <strong>Git + GitHub</strong> to version, document and store the team's projects.",
+    "Building, forecasting and analyzing the indicators that support Espírito Santo's <strong>State Education Plan 2026–2036</strong>.",
   ], now = true },
   { when = "2024 — present", org = "Cetti", roles = ["Management and Data Consulting"], items = [
     "The company's management and data consultant: turning commercial and operational questions into structured information and decisions.",
