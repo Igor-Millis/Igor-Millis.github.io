@@ -1,0 +1,248 @@
+<p>Quem usa o Claude no dia a dia acaba repetindo as mesmas instruções: “use o modelo de relatório da empresa”, “formate as datas assim”, “gráfico sem pizza, por favor”. Uma <strong>skill</strong> é o jeito de escrever essas instruções <em>uma vez</em>, guardar numa pasta e deixar o Claude usá-las sozinho sempre que a tarefa pedir. Este artigo explica, do zero, o que é uma skill, como ela funciona por dentro, quando vale a pena criar uma e como montá-la passo a passo. Para não ficar só na teoria, no fim construo uma skill completa: uma que ensina o Claude a fazer gráficos seguindo os princípios do livro <em>Storytelling com Dados</em>, de Cole Nussbaumer Knaflic.</p>
+
+<div class="note"><strong>Sobre o livro.</strong> A skill e as seções §8–§9 resumem as ideias do livro com palavras minhas e exemplos inventados por mim; não reproduzem o texto nem as figuras da obra, que é protegida por direitos autorais. O resumo serve para o Claude aplicar os princípios — para os estudos de caso e a argumentação completa, leia o livro (ed. brasileira pela Alta Books).</div>
+
+<h2><span class="n">§1</span>O que é uma skill</h2>
+
+<p>Uma skill (“habilidade”) é <strong>uma pasta com instruções e, opcionalmente, arquivos de apoio</strong>, que o Claude carrega quando a tarefa combina com ela. O coração da pasta é um arquivo chamado <code>SKILL.md</code>: um texto em Markdown com um pequeno cabeçalho que diz o nome da skill e quando usá-la. Ao lado dele podem existir documentos de referência, modelos, exemplos e scripts.</p>
+
+<p>Uma analogia: o Claude é um profissional competente e generalista. Uma skill é o <strong>manual de procedimentos</strong> que você entrega a ele no primeiro dia — “aqui fazemos relatórios assim”, “nossos gráficos seguem estas regras”, “este script converte a planilha do jeito certo”. Ele não precisa decorar o manual: sabe que existe, sabe para que serve e abre a página certa quando precisa.</p>
+
+<p>Três coisas definem uma skill:</p>
+<ul>
+<li><strong>É conhecimento de procedimento</strong>, não de fatos. Ensina <em>como fazer</em> algo do seu jeito (o fluxo, o padrão, as armadilhas), não informações que mudam toda semana.</li>
+<li><strong>É ativada pelo contexto.</strong> Você não precisa chamá-la: o Claude decide usá-la quando o pedido combina com a descrição. No Claude Code, também dá para chamá-la explicitamente com <code>/nome-da-skill</code>.</li>
+<li><strong>É portátil.</strong> A mesma pasta funciona no Claude Code, no app do Claude (claude.ai) e pela API. Dá para versionar no Git e compartilhar com a equipe.</li>
+</ul>
+
+<h2><span class="n">§2</span>Como funciona por dentro: carregamento em camadas</h2>
+
+<p>O detalhe que torna as skills práticas é que elas <strong>não ocupam o contexto do modelo o tempo todo</strong>. O contexto (o “espaço de trabalho” do modelo, medido em tokens) é limitado; se cada skill instalada despejasse todo o seu conteúdo em cada conversa, não daria para ter muitas. Por isso o carregamento acontece em três níveis — o que a Anthropic chama de <em>progressive disclosure</em> (revelação progressiva):</p>
+
+<div class="tbl-wrap"><table class="txt"><thead><tr><th scope=col>Nível</th><th scope=col>O que é carregado</th><th scope=col>Quando</th><th scope=col>Custo</th></tr></thead><tbody>
+<tr><td>1 · metadados</td><td>Só o <code>name</code> e a <code>description</code> do cabeçalho</td><td>Sempre, no início de cada sessão</td><td>Dezenas de tokens por skill</td></tr>
+<tr><td>2 · instruções</td><td>O corpo do <code>SKILL.md</code></td><td>Quando o Claude decide que a skill se aplica ao pedido</td><td>Idealmente até alguns milhares de tokens</td></tr>
+<tr><td>3 · recursos</td><td>Arquivos de referência, modelos, scripts</td><td>Só quando as instruções mandam e a tarefa precisa</td><td>Só o que for lido; scripts podem rodar sem que o código entre no contexto</td></tr>
+</tbody></table></div>
+
+<p>Na prática: o Claude “sabe” que existe uma skill de gráficos porque leu a descrição de uma linha. Quando você pede um gráfico, ele abre o <code>SKILL.md</code>. Se o <code>SKILL.md</code> diz “para escolher o tipo de gráfico, consulte <code>references/escolha-do-grafico.md</code>”, ele abre esse arquivo — e só ele. Por isso dá para instalar dezenas de skills sem pesar, e por isso uma skill pode carregar material extenso: o que não for necessário fica no disco.</p>
+
+<h2><span class="n">§3</span>Skill, prompt, CLAUDE.md, MCP, subagente: qual usar</h2>
+
+<p>O ecossistema do Claude tem várias formas de “ensinar” ou “equipar” o modelo, e é fácil confundir. A diferença está em <strong>quando</strong> a coisa é carregada e <strong>o que</strong> ela fornece:</p>
+
+<div class="tbl-wrap"><table class="txt"><thead><tr><th scope=col>Recurso</th><th scope=col>O que fornece</th><th scope=col>Quando entra em ação</th><th scope=col>Use para</th></tr></thead><tbody>
+<tr><td>Prompt na conversa</td><td>Instrução pontual</td><td>Só nessa conversa</td><td>Algo que você vai pedir uma vez</td></tr>
+<tr><td><code>CLAUDE.md</code> / instruções do projeto</td><td>Regras sempre válidas para um projeto</td><td>Sempre, em toda conversa do projeto</td><td>Convenções curtas que valem para tudo (“use pnpm”, “testes em pytest”)</td></tr>
+<tr><td><strong>Skill</strong></td><td>Procedimento especializado + arquivos de apoio</td><td>Só quando a tarefa combina</td><td>Fluxos que se repetem, mas não em toda conversa</td></tr>
+<tr><td>MCP (conector)</td><td>Acesso a sistemas externos (ferramentas e dados)</td><td>Quando o Claude chama a ferramenta</td><td>Ler o Google Drive, consultar um banco, abrir tickets</td></tr>
+<tr><td>Subagente</td><td>Outro “Claude” com contexto próprio</td><td>Quando o trabalho é delegado</td><td>Tarefas longas e paralelas que poluiriam a conversa principal</td></tr>
+</tbody></table></div>
+
+<p>Uma forma simples de pensar: <strong>MCP dá ao Claude mãos</strong> (acesso a sistemas); <strong>skill dá ao Claude know-how</strong> (como fazer bem). Os dois se combinam: um conector MCP traz os dados de vendas; uma skill diz como transformá-los num gráfico que comunica.</p>
+
+<h2><span class="n">§4</span>Para que serve, e quando criar uma</h2>
+
+<p><strong>Vale a pena criar uma skill quando:</strong></p>
+<ul>
+<li><strong>Você se pega repetindo as mesmas instruções</strong> em conversas diferentes. Se já colou o mesmo parágrafo de orientação três vezes, ele deveria ser uma skill.</li>
+<li><strong>Há um padrão da casa</strong>: identidade visual, formato de relatório, estrutura de proposta, guia de estilo de escrita, convenções de código de uma biblioteca interna.</li>
+<li><strong>A tarefa tem um fluxo com várias etapas</strong> que o modelo costuma pular ou fazer fora de ordem: revisão de contrato contra um checklist, análise de dados com validação, preparação de release.</li>
+<li><strong>Existe conhecimento de domínio</strong> que o modelo não tem ou aplica de forma inconsistente: as regras de um livro de referência (como o desta demonstração), normas da empresa, particularidades de um formato de arquivo.</li>
+<li><strong>Parte do trabalho é determinística</strong> e deveria ser código, não texto gerado: converter formatos, validar um arquivo, aplicar um estilo. A skill pode trazer o script pronto.</li>
+</ul>
+
+<p><strong>Não vale a pena quando:</strong></p>
+<ul>
+<li>É algo de uma vez só — escreva no prompt.</li>
+<li>É uma regra que vale para <em>tudo</em> num projeto — vai no <code>CLAUDE.md</code>.</li>
+<li>O que falta é <em>acesso</em> a um sistema, não instrução — isso é um conector MCP.</li>
+<li>A informação muda toda semana (preços, estoque, notícias) — a skill envelhece; busque o dado na hora.</li>
+</ul>
+
+<h2><span class="n">§5</span>Anatomia de uma skill</h2>
+
+<p>A estrutura mínima é uma pasta com um arquivo. A estrutura típica, a da skill que vou construir, é esta:</p>
+
+<pre class="code">storytelling-charts/
+├── SKILL.md                     # obrigatório: cabeçalho + instruções principais
+├── references/                  # lidos sob demanda
+│   ├── principios.md            #   os princípios completos, com o porquê
+│   ├── escolha-do-grafico.md    #   tabela pergunta → tipo de gráfico
+│   └── checklist.md             #   revisão antes de entregar
+└── scripts/
+    └── sc_style.py              # ajudantes de matplotlib (estilo, rótulos diretos)</pre>
+
+<p>O <code>SKILL.md</code> começa com um cabeçalho em YAML, entre linhas de <code>---</code>:</p>
+
+<pre class="code">---
+name: storytelling-charts
+description: Monta gráficos explicativos que comunicam uma mensagem, seguindo
+  os princípios de "Storytelling com Dados". Use sempre que o usuário pedir um
+  gráfico, visualização, slide com dados ou dashboard para apresentar a alguém,
+  e quando pedir para revisar ou "deixar mais claro" um gráfico existente.
+---
+
+# Gráficos com storytelling
+
+Esta skill transforma "fazer um gráfico" em "comunicar uma conclusão com dados".
+...</pre>
+
+<ul>
+<li><strong><code>name</code></strong>: identificador da skill — letras minúsculas, números e hífens, até 64 caracteres. É o que aparece em <code>/storytelling-charts</code>.</li>
+<li><strong><code>description</code></strong>: o campo mais importante da skill inteira (até 1.024 caracteres). É a única coisa que o Claude vê antes de decidir se usa ou não. Precisa dizer <em>o que</em> a skill faz e <em>quando</em> usá-la.</li>
+<li><strong>Corpo</strong>: as instruções, em Markdown comum. Escreva como escreveria para um colega competente que nunca viu o seu processo: imperativo, direto, com exemplos. A recomendação é manter o <code>SKILL.md</code> abaixo de umas 500 linhas e mover o detalhe para arquivos em <code>references/</code>.</li>
+<li><strong>Arquivos de apoio</strong>: o corpo precisa <em>apontar</em> para eles (“leia <code>references/principios.md</code> na primeira vez”). Um arquivo que nenhuma instrução menciona provavelmente nunca será aberto.</li>
+</ul>
+
+<p>No Claude Code, o cabeçalho aceita campos opcionais além desses dois — por exemplo, restringir quais ferramentas a skill pode usar. Para começar, <code>name</code> e <code>description</code> bastam.</p>
+
+<h2><span class="n">§6</span>Montando passo a passo</h2>
+
+<p><strong>1. Faça a tarefa uma vez, na conversa, sem skill.</strong> Peça o gráfico, corrija o que sair errado, anote cada correção que você precisou dar. Essas correções são o conteúdo da skill. Uma skill escrita antes de você ter feito a tarefa à mão costuma ensinar o óbvio e esquecer o que importa.</p>
+
+<p><strong>2. Escreva a descrição.</strong> Ela deve conter as palavras que você usaria ao pedir (“gráfico”, “visualização”, “slide”, “dashboard”) e os limites (“não use para gráficos exploratórios rápidos”). Descrições vagas — “ajuda com dados” — fazem a skill disparar na hora errada ou nunca.</p>
+
+<p><strong>3. Escreva o corpo como um processo.</strong> Etapas numeradas, na ordem em que devem acontecer, com o <em>porquê</em> de cada regra. Explicar o motivo (“pizza dificulta comparar porque o olho mede mal ângulos”) funciona melhor do que só proibir: o modelo generaliza para casos que você não previu.</p>
+
+<p><strong>4. Mova o detalhe para <code>references/</code>.</strong> Tabelas longas, catálogos, exemplos extensos, regras de nicho. O <code>SKILL.md</code> fica enxuto e diz quando abrir cada arquivo.</p>
+
+<p><strong>5. Transforme o que é mecânico em script.</strong> Se toda vez o modelo reescreve as mesmas 30 linhas de configuração do matplotlib, ponha essas linhas num <code>.py</code> e mande a skill usá-lo. Código é determinístico, testável e não gasta contexto para ser “lembrado”.</p>
+
+<p><strong>6. Instale.</strong> Onde a pasta vai depende de onde você usa o Claude:</p>
+
+<div class="tbl-wrap"><table class="txt"><thead><tr><th scope=col>Onde</th><th scope=col>Como instalar</th><th scope=col>Quem enxerga</th></tr></thead><tbody>
+<tr><td>Claude Code, pessoal</td><td>Copiar a pasta para <code>~/.claude/skills/</code></td><td>Você, em todos os projetos</td></tr>
+<tr><td>Claude Code, projeto</td><td>Copiar para <code>.claude/skills/</code> dentro do repositório e fazer commit</td><td>Todos que clonarem o projeto</td></tr>
+<tr><td>Claude Code, plugin</td><td>Empacotar num plugin e distribuir por um marketplace</td><td>Quem instalar o plugin</td></tr>
+<tr><td>App do Claude (claude.ai)</td><td>Compactar a pasta em .zip e enviar nas configurações de skills/capacidades</td><td>Sua conta (ou a organização, se o admin publicar)</td></tr>
+<tr><td>API</td><td>Enviar a skill pela API de skills e referenciá-la na requisição (requer a ferramenta de execução de código)</td><td>Sua aplicação</td></tr>
+</tbody></table></div>
+
+<p>Para esta skill, no Claude Code:</p>
+
+<pre class="code"># pessoal (vale em qualquer projeto)
+cp -r skills/storytelling-charts ~/.claude/skills/
+
+# ou só neste repositório
+mkdir -p .claude/skills &amp;&amp; cp -r skills/storytelling-charts .claude/skills/</pre>
+
+<p><strong>7. Teste e ajuste</strong> (detalhes na §10).</p>
+
+<h2><span class="n">§7</span>A descrição: o detalhe que decide tudo</h2>
+
+<p>Como só o nome e a descrição ficam sempre visíveis, uma skill excelente com descrição ruim é uma skill que não roda. Três regras práticas:</p>
+<ul>
+<li><strong>Diga o gatilho, não só o tema.</strong> “Princípios de visualização” descreve um assunto; “Use sempre que o usuário pedir um gráfico, slide com dados ou dashboard” descreve uma situação. O Claude decide por situação.</li>
+<li><strong>Inclua os sinônimos que as pessoas usam.</strong> Gráfico, chart, plot, visualização, figura. Também casos indiretos: “revisar um gráfico existente”, “deixar mais claro”.</li>
+<li><strong>Diga quando <em>não</em> usar</strong>, se houver uma fronteira natural. Isso evita que a skill entre em tarefas vizinhas.</li>
+</ul>
+
+<p>Os modelos tendem a <em>subusar</em> skills — na dúvida, não carregam. Por isso a descrição pode (e deve) ser um pouco insistente: “use sempre que…” funciona melhor que “pode ser usada para…”.</p>
+
+<h2><span class="n">§8</span>A demonstração: o livro em seis etapas</h2>
+
+<p><em>Storytelling com Dados</em> é um dos livros mais usados para ensinar comunicação com gráficos no mundo corporativo. A tese central é que <strong>um gráfico explicativo é um argumento</strong>: existe para levar uma audiência específica a entender algo e agir, e os padrões dos softwares (feitos para servir a qualquer dado) quase nunca servem a esse objetivo. O livro organiza o trabalho em seis lições, que viraram as seis etapas do <code>SKILL.md</code>:</p>
+
+<ol>
+<li><strong>Entender o contexto.</strong> Antes de abrir o software: <em>quem</em> é a audiência (específica, não “a diretoria”), <em>o que</em> ela deve saber ou fazer e <em>como</em> vai ver (apresentação ao vivo ou documento lido sozinho). Separar a análise <em>exploratória</em> (procurar o que é interessante) da <em>explicativa</em> (mostrar o que você achou). Resumir tudo numa <strong>ideia central</strong> — uma frase com ponto de vista e o que está em jogo — e conseguir contar a história em três minutos. Rascunhar a sequência em papel (storyboard) antes de produzir.</li>
+<li><strong>Escolher o visual adequado.</strong> Um repertório pequeno resolve quase tudo: texto simples para um ou dois números, tabela, mapa de calor, dispersão, linhas, inclinação, barras (verticais, horizontais, empilhadas), cascata. Evitar pizza e rosca, 3D e eixo duplo. Barras sempre com base zero.</li>
+<li><strong>Eliminar a poluição.</strong> Cada elemento sem função aumenta a carga cognitiva. Os princípios da Gestalt (proximidade, similaridade, fechamento, continuidade, conexão, cerco) explicam por que bordas, grades e legendas costumam ser dispensáveis. Alinhar, usar espaço em branco, rotular diretamente.</li>
+<li><strong>Focar a atenção.</strong> Os atributos pré-atentivos — cor, intensidade, tamanho, posição, negrito — são percebidos antes da leitura consciente. A receita: tudo em cinza, cor só onde está a mensagem. Se tudo se destaca, nada se destaca.</li>
+<li><strong>Pensar como designer.</strong> Deixar claro como “usar” o gráfico (o que olhar primeiro), torná-lo acessível (título que afirma, eixos rotulados, anotações, linguagem simples), cuidar da estética e planejar a aceitação de formatos novos pela audiência.</li>
+<li><strong>Contar uma história.</strong> Começo (contexto e conflito), meio (os dados que desenvolvem o problema e as opções), fim (a chamada à ação). Verificar pelos títulos dos slides lidos em sequência (lógica horizontal) e pelo conteúdo de cada slide (lógica vertical). Repetir a mensagem no começo e no fim.</li>
+</ol>
+
+<p>O arquivo <a href="https://github.com/Igor-Millis/Igor-Millis.github.io/blob/main/skills/storytelling-charts/references/principios.md"><code>references/principios.md</code></a> desenvolve cada etapa com o porquê, os padrões recorrentes de bons gráficos e as táticas de narrativa; <a href="https://github.com/Igor-Millis/Igor-Millis.github.io/blob/main/skills/storytelling-charts/references/escolha-do-grafico.md"><code>escolha-do-grafico.md</code></a> traz a tabela “pergunta do leitor → gráfico”; <a href="https://github.com/Igor-Millis/Igor-Millis.github.io/blob/main/skills/storytelling-charts/references/checklist.md"><code>checklist.md</code></a> é a revisão final. A pasta completa está no <a href="https://github.com/Igor-Millis/Igor-Millis.github.io/tree/main/skills/storytelling-charts">repositório deste site</a>.</p>
+
+<h2><span class="n">§9</span>Antes e depois</h2>
+
+<p>Os mesmos dados (inventados) em duas versões. Primeiro, o que sai de um software com as configurações padrão, ou de um pedido genérico “faça um gráfico das devoluções por linha”:</p>
+
+<figure class="panel">
+  <div class="panel-h"><span><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>antes · padrões do software</span><span>dados ilustrativos</span></div>
+  <div class="panel-b chart">
+<svg viewBox="0 0 640 330" role="img" aria-label="Gráfico de linhas com três séries coloridas, grade, marcadores, borda e legenda" style="width:100%;height:auto;font-family:var(--f-mono);font-size:11px">
+  <text x="320" y="20" text-anchor="middle" fill="var(--text)" font-size="14">Devoluções por mês</text>
+  <rect x="60" y="40" width="460" height="240" fill="none" stroke="var(--text-3)"/>
+  <g stroke="var(--line)" stroke-width="1">
+    <line x1="60" x2="520" y1="232" y2="232"/><line x1="60" x2="520" y1="184" y2="184"/><line x1="60" x2="520" y1="136" y2="136"/><line x1="60" x2="520" y1="88" y2="88"/>
+    <line x1="117.5" x2="117.5" y1="40" y2="280"/><line x1="175" x2="175" y1="40" y2="280"/><line x1="232.5" x2="232.5" y1="40" y2="280"/><line x1="290" x2="290" y1="40" y2="280"/><line x1="347.5" x2="347.5" y1="40" y2="280"/><line x1="405" x2="405" y1="40" y2="280"/><line x1="462.5" x2="462.5" y1="40" y2="280"/>
+  </g>
+  <g fill="var(--text-2)" text-anchor="end"><text x="54" y="284">0,00</text><text x="54" y="236">100,00</text><text x="54" y="188">200,00</text><text x="54" y="140">300,00</text><text x="54" y="92">400,00</text><text x="54" y="44">500,00</text></g>
+  <g fill="var(--text-2)" text-anchor="end">
+    <text transform="translate(64 296) rotate(-40)">01/01/2026</text><text transform="translate(121.5 296) rotate(-40)">01/02/2026</text><text transform="translate(179 296) rotate(-40)">01/03/2026</text><text transform="translate(236.5 296) rotate(-40)">01/04/2026</text><text transform="translate(294 296) rotate(-40)">01/05/2026</text><text transform="translate(351.5 296) rotate(-40)">01/06/2026</text><text transform="translate(409 296) rotate(-40)">01/07/2026</text><text transform="translate(466.5 296) rotate(-40)">01/08/2026</text><text transform="translate(524 296) rotate(-40)">01/09/2026</text>
+  </g>
+  <polyline fill="none" stroke="#d62728" stroke-width="2" points="60,179.2 117.5,181.6 175,169.6 232.5,131.2 290,107.2 347.5,90.4 405,78.4 462.5,68.8 520,64"/>
+  <polyline fill="none" stroke="#2ca02c" stroke-width="2" points="60,97.6 117.5,102.4 175,92.8 232.5,95.2 290,97.6 347.5,90.4 405,88 462.5,92.8 520,95.2"/>
+  <polyline fill="none" stroke="#9467bd" stroke-width="2" points="60,208 117.5,203.2 175,205.6 232.5,204.2 290,200.8 347.5,203.2 405,198.4 462.5,199.4 520,197.4"/>
+  <g fill="#d62728"><circle cx="60" cy="179.2" r="3.5"/><circle cx="117.5" cy="181.6" r="3.5"/><circle cx="175" cy="169.6" r="3.5"/><circle cx="232.5" cy="131.2" r="3.5"/><circle cx="290" cy="107.2" r="3.5"/><circle cx="347.5" cy="90.4" r="3.5"/><circle cx="405" cy="78.4" r="3.5"/><circle cx="462.5" cy="68.8" r="3.5"/><circle cx="520" cy="64" r="3.5"/></g>
+  <g fill="#2ca02c"><circle cx="60" cy="97.6" r="3.5"/><circle cx="117.5" cy="102.4" r="3.5"/><circle cx="175" cy="92.8" r="3.5"/><circle cx="232.5" cy="95.2" r="3.5"/><circle cx="290" cy="97.6" r="3.5"/><circle cx="347.5" cy="90.4" r="3.5"/><circle cx="405" cy="88" r="3.5"/><circle cx="462.5" cy="92.8" r="3.5"/><circle cx="520" cy="95.2" r="3.5"/></g>
+  <g fill="#9467bd"><circle cx="60" cy="208" r="3.5"/><circle cx="117.5" cy="203.2" r="3.5"/><circle cx="175" cy="205.6" r="3.5"/><circle cx="232.5" cy="204.2" r="3.5"/><circle cx="290" cy="200.8" r="3.5"/><circle cx="347.5" cy="203.2" r="3.5"/><circle cx="405" cy="198.4" r="3.5"/><circle cx="462.5" cy="199.4" r="3.5"/><circle cx="520" cy="197.4" r="3.5"/></g>
+  <rect x="534" y="120" width="98" height="70" fill="none" stroke="var(--text-3)"/>
+  <g fill="var(--text-2)"><rect x="542" y="132" width="14" height="3" fill="#d62728"/><text x="562" y="137">Infantil</text><rect x="542" y="152" width="14" height="3" fill="#2ca02c"/><text x="562" y="157">Adulto</text><rect x="542" y="172" width="14" height="3" fill="#9467bd"/><text x="562" y="177">Esporte</text></g>
+</svg>
+  </div>
+  <figcaption style="padding:0 18px 16px">Tudo tem o mesmo peso visual. O título descreve, não conclui; o leitor precisa ir à legenda e voltar para saber qual linha é qual; vermelho × verde é a combinação que mais confunde daltônicos; nada diz o que aconteceu em março.</figcaption>
+</figure>
+
+<p>Agora o mesmo gráfico depois de passar pelas seis etapas da skill. A ideia central foi definida primeiro: <em>as devoluções da linha infantil dobraram depois da troca de fornecedor em março</em>. Todo o resto serve a essa frase:</p>
+
+<figure class="panel">
+  <div class="panel-h"><span><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>depois · com a skill</span><span>dados ilustrativos</span></div>
+  <div class="panel-b chart">
+<svg viewBox="0 0 640 340" role="img" aria-label="Gráfico de linhas: Adulto e Esporte em cinza, estáveis; Infantil em destaque, sobe de cerca de 210 para 450 devoluções por mês após a troca de fornecedor em março" style="width:100%;height:auto;font-family:var(--f-sans, sans-serif);font-size:12px">
+  <text x="0" y="18" fill="var(--text)" font-size="16" font-weight="600">Devoluções da linha infantil dobraram após a troca de fornecedor</text>
+  <text x="0" y="38" fill="var(--text-2)" font-size="12">Devoluções por mês, por linha de produto, jan–set 2026</text>
+  <line x1="60" x2="520" y1="300" y2="300" stroke="var(--text-3)"/>
+  <g fill="var(--text-3)" text-anchor="end" font-size="11"><text x="52" y="304">0</text><text x="52" y="208">200</text><text x="52" y="112">400</text></g>
+  <g fill="var(--text-3)" text-anchor="middle" font-size="11"><text x="60" y="318">jan</text><text x="117.5" y="318">fev</text><text x="175" y="318">mar</text><text x="232.5" y="318">abr</text><text x="290" y="318">mai</text><text x="347.5" y="318">jun</text><text x="405" y="318">jul</text><text x="462.5" y="318">ago</text><text x="520" y="318">set</text></g>
+  <line x1="203.75" x2="203.75" y1="70" y2="300" stroke="var(--text-3)" stroke-dasharray="2 3"/>
+  <text x="209" y="78" fill="var(--text-2)" font-size="11">troca de fornecedor</text>
+  <polyline fill="none" stroke="var(--text-3)" stroke-width="2" points="60,117.6 117.5,122.4 175,112.8 232.5,115.2 290,117.6 347.5,110.4 405,108 462.5,112.8 520,115.2"/>
+  <polyline fill="none" stroke="var(--text-3)" stroke-width="2" points="60,228 117.5,223.2 175,225.6 232.5,224.2 290,220.8 347.5,223.2 405,218.4 462.5,219.4 520,217.4"/>
+  <polyline fill="none" stroke="var(--accent)" stroke-width="3.5" points="60,199.2 117.5,201.6 175,189.6 232.5,151.2 290,127.2 347.5,110.4 405,98.4 462.5,88.8 520,84"/>
+  <circle cx="175" cy="189.6" r="4" fill="var(--accent)"/><circle cx="520" cy="84" r="4" fill="var(--accent)"/>
+  <text x="175" y="210" fill="var(--accent)" font-size="11" text-anchor="middle">230</text>
+  <text x="528" y="88" fill="var(--accent)" font-weight="600">Infantil · 450</text>
+  <text x="528" y="119" fill="var(--text-3)">Adulto</text>
+  <text x="528" y="221" fill="var(--text-3)">Esporte</text>
+  <text x="0" y="338" fill="var(--text-3)" font-size="10">Fonte: dados ilustrativos.</text>
+</svg>
+  </div>
+  <figcaption style="padding:0 18px 16px">O título afirma a conclusão; a única cor está na série que importa; os rótulos diretos substituem a legenda; a linha pontilhada explica a mudança; só os dois valores que contam a história aparecem.</figcaption>
+</figure>
+
+<p>Repare no que <em>saiu</em>: borda, grade, marcadores, legenda, decimais, datas inclinadas, duas cores. E no que <em>entrou</em>: uma frase de conclusão, uma anotação, dois números. Num slide, o próximo passo seria a chamada à ação — por exemplo, “propomos voltar ao fornecedor anterior para a coleção de Natal” — e, ao apresentar, revelar primeiro as linhas cinza (o normal), depois a azul (o problema).</p>
+
+<p>O script <code>scripts/sc_style.py</code> da skill gera essa versão em matplotlib com poucas chamadas: <code>setup()</code> aplica os padrões, <code>declutter()</code> remove bordas e marcas, <code>label_line_end()</code> coloca o rótulo na ponta da linha e <code>title_block()</code> monta o título de conclusão alinhado à esquerda. Rodar o arquivo direto produz o gráfico de demonstração:</p>
+
+<pre class="code">python skills/storytelling-charts/scripts/sc_style.py demo.png</pre>
+
+<h2><span class="n">§10</span>Testar e melhorar a skill</h2>
+
+<p>Uma skill é um texto que muda o comportamento de um modelo — e só dá para saber se funciona testando. Um roteiro enxuto:</p>
+<ul>
+<li><strong>Teste o gatilho.</strong> Faça pedidos que <em>deveriam</em> ativar a skill (“monta um gráfico das vendas por região para a reunião”) e pedidos vizinhos que <em>não</em> deveriam (“qual a média dessa coluna?”). Se ela não dispara ou dispara demais, o problema está na <code>description</code>.</li>
+<li><strong>Compare com e sem.</strong> Mesmo pedido, numa sessão com a skill e noutra sem. Se o resultado é igual, a skill não está ensinando nada que o modelo já não fizesse.</li>
+<li><strong>Leia o que o modelo fez, não só o resultado.</strong> Ele abriu os arquivos de referência? Pulou etapas? Se ignora uma instrução, talvez ela esteja enterrada no meio do texto, ou sem o porquê.</li>
+<li><strong>Corrija a causa, não o caso.</strong> Se o gráfico saiu com legenda, não acrescente “não use legenda neste gráfico de vendas”; reforce o princípio geral e o motivo (“rótulo direto poupa o olho de ir e voltar”).</li>
+<li><strong>Mantenha enxuto.</strong> Instruções que não mudam nada no resultado só gastam contexto. Corte.</li>
+</ul>
+
+<p>No Claude Code e no claude.ai existe uma skill oficial para isso, a <strong>skill-creator</strong>: ela entrevista você sobre o que a skill deve fazer, escreve o rascunho, roda casos de teste com e sem a skill e ajuda a ajustar a descrição. É um bom ponto de partida para a primeira skill.</p>
+
+<div class="note"><strong>Segurança.</strong> Skills podem conter scripts, e o Claude executa o que a skill manda. Instale apenas skills de fontes em que você confia — as suas, as da sua equipe, as oficiais — e leia o conteúdo (principalmente a pasta <code>scripts/</code>) antes de instalar uma skill de terceiros.</div>
+
+<h2><span class="n">§11</span>Conclusões</h2>
+
+<ul>
+<li>Uma skill é <strong>uma pasta com um <code>SKILL.md</code></strong> (nome, descrição e instruções) e, se preciso, arquivos de referência e scripts.</li>
+<li>Ela é carregada <strong>em camadas</strong>: só a descrição fica sempre visível; o resto entra quando a tarefa pede. Por isso pode ser extensa sem pesar.</li>
+<li>Use skill para <strong>procedimentos que se repetem</strong> e conhecimento de domínio; <code>CLAUDE.md</code> para regras sempre válidas; MCP para acesso a sistemas; o prompt para o que é pontual.</li>
+<li>A <strong>descrição decide se a skill roda</strong>: escreva o gatilho, os sinônimos e os limites.</li>
+<li>Monte a skill <strong>a partir de uma tarefa real</strong>, explique o porquê das regras, mova detalhes para <code>references/</code>, transforme o mecânico em script e teste com e sem.</li>
+<li>A skill <code>storytelling-charts</code> mostra o padrão completo aplicado a um livro: contexto → visual → limpeza → atenção → design → história.</li>
+</ul>
+
+<p class="cap">Referências: <a href="https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview">documentação de Agent Skills</a> e <a href="https://docs.claude.com/en/docs/claude-code/skills">skills no Claude Code</a> (Anthropic); <a href="https://github.com/anthropics/skills">repositório público de skills da Anthropic</a>; Cole Nussbaumer Knaflic, <em>Storytelling com Dados: um guia sobre visualização de dados para profissionais de negócios</em> (Alta Books, 2018; original <em>Storytelling with Data</em>, Wiley, 2015). A skill completa: <a href="https://github.com/Igor-Millis/Igor-Millis.github.io/tree/main/skills/storytelling-charts">skills/storytelling-charts</a>. Os dados dos gráficos são inventados.</p>

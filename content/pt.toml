@@ -534,3 +534,12 @@ kind = "estatística · mlg"
 date = "2026-11-09"
 minutes = 30
 abstract = "Escreva a contagem em dois andares — uma taxa Gama para cada unidade, depois Poisson dada a taxa — e a esperança iterada, a variância total e uma integral mostram de onde vem a sobredispersão e por que a resposta é a binomial negativa. Depois, ajuste e simulação para medir o custo de ignorá-la."
+
+[research.notes.claude-skills]
+title = "Skills do Claude: o que são, quando usar e como montar uma"
+seo_title = "Skills do Claude: o que são, para que servem e como criar uma (com uma skill de gráficos baseada em Storytelling com Dados)"
+description = "Guia do zero sobre Agent Skills do Claude: o que é uma skill, como o carregamento em camadas funciona, quando usar skill, CLAUDE.md, MCP ou subagente, anatomia do SKILL.md, como montar, instalar e testar — com uma skill completa de gráficos baseada em Storytelling com Dados."
+kind = "ia · claude skills"
+date = "2026-11-10"
+minutes = 16
+abstract = "O que é uma skill, como o Claude decide usá-la e como montar uma do zero — demonstrado com uma skill que ensina o Claude a fazer gráficos com os princípios de Storytelling com Dados."

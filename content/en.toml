@@ -534,3 +534,12 @@ kind = "statistics · glm"
 date = "2026-11-09"
 minutes = 30
 abstract = "Write the count in two layers — a Gamma rate for each unit, then Poisson given the rate — and the iterated expectation, the law of total variance and one integral show where overdispersion comes from and why the answer is the negative binomial. Then a fit and a simulation measure the cost of ignoring it."
+
+[research.notes.claude-skills]
+title = "Claude skills: what they are, when to use them and how to build one"
+seo_title = "Claude skills: what they are, what they are for and how to build one (with a chart skill based on Storytelling with Data)"
+description = "A from-scratch guide to Claude Agent Skills: what a skill is, how layered loading works, when to use a skill, CLAUDE.md, MCP or a subagent, the anatomy of SKILL.md, how to build, install and test one — with a complete chart skill based on Storytelling with Data."
+kind = "ai · claude skills"
+date = "2026-11-10"
+minutes = 16
+abstract = "What a skill is, how Claude decides to use it and how to build one from scratch — demonstrated with a skill that teaches Claude to make charts with the principles of Storytelling with Data."
