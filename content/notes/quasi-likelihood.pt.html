@@ -1,0 +1,366 @@
+<p>Para ajustar um MLG você escolhe uma distribuição — Poisson, binomial, Gama — e maximiza a verossimilhança. Mas, olhando com atenção para as equações que o algoritmo resolve, a distribuição quase não aparece: só entram a <strong>média</strong> \(\mu_i\) e a <strong>função de variância</strong> \(V(\mu_i)\). Robert Wedderburn percebeu isso em 1974 e tirou a consequência: se só a média e a variância importam, dá para <em>especificar só a média e a variância</em> e jogar fora o resto da distribuição. O resultado é a <strong>quasi-verossimilhança</strong>, a base da quasi-Poisson, da quasi-binomial e de modelos para dados que não seguem distribuição conhecida nenhuma. Este artigo conta de onde ela veio, demonstra por que funciona, mostra os estimadores, as propriedades algébricas que a tornam tão conveniente e — com três exemplos e quatro simulações — quando ela é a ferramenta certa e quando não é. Todos os números saem de um <a href="https://github.com/Igor-Millis/Igor-Millis.github.io/tree/main/research/quasi">script reprodutível</a>.</p>
+
+<div class="note"><strong>O que você precisa saber antes.</strong> A estrutura de um MLG (componente aleatório, preditor linear \(\eta_i = \mathbf x_i^\top\boldsymbol\beta\), ligação \(g(\mu_i) = \eta_i\)), máxima verossimilhança e a ideia de erro-padrão. Álgebra matricial ajuda nas §4–§5. O artigo <a href="{note:negative-binomial}">Da Poisson à binomial negativa</a> trata a sobredispersão pelo caminho oposto — modelando a distribuição inteira — e os dois se complementam.</div>
+
+<h2><span class="n">§1</span>O que um MLG realmente usa da distribuição</h2>
+
+<p>Num MLG, a resposta pertence à <strong>família exponencial</strong>:</p>
+
+<div class="eq">\[ f(y;\theta,\phi) = \exp\!\left\{\frac{y\theta - b(\theta)}{\phi} + c(y,\phi)\right\}, \qquad \mathbb E[Y] = \mu = b'(\theta), \qquad \operatorname{Var}(Y) = \phi\, b''(\theta) = \phi\, V(\mu). \]<span class="tag-n">(1)</span></div>
+
+<p>\(\theta\) é o parâmetro canônico, \(\phi\) o de dispersão e \(V(\mu) = b''(\theta)\), escrita como função de \(\mu\), é a <strong>função de variância</strong>: \(V(\mu) = \mu\) na Poisson, \(\mu(1-\mu)\) na binomial (para proporções), \(\mu^2\) na Gama, \(1\) na normal. Agora derive a log-verossimilhança de uma observação em relação a um coeficiente \(\beta_j\), pela regra da cadeia \(\beta_j \to \eta \to \mu \to \theta\):</p>
+
+<div class="eq">\[ \frac{\partial \ell_i}{\partial\beta_j} = \underbrace{\frac{y_i - b'(\theta_i)}{\phi}}_{\partial\ell_i/\partial\theta_i}\cdot\underbrace{\frac{1}{V(\mu_i)}}_{d\theta_i/d\mu_i}\cdot\underbrace{\frac{\partial\mu_i}{\partial\beta_j}}_{\text{ligação}} = \frac{y_i - \mu_i}{\phi\, V(\mu_i)}\,\frac{\partial\mu_i}{\partial\beta_j}. \]<span class="tag-n">(2)</span></div>
+
+<p>(O termo do meio vem de \(d\mu/d\theta = b''(\theta) = V(\mu)\).) Somando nas observações, as <strong>equações de escore</strong> que definem o estimador de máxima verossimilhança são</p>
+
+<div class="eq">\[ \sum_{i=1}^{n} \frac{y_i - \mu_i}{\phi\, V(\mu_i)}\,\frac{\partial\mu_i}{\partial\beta_j} = 0, \qquad j = 1,\dots,p. \]<span class="tag-n">(3)</span></div>
+
+<p>Leia (3) com cuidado. Não há \(b(\cdot)\), não há \(c(y,\phi)\), não há forma da densidade. Só aparecem a média \(\mu_i(\boldsymbol\beta)\) e a variância \(V(\mu_i)\). Duas distribuições com a mesma média e a mesma função de variância dariam exatamente o mesmo \(\hat{\boldsymbol\beta}\). Essa é a observação que dá origem a tudo o que segue.</p>
+
+<h2><span class="n">§2</span>A origem: Wedderburn e a mancha-da-folha</h2>
+
+<p>Os MLGs foram propostos por John Nelder e Robert Wedderburn em 1972. Dois anos depois, Wedderburn — um jovem estatístico da Rothamsted Experimental Station — publicou na <em>Biometrika</em> “Quasi-likelihood functions, generalized linear models, and the Gauss–Newton method”. O problema concreto era um conjunto de dados sobre a <strong>mancha-da-folha</strong> (<em>Rhynchosporium secalis</em>) em cevada: a <em>porcentagem da área foliar</em> atingida, para 10 variedades em 9 locais.</p>
+
+<p>Esses dados são proporções, mas <strong>não são binomiais</strong>: não há “\(m\) ensaios” e “\(y\) sucessos”, há uma área contínua. Não existe distribuição natural para eles. Mesmo assim, o modelo para a média é óbvio — \(\operatorname{logit}\mu_{ij} = \alpha_i + \beta_j\), variedade mais local — e alguma coisa se pode dizer sobre a variância: ela tem de ir a zero quando a proporção vai a 0 ou a 1. Wedderburn mostrou que a variância binomial, \(\mu(1-\mu)\), não descrevia bem os resíduos e propôs</p>
+
+<div class="eq">\[ V(\mu) = \mu^2(1-\mu)^2, \]<span class="tag-n">(4)</span></div>
+
+<p>que não corresponde a <em>nenhuma</em> distribuição da família exponencial. A pergunta do artigo era: dá para estimar \(\boldsymbol\beta\) resolvendo (3) com uma \(V\) qualquer, mesmo sem verossimilhança por trás? E o estimador resultante tem boas propriedades? A resposta, sim e sim, é o conteúdo das §3–§5. A §8 refaz o exemplo com dados simulados no mesmo formato.</p>
+
+<p>A ideia foi completada por outros:</p>
+
+<ul>
+<li><strong>Peter McCullagh (1983)</strong>, nos <em>Annals of Statistics</em>, deu a teoria assintótica: consistência, normalidade e a matriz de covariância do estimador, inclusive para observações dependentes.</li>
+<li><strong>Kung-Yee Liang e Scott Zeger (1986)</strong> estenderam a ideia para dados longitudinais e agrupados: as <strong>GEE</strong> (equações de estimação generalizadas) são equações de quasi-verossimilhança multivariadas, com uma matriz de correlação “de trabalho”.</li>
+<li><strong>John Nelder e Daryl Pregibon (1987)</strong> propuseram a <strong>quasi-verossimilhança estendida</strong>, que permite comparar funções de variância diferentes (§4.6).</li>
+<li>O livro de <strong>McCullagh e Nelder (1989)</strong>, cap. 9, consolidou o método — é lá que a maioria dos estatísticos o aprendeu, e é lá que estão os dados originais da mancha-da-folha.</li>
+</ul>
+
+<p>Wedderburn morreu em 1975, um ano depois do artigo, com menos de 30 anos. A quasi-Poisson e a quasi-binomial que hoje estão em qualquer software — <code>family = quasipoisson</code> no R — são consequência direta dele.</p>
+
+<h2><span class="n">§3</span>A fundamentação matemática</h2>
+
+<h3>3.1 O quasi-escore</h3>
+
+<p>Suponha só duas coisas sobre uma observação \(Y\):</p>
+
+<div class="eq">\[ \mathbb E[Y] = \mu, \qquad \operatorname{Var}(Y) = \phi\, V(\mu), \]<span class="tag-n">(5)</span></div>
+
+<p>com \(V\) uma função conhecida e \(\phi \gt 0\) possivelmente desconhecido. Nada sobre a forma da distribuição. Defina o <strong>quasi-escore</strong> imitando o termo de (2):</p>
+
+<div class="eq">\[ U(\mu; Y) = \frac{Y - \mu}{\phi\, V(\mu)}. \]<span class="tag-n">(6)</span></div>
+
+<p>Um escore de verossimilhança verdadeiro, \(\partial\ell/\partial\mu\), tem três propriedades que sustentam toda a teoria assintótica da máxima verossimilhança. O quasi-escore tem as mesmas três, <strong>usando apenas (5)</strong>.</p>
+
+<p><strong>Propriedade 1 — média zero.</strong></p>
+
+<div class="eq">\[ \mathbb E[U] = \frac{\mathbb E[Y] - \mu}{\phi V(\mu)} = 0. \]<span class="tag-n">(7)</span></div>
+
+<p><strong>Propriedade 2 — a variância.</strong> Como \(\mu\) e \(V(\mu)\) são constantes,</p>
+
+<div class="eq">\[ \operatorname{Var}(U) = \frac{\operatorname{Var}(Y)}{\phi^2 V(\mu)^2} = \frac{\phi V(\mu)}{\phi^2 V(\mu)^2} = \frac{1}{\phi V(\mu)}. \]<span class="tag-n">(8)</span></div>
+
+<p><strong>Propriedade 3 — a identidade da informação.</strong> Derive \(U\) em relação a \(\mu\) (regra do quociente):</p>
+
+<div class="eq">\[ \frac{\partial U}{\partial\mu} = \frac{-\phi V(\mu) - (Y - \mu)\,\phi V'(\mu)}{\phi^2 V(\mu)^2} \quad\Longrightarrow\quad -\mathbb E\!\left[\frac{\partial U}{\partial\mu}\right] = \frac{\phi V(\mu) + 0}{\phi^2 V(\mu)^2} = \frac{1}{\phi V(\mu)} = \operatorname{Var}(U). \]<span class="tag-n">(9)</span></div>
+
+<p>O termo com \(V'(\mu)\) some porque multiplica \(Y - \mu\), que tem média zero. A igualdade “\(-\mathbb E[\text{derivada do escore}] = \operatorname{Var}(\text{escore})\)” é a <strong>identidade de Bartlett</strong> que, na verossimilhança, faz a informação de Fisher ser ao mesmo tempo a curvatura esperada e a variância do escore. É ela que dá \(\operatorname{Cov}(\hat{\boldsymbol\beta}) \approx \mathcal I^{-1}\). Como (7)–(9) valem, todos os argumentos assintóticos da máxima verossimilhança que só usam essas três propriedades valem também para o quasi-escore.</p>
+
+<h3>3.2 A quasi-verossimilhança</h3>
+
+<p>Se \(U\) se comporta como uma derivada de log-verossimilhança, integre-o:</p>
+
+<div class="eq">\[ Q(\mu; y) = \int_{y}^{\mu} \frac{y - t}{\phi\, V(t)}\, dt, \qquad Q(\boldsymbol\mu;\mathbf y) = \sum_{i=1}^n Q(\mu_i; y_i). \]<span class="tag-n">(10)</span></div>
+
+<p>Esta é a <strong>quasi-(log-)verossimilhança</strong>. Por construção \(\partial Q/\partial\mu = U\) e, pela regra da cadeia, \(\partial Q/\partial\beta_j = \sum_i U_i\,\partial\mu_i/\partial\beta_j\): maximizar \(Q\) é resolver (3). O limite inferior \(y\) só fixa a constante — faz \(Q(y;y) = 0\) — e não afeta nada que dependa de \(\boldsymbol\beta\). Para cada função de variância, a integral dá (com \(\phi = 1\) e a menos de termos que só dependem de \(y\)):</p>
+
+<div class="tbl-wrap"><table><thead><tr><th scope=col>\(V(\mu)\)</th><th scope=col>\(Q(\mu;y)\)</th><th scope=col>distribuição correspondente</th></tr></thead><tbody>
+<tr><td>\(1\)</td><td>\(-(y-\mu)^2/2\)</td><td>normal</td></tr>
+<tr><td>\(\mu\)</td><td>\(y\log\mu - \mu\)</td><td>Poisson</td></tr>
+<tr><td>\(\mu(1-\mu)\)</td><td>\(y\log\frac{\mu}{1-\mu} + \log(1-\mu)\)</td><td>binomial (proporção)</td></tr>
+<tr><td>\(\mu^2\)</td><td>\(-y/\mu - \log\mu\)</td><td>Gama</td></tr>
+<tr><td>\(\mu^3\)</td><td>\(-y/(2\mu^2) + 1/\mu\)</td><td>normal inversa</td></tr>
+<tr><td>\(\mu^{p}\), \(p \ne 0,1,2\)</td><td>\(\frac{y\,\mu^{1-p}}{1-p} - \frac{\mu^{2-p}}{2-p}\)</td><td>Tweedie (só para alguns \(p\))</td></tr>
+<tr><td>\(\mu + \mu^2/k\)</td><td>\(y\log\frac{\mu}{k+\mu} + k\log\frac{k}{k+\mu}\)</td><td>binomial negativa com \(k\) fixo</td></tr>
+<tr class=hl><td>\(\mu^2(1-\mu)^2\)</td><td>\((2y-1)\log\frac{\mu}{1-\mu} - \frac{y}{\mu} - \frac{1-y}{1-\mu}\)</td><td><b>nenhuma</b></td></tr>
+</tbody></table></div>
+<p class="cap">Quando existe uma distribuição da família exponencial com aquela \(V\), \(Q\) coincide com a sua log-verossimilhança (a menos de termos em \(y\)). A última linha é a de Wedderburn: uma “verossimilhança” sem distribuição.</p>
+
+<p><strong>Exemplo: conferindo a linha de Wedderburn.</strong> Derive cada termo de \(Q = (2y-1)\log\frac{\mu}{1-\mu} - \frac{y}{\mu} - \frac{1-y}{1-\mu}\):</p>
+
+<div class="eq">\[ \frac{\partial Q}{\partial\mu} = \frac{2y-1}{\mu(1-\mu)} + \frac{y}{\mu^2} - \frac{1-y}{(1-\mu)^2} = \frac{(2y-1)\,\mu(1-\mu) + y(1-\mu)^2 - (1-y)\mu^2}{\mu^2(1-\mu)^2}. \]<span class="tag-n">(11)</span></div>
+
+<p>Expandindo o numerador: \((2y\mu - 2y\mu^2 - \mu + \mu^2) + (y - 2y\mu + y\mu^2) - (\mu^2 - y\mu^2) = y - \mu\). Logo \(\partial Q/\partial\mu = (y-\mu)/[\mu^2(1-\mu)^2]\), como deveria. É assim que se verifica qualquer linha da tabela.</p>
+
+<h3>3.3 A quasi-deviance</h3>
+
+<p>Como na verossimilhança, a medida de ajuste é a distância ao modelo saturado (\(\mu_i = y_i\)):</p>
+
+<div class="eq">\[ D(\mathbf y;\boldsymbol\mu) = -2\phi\, Q(\boldsymbol\mu;\mathbf y) = 2\sum_{i=1}^n \int_{\mu_i}^{y_i} \frac{y_i - t}{V(t)}\, dt. \]<span class="tag-n">(12)</span></div>
+
+<p>Multiplicar por \(\phi\) tira o parâmetro de dispersão: \(D\) só depende de \(V\). Para \(V = \mu\) ela é a deviance da Poisson, \(2\sum[y\log(y/\mu) - (y - \mu)]\), e assim por diante. Ela serve para comparar modelos <em>encaixados com a mesma \(V\)</em> (§4.5) — e <strong>não</strong> para comparar funções de variância diferentes, porque cada \(V\) define uma escala diferente.</p>
+
+<h2><span class="n">§4</span>Os estimadores</h2>
+
+<h3>4.1 Os coeficientes: as equações de quasi-escore</h3>
+
+<p>Em notação matricial, com \(\mathbf D = \partial\boldsymbol\mu/\partial\boldsymbol\beta^\top\) (matriz \(n\times p\), \(D_{ij} = \partial\mu_i/\partial\beta_j\)) e \(\mathbf V = \operatorname{diag}\{V(\mu_i)\}\), as equações (3) ficam</p>
+
+<div class="eq">\[ \mathbf U(\boldsymbol\beta) = \frac{1}{\phi}\,\mathbf D^\top \mathbf V^{-1} (\mathbf y - \boldsymbol\mu) = \mathbf 0. \]<span class="tag-n">(13)</span></div>
+
+<p>\(\hat{\boldsymbol\beta}\) é a raiz de (13). Repare que \(\phi\) multiplica a equação inteira e pode ser cancelado: <strong>\(\hat{\boldsymbol\beta}\) não depende de \(\phi\)</strong>.</p>
+
+<h3>4.2 O algoritmo: escore de Fisher = IRLS = Gauss–Newton</h3>
+
+<p>O método de escore de Fisher troca a derivada de \(\mathbf U\) pela sua esperança, \(-\mathbb E[\partial\mathbf U/\partial\boldsymbol\beta^\top] = \mathbf D^\top\mathbf V^{-1}\mathbf D/\phi\) (a versão matricial de (9)), e itera</p>
+
+<div class="eq">\[ \boldsymbol\beta^{(r+1)} = \boldsymbol\beta^{(r)} + \big(\mathbf D^\top\mathbf V^{-1}\mathbf D\big)^{-1}\mathbf D^\top\mathbf V^{-1}(\mathbf y - \boldsymbol\mu), \]<span class="tag-n">(14)</span></div>
+
+<p>com tudo avaliado em \(\boldsymbol\beta^{(r)}\). Mais uma vez \(\phi\) cancela. Para ver que isso é o IRLS dos MLGs, escreva \(\mathbf D = \boldsymbol\Delta\mathbf X\), com \(\boldsymbol\Delta = \operatorname{diag}(d\mu_i/d\eta_i)\), e defina os pesos e a resposta de trabalho</p>
+
+<div class="eq">\[ \mathbf W = \boldsymbol\Delta\mathbf V^{-1}\boldsymbol\Delta = \operatorname{diag}\!\left\{\frac{(d\mu_i/d\eta_i)^2}{V(\mu_i)}\right\}, \qquad \mathbf z = \boldsymbol\eta + \boldsymbol\Delta^{-1}(\mathbf y - \boldsymbol\mu). \]<span class="tag-n">(15)</span></div>
+
+<p>Então \(\mathbf D^\top\mathbf V^{-1}\mathbf D = \mathbf X^\top\mathbf W\mathbf X\) e \(\mathbf D^\top\mathbf V^{-1}(\mathbf y-\boldsymbol\mu) = \mathbf X^\top\mathbf W\boldsymbol\Delta^{-1}(\mathbf y-\boldsymbol\mu)\), e (14) vira</p>
+
+<div class="eq">\[ \boldsymbol\beta^{(r+1)} = (\mathbf X^\top\mathbf W\mathbf X)^{-1}\mathbf X^\top\mathbf W\big[\mathbf X\boldsymbol\beta^{(r)} + \boldsymbol\Delta^{-1}(\mathbf y-\boldsymbol\mu)\big] = (\mathbf X^\top\mathbf W\mathbf X)^{-1}\mathbf X^\top\mathbf W\mathbf z: \]<span class="tag-n">(16)</span></div>
+
+<p>uma regressão de mínimos quadrados ponderados de \(\mathbf z\) em \(\mathbf X\), repetida até convergir. É o mesmo algoritmo que ajusta qualquer MLG; a única coisa que muda de um modelo quasi para outro é a função \(V\) dentro dos pesos. O “Gauss–Newton” do título de Wedderburn vem daqui: (14) é exatamente o passo de Gauss–Newton para minimizar \(\sum_i (y_i - \mu_i)^2/V_i\) com os \(V_i\) congelados na iteração atual — mínimos quadrados não lineares ponderados.</p>
+
+<p><strong>Exemplo.</strong> No conjunto de dados de insetos da §6 (quatro inseticidas, ligação log, \(V(\mu) = \mu\)), as iterações de (16) a partir de um chute ingênuo são:</p>
+
+<!--qp-trace-->
+
+<h3>4.3 A dispersão \(\phi\): o estimador de Pearson</h3>
+
+<p>Por (5), \(\mathbb E[(Y_i - \mu_i)^2/V(\mu_i)] = \phi\) para toda observação. Isso sugere o estimador de momentos</p>
+
+<div class="eq">\[ \hat\phi = \frac{1}{n - p}\sum_{i=1}^{n} \frac{(y_i - \hat\mu_i)^2}{V(\hat\mu_i)} = \frac{X^2}{n - p}, \]<span class="tag-n">(17)</span></div>
+
+<p>a estatística \(X^2\) de Pearson dividida pelos graus de liberdade. O \(n - p\) no lugar de \(n\) compensa os \(p\) parâmetros estimados, exatamente como em \(s^2 = \text{SQR}/(n-p)\) na regressão linear (que é o caso \(V = 1\)). Uma alternativa é \(D/(n-p)\), a deviance dividida pelos graus de liberdade, mas ela é viesada quando as contagens são pequenas ou as proporções estão perto de 0 e 1; \(\hat\phi\) de Pearson é consistente sempre que (5) vale, e é o padrão no R e no <code>statsmodels</code>.</p>
+
+<h3>4.4 A covariância de \(\hat{\boldsymbol\beta}\)</h3>
+
+<p>Expanda (13) em torno do valor verdadeiro: \(\mathbf 0 = \mathbf U(\hat{\boldsymbol\beta}) \approx \mathbf U(\boldsymbol\beta) - \mathcal I(\hat{\boldsymbol\beta} - \boldsymbol\beta)\), com \(\mathcal I = \mathbf D^\top\mathbf V^{-1}\mathbf D/\phi\). Logo \(\hat{\boldsymbol\beta} - \boldsymbol\beta \approx \mathcal I^{-1}\mathbf U(\boldsymbol\beta)\) e, como as observações são independentes,</p>
+
+<div class="eq">\[ \operatorname{Cov}(\hat{\boldsymbol\beta}) \approx \mathcal I^{-1}\operatorname{Cov}(\mathbf U)\,\mathcal I^{-1} = \mathcal I^{-1}\mathcal I\,\mathcal I^{-1} = \phi\,\big(\mathbf D^\top\mathbf V^{-1}\mathbf D\big)^{-1} = \phi\,(\mathbf X^\top\mathbf W\mathbf X)^{-1}. \]<span class="tag-n">(18)</span></div>
+
+<p>O passo do meio usa \(\operatorname{Cov}(\mathbf U) = \mathcal I\), a versão matricial de (8)–(9). Na prática, \(\phi\) é trocado por \(\hat\phi\) de (17). Resultado: <strong>os erros-padrão do modelo quasi são os do MLG “nominal” multiplicados por \(\sqrt{\hat\phi}\)</strong>. Na quasi-Poisson, os da Poisson vezes \(\sqrt{\hat\phi}\); na quasi-binomial, os da binomial vezes \(\sqrt{\hat\phi}\).</p>
+
+<p>E se a função de variância estiver errada — se a variância verdadeira for \(\boldsymbol\Sigma \ne \phi\mathbf V\)? Então \(\operatorname{Cov}(\mathbf U) \ne \mathcal I\) e a covariância correta é o <strong>sanduíche</strong></p>
+
+<div class="eq">\[ \operatorname{Cov}(\hat{\boldsymbol\beta}) \approx \big(\mathbf D^\top\mathbf V^{-1}\mathbf D\big)^{-1}\;\mathbf D^\top\mathbf V^{-1}\boldsymbol\Sigma\,\mathbf V^{-1}\mathbf D\;\big(\mathbf D^\top\mathbf V^{-1}\mathbf D\big)^{-1}, \]<span class="tag-n">(19)</span></div>
+
+<p>estimada trocando \(\boldsymbol\Sigma\) por \(\operatorname{diag}\{(y_i - \hat\mu_i)^2\}\). Ela não supõe forma nenhuma para a variância, mas é ruidosa com \(n\) pequeno (a §9 mede isso).</p>
+
+<h3>4.5 Testes: \(t\) e \(F\) no lugar de \(z\) e \(\chi^2\)</h3>
+
+<p>Como \(\phi\) é estimado, a inferência segue o modelo da regressão linear, não o da verossimilhança:</p>
+
+<ul>
+<li><strong>Um coeficiente:</strong> \(t = \hat\beta_j/\text{e.p.}(\hat\beta_j)\), comparado com a \(t_{n-p}\).</li>
+<li><strong>Modelos encaixados</strong> (o menor com \(p_0\) parâmetros, o maior com \(p_1\)):</li>
+</ul>
+
+<div class="eq">\[ F = \frac{(D_0 - D_1)/(p_1 - p_0)}{\hat\phi_1} \;\overset{\text{aprox.}}{\sim}\; F_{p_1 - p_0,\; n - p_1}, \]<span class="tag-n">(20)</span></div>
+
+<p>com \(\hat\phi_1\) estimado no modelo maior. Se \(\phi\) fosse conhecido e igual a 1, \((D_0 - D_1)\) seria o teste da razão de verossimilhanças com \(\chi^2_{p_1-p_0}\). Dividir por \(\hat\phi\) “desconta” a sobredispersão, e usar \(F\) em vez de \(\chi^2\) desconta a incerteza de ter estimado \(\hat\phi\).</p>
+
+<h3>4.6 Quando é preciso comparar funções de variância</h3>
+
+<p>\(Q\) não serve para escolher entre \(V(\mu) = \mu(1-\mu)\) e \(V(\mu) = \mu^2(1-\mu)^2\): as duas estão em escalas diferentes. Nelder e Pregibon (1987) resolveram isso com a <strong>quasi-verossimilhança estendida</strong></p>
+
+<div class="eq">\[ Q^{+} = -\frac12\sum_{i=1}^n\left[\frac{d_i}{\phi} + \log\big(2\pi\phi\, V(y_i)\big)\right], \]<span class="tag-n">(21)</span></div>
+
+<p>em que \(d_i\) é a contribuição da observação \(i\) para a deviance (12). O termo \(\log V(y_i)\) é o que permite comparar \(V\)s diferentes: \(Q^+\) é a aproximação de ponto de sela da log-verossimilhança, e para a normal e a normal inversa é exata. Maximizando em \(\phi\) dá \(\hat\phi = D/n\). Para seleção de modelos com sobredispersão em ecologia usa-se também o <strong>QAIC</strong> de Lebreton et al. (1992), \(\text{QAIC} = -2\ell/\hat c + 2k\), com \(\hat c = \hat\phi\) e \(k\) incluindo o \(\phi\).</p>
+
+<h2><span class="n">§5</span>As vantagens algébricas</h2>
+
+<p>As propriedades a seguir são a razão de a quasi-verossimilhança ser tão usada. Cada uma é uma conta curta.</p>
+
+<h3>5.1 Consistência exige só a média certa</h3>
+
+<p>Calcule a esperança de (13) no valor verdadeiro de \(\boldsymbol\beta\):</p>
+
+<div class="eq">\[ \mathbb E[\mathbf U(\boldsymbol\beta)] = \frac{1}{\phi}\,\mathbf D^\top\mathbf V^{-1}\,\mathbb E[\mathbf y - \boldsymbol\mu] = \mathbf 0 \quad\text{sempre que}\quad \mathbb E[Y_i] = \mu_i(\boldsymbol\beta). \]<span class="tag-n">(22)</span></div>
+
+<p>A conta não usou a variância. Uma equação de estimação com esperança zero no valor verdadeiro (uma <em>equação de estimação não viesada</em>) produz, sob condições de regularidade, um estimador consistente. Logo \(\hat{\boldsymbol\beta}\) é consistente <strong>mesmo que \(V\) esteja errada</strong>. A variância errada estraga os erros-padrão (que (19) conserta) e a eficiência (§5.3), mas não aponta o estimador para o lugar errado.</p>
+
+<h3>5.2 \(\phi\) se separa de \(\boldsymbol\beta\)</h3>
+
+<p>Já vimos que \(\phi\) cancela em (13) e (14). Algebricamente, isso quer dizer que o problema se decompõe em dois: primeiro estima-se \(\boldsymbol\beta\) como se \(\phi = 1\); depois, \(\phi\) por (17); por fim, a covariância (18) é a nominal multiplicada por \(\hat\phi\). <strong>Exemplo:</strong> na §6, a quasi-Poisson devolve exatamente os mesmos \(\hat\beta\) que a Poisson (na tabela, uma única coluna de estimativas serve às duas). Por isso trocar Poisson por quasi-Poisson nunca muda uma previsão; muda só a incerteza.</p>
+
+<h3>5.3 Otimalidade: o “Gauss–Markov” das equações de estimação</h3>
+
+<p>Por que justamente \(\mathbf D^\top\mathbf V^{-1}(\mathbf y-\boldsymbol\mu)\)? Considere qualquer equação de estimação <strong>linear em \(\mathbf y\)</strong>,</p>
+
+<div class="eq">\[ \mathbf g(\boldsymbol\beta) = \mathbf A^\top(\mathbf y - \boldsymbol\mu) = \mathbf 0, \]<span class="tag-n">(23)</span></div>
+
+<p>com \(\mathbf A\) uma matriz \(n\times p\) qualquer (que pode depender de \(\boldsymbol\beta\)). Pelo mesmo argumento de (18), a raiz tem \(\hat{\boldsymbol\beta} - \boldsymbol\beta \approx (\mathbf A^\top\mathbf D)^{-1}\mathbf A^\top(\mathbf y-\boldsymbol\mu)\) e covariância assintótica</p>
+
+<div class="eq">\[ \mathbf C(\mathbf A) = (\mathbf A^\top\mathbf D)^{-1}\,\mathbf A^\top\boldsymbol\Sigma\mathbf A\,(\mathbf D^\top\mathbf A)^{-1}, \qquad \boldsymbol\Sigma = \operatorname{Cov}(\mathbf y) = \phi\mathbf V. \]<span class="tag-n">(24)</span></div>
+
+<p>A escolha de quasi-verossimilhança é \(\mathbf A^\star = \boldsymbol\Sigma^{-1}\mathbf D\), que dá \(\mathbf C(\mathbf A^\star) = (\mathbf D^\top\boldsymbol\Sigma^{-1}\mathbf D)^{-1}\). <strong>Afirmação:</strong> \(\mathbf C(\mathbf A) - \mathbf C(\mathbf A^\star)\) é semidefinida positiva para todo \(\mathbf A\). <strong>Demonstração.</strong> Defina</p>
+
+<div class="eq">\[ \mathbf M = (\mathbf A^\top\mathbf D)^{-1}\mathbf A^\top - (\mathbf D^\top\boldsymbol\Sigma^{-1}\mathbf D)^{-1}\mathbf D^\top\boldsymbol\Sigma^{-1}. \]<span class="tag-n">(25)</span></div>
+
+<p>\(\mathbf M\boldsymbol\Sigma\mathbf M^\top\) é semidefinida positiva (é uma covariância). Expandindo, os dois termos cruzados são iguais a</p>
+
+<div class="eq">\[ (\mathbf A^\top\mathbf D)^{-1}\mathbf A^\top\boldsymbol\Sigma\,\boldsymbol\Sigma^{-1}\mathbf D\,(\mathbf D^\top\boldsymbol\Sigma^{-1}\mathbf D)^{-1} = \underbrace{(\mathbf A^\top\mathbf D)^{-1}\mathbf A^\top\mathbf D}_{\mathbf I}\,(\mathbf D^\top\boldsymbol\Sigma^{-1}\mathbf D)^{-1} = \mathbf C(\mathbf A^\star), \]<span class="tag-n">(26)</span></div>
+
+<p>e o último termo também é \(\mathbf C(\mathbf A^\star)\). Logo</p>
+
+<div class="eq">\[ \mathbf 0 \preceq \mathbf M\boldsymbol\Sigma\mathbf M^\top = \mathbf C(\mathbf A) - 2\,\mathbf C(\mathbf A^\star) + \mathbf C(\mathbf A^\star) = \mathbf C(\mathbf A) - \mathbf C(\mathbf A^\star). \quad\blacksquare \]<span class="tag-n">(27)</span></div>
+
+<p>Entre todos os estimadores definidos por equações lineares em \(\mathbf y\), o de quasi-verossimilhança tem a menor variância assintótica (Godambe, 1960; McCullagh, 1983). É a generalização do teorema de Gauss–Markov: no caso \(V = 1\) e ligação identidade, \(\mathbf A^\star \propto \mathbf X\) e (23) são as equações normais dos mínimos quadrados. Duas consequências práticas: (i) <strong>acertar a forma de \(V\) compra eficiência</strong> — a §9 mede quanto; (ii) a garantia é só dentro da classe linear: se a distribuição verdadeira for conhecida e <em>não</em> for da família exponencial, a máxima verossimilhança completa pode ser mais eficiente.</p>
+
+<h3>5.4 A família exponencial é um caso particular</h3>
+
+<p>Se existe uma distribuição da família exponencial com função de variância \(V\), então \(Q\) <em>é</em> a sua log-verossimilhança (a menos de termos em \(y\)) — basta comparar (2) com (6) e integrar. Nesse caso o estimador de quasi-verossimilhança é o de máxima verossimilhança, com toda a sua eficiência. A quasi-verossimilhança não é um substituto aproximado do MLG: ela é a teoria geral, e o MLG clássico é o caso em que existe uma distribuição por trás.</p>
+
+<h3>5.5 Mais liberdade com o mesmo algoritmo</h3>
+
+<ul>
+<li><strong>Qualquer \(V\) positiva</strong>, mesmo sem distribuição (como (4)), cabe no mesmo IRLS (16).</li>
+<li><strong>\(\phi\) livre nos dois sentidos:</strong> \(\hat\phi \lt 1\) (subdispersão) é tão admissível quanto \(\hat\phi \gt 1\). Na Poisson e na binomial, \(\phi = 1\) é imposto.</li>
+<li><strong>Respostas fora do suporte “oficial”:</strong> a quasi-Poisson aceita \(y\) contínuo e não negativo (gastos, concentrações), e a quasi-binomial aceita proporções contínuas — \(Q\) só exige que a integral (10) exista.</li>
+</ul>
+
+<h2><span class="n">§6</span>Exemplo 1 — quasi-Poisson: insetos por parcela</h2>
+
+<p>Quatro inseticidas (A, B, C, D) são aplicados em 12 parcelas cada, e conta-se o número de insetos vivos por parcela. As médias verdadeiras são 15, 12, 4 e 6, mas as parcelas diferem entre si (microclima, borda, vegetação), e os dados foram gerados com \(\operatorname{Var}(Y) = 3\mu\) — o caso exato que a quasi-Poisson descreve, com \(\phi = 3\). O primeiro diagnóstico não precisa de modelo: com grupos, compare média e variância.</p>
+
+<!--qp-groups-->
+
+<p>O modelo é \(\log\mu_{i} = \beta_0 + \beta_1[\text{B}] + \beta_2[\text{C}] + \beta_3[\text{D}]\). Ajustando Poisson e quasi-Poisson:</p>
+
+<!--qp-fit-->
+
+<p>Três leituras:</p>
+
+<ul>
+<li><strong>\(\hat\phi = 3{,}34\)</strong>, perto do verdadeiro 3. Os erros-padrão da Poisson estão \(\sqrt{3{,}34} = 1{,}83\) vezes pequenos demais.</li>
+<li><strong>O intervalo para B − A</strong> passa de \([-0{,}272;\ 0{,}170]\) para \([-0{,}467;\ 0{,}365]\). Em razão de taxas, \(e^{\hat\beta_1} = 0{,}95\): os dois inseticidas são indistinguíveis nos dois modelos, mas a Poisson promete uma precisão quase duas vezes maior do que os dados têm.</li>
+<li><strong>O teste global</strong> de efeito do inseticida continua significativo — \(F_{3,44} = 7{,}18\), p = 0,0005 — mas a evidência é mais de dez ordens de grandeza menos extrema que a da Poisson (\(\chi^2_3 = 72{,}0\), p \(\approx 10^{-15}\)). Com efeitos menores, é nessa distância que moram os falsos positivos.</li>
+</ul>
+
+<p>A coluna sanduíche fica entre as duas para alguns coeficientes e acima da quasi para C − A. Com 12 parcelas por grupo, ela estima uma variância separada por grupo e é bem mais ruidosa que a quasi-Poisson, que junta todas as 48 observações num único \(\hat\phi\).</p>
+
+<h2><span class="n">§7</span>Exemplo 2 — quasi-binomial: germinação de sementes</h2>
+
+<p>Dois tipos de semente são postos para germinar em placas de 30 sementes, com água ou com um extrato vegetal; oito placas por combinação. A pergunta é se o extrato age diferente nos dois tipos — a <strong>interação</strong>. Sementes da mesma placa compartilham umidade e temperatura, então germinam de forma correlacionada: o número de germinadas por placa não é binomial. Se a probabilidade de cada placa varia em torno da média com correlação intraplaca \(\rho\), a variância é</p>
+
+<div class="eq">\[ \operatorname{Var}(Y_i) = m\,\mu_i(1-\mu_i)\,\big[1 + (m-1)\rho\big], \]<span class="tag-n">(28)</span></div>
+
+<p>ou seja, a variância binomial vezes \(\phi = 1 + (m-1)\rho\). Com \(m\) igual em todas as placas, isso é exatamente a quasi-binomial. Aqui \(\rho = 0{,}06\) dá \(\phi = 2{,}74\), e <strong>a interação verdadeira é zero</strong>.</p>
+
+<!--qb-fit-->
+
+<p>Este conjunto de dados é instrutivo justamente por ser “azarado”. A combinação tipo 1 · extrato germinou 15% contra 31% esperados, o que produziu uma interação estimada de 1,2 onde a verdadeira é zero, e \(\hat\phi = 1{,}54\), bem abaixo do verdadeiro 2,74. A binomial rejeita com p \(\approx 3\times 10^{-5}\); a quasi-binomial também rejeita, com p = 0,002. Uma amostra só não diz qual método é calibrado. Para isso, repetimos o mesmo desenho 2.000 vezes, sempre sem interação, e contamos as rejeições a 5%:</p>
+
+<ul>
+<li><strong>binomial (\(\chi^2_1\)): rejeita 22,6% das vezes</strong> — mais de quatro vezes o nível nominal;</li>
+<li><strong>quasi-binomial (\(F_{1,28}\)): rejeita 4,4%</strong> — dentro do erro de Monte Carlo de 5%.</li>
+</ul>
+
+<p>Nessas 2.000 repetições, \(\hat\phi\) teve média 2,77 (verdadeiro 2,74), com 80% dos valores entre 1,92 e 3,68: a nossa amostra estava nos 10% mais baixos. A quasi-binomial é calibrada no agregado, e a variabilidade de \(\hat\phi\) com 28 graus de liberdade é o preço de não saber \(\phi\) — o \(F\) já o leva em conta.</p>
+
+<div class="note"><strong>Placas de tamanhos diferentes.</strong> Por (28), se \(m_i\) varia, \(\phi_i = 1 + (m_i - 1)\rho\) varia junto, e um \(\phi\) único é só uma aproximação. Williams (1982) propôs pesos que corrigem isso; a alternativa com verossimilhança completa é a beta-binomial.</div>
+
+<h2><span class="n">§8</span>Exemplo 3 — a variância de Wedderburn: proporções contínuas</h2>
+
+<p>De volta a 1974. Simulamos dados no formato da mancha-da-folha: 10 variedades × 9 locais, a proporção da área foliar atingida com \(\operatorname{logit}\mu_{ij} = \alpha_i + \beta_j\) — de proporções quase nulas a quase 1 — e uma distribuição Beta cuja variância é exatamente \(\mu^2(1-\mu)^2\). Ajustamos o mesmo modelo para a média com duas funções de variância: a binomial \(\mu(1-\mu)\) (a quasi-binomial, que é o que muita gente faria) e a de Wedderburn (4).</p>
+
+<!--wd-fig-->
+
+<!--wd-table-->
+
+<ul>
+<li><strong>O padrão dos resíduos.</strong> Com a variância binomial, a média do resíduo ao quadrado sobe de 0,68 no quinto mais baixo para 1,55 no quarto quinto: a variância suposta é grande demais para as proporções pequenas, em relação às do meio. Com a de Wedderburn, os cinco quintos ficam entre 0,84 e 1,14. É o mesmo diagnóstico que Wedderburn fez em 1974. (O padrão é menos dramático do que a razão teórica \(\mu(1-\mu)\) sugeriria, porque a própria \(V\) errada distorce o ajuste: com pesos \(\propto\mu(1-\mu)\), as observações extremas quase não pesam e acabam mal ajustadas.)</li>
+<li><strong>\(\hat\phi\) não compara modelos.</strong> 0,158 contra 1,113 não significa que o primeiro ajusta “melhor”; as duas \(V\) estão em escalas diferentes. Quem compara é \(Q^+\): 121,8 contra 97,1, a favor de \(\mu^2(1-\mu)^2\).</li>
+<li><strong>Eficiência.</strong> O contraste variedade 10 − variedade 1 (verdadeiro 3,5) sai 4,00 com e.p. 0,50 na variância certa, e 4,17 com e.p. 0,68 na binomial. O sanduíche conta a mesma história (0,35 contra 0,46): mesmo com erros-padrão robustos, a variância errada desperdiça informação — é o teorema da §5.3 em ação.</li>
+</ul>
+
+<h2><span class="n">§9</span>Quando os modelos quasi são bons</h2>
+
+<p>Para medir em vez de opinar, quatro estudos de simulação com 2.000 conjuntos de dados cada. S1 e S3 geram contagens com \(\operatorname{Var} = 3\mu\) (a hipótese da quasi-Poisson é verdadeira); S2 gera dados contínuos positivos com \(\operatorname{Var} = 0{,}25\,\mu^2\) e os ajusta com a \(V\) errada (\(\mu\)) e a certa (\(\mu^2\)).</p>
+
+<!--q-sim-->
+
+<p>A quasi-verossimilhança é uma boa escolha quando:</p>
+
+<ol>
+<li><strong>A sobredispersão é proporcional à variância nominal.</strong> Em S1, a Poisson cobre 73,8% e a quasi-Poisson, 94,5%. É o caso de contagens agregadas de unidades homogêneas, de proporções com tamanho de grupo constante (28), e de qualquer situação em que comparar variância e média (como na tabela da §6) mostre uma razão aproximadamente constante.</li>
+<li><strong>O interesse está em \(\boldsymbol\beta\), não na distribuição.</strong> Efeitos, razões de taxas, razões de chances, testes de hipótese: tudo isso só precisa da média e de erros-padrão honestos.</li>
+<li><strong>Não existe distribuição razoável.</strong> Proporções contínuas, índices, contagens com dependência fraca e desconhecida — a mancha-da-folha é o exemplo-tipo.</li>
+<li><strong>A amostra é pequena e a \(V\) é plausível.</strong> Em S3, com \(n = 12\), a quasi-Poisson com quantil \(t\) cobre 95,2%, enquanto o sanduíche cai para 85,8%: um único parâmetro \(\phi\) é muito mais estável que uma variância por observação. Repare na diferença entre quantil normal (92,0%) e \(t\) (95,2%): com \(n\) pequeno, usar \(t\) e \(F\) importa.</li>
+<li><strong>Você quer robustez sem complicar.</strong> O ajuste é o do MLG nominal, e \(\hat{\boldsymbol\beta}\) continua consistente mesmo que a \(V\) esteja errada (5.1).</li>
+</ol>
+
+<h2><span class="n">§10</span>Quando os modelos quasi são ruins</h2>
+
+<ol>
+<li><strong>Quando a forma da variância está errada.</strong> Em S2, usar \(V = \mu\) para dados com variância \(\propto\mu^2\) mantém \(\hat\beta_1\) sem viés, mas o desvio-padrão real do estimador sobe de 0,124 para 0,162 — a variância é 1,7 vez maior, ou seja, é como jogar fora cerca de 40% dos dados. E o erro-padrão reportado (0,148 em média) subestima o real (0,162): a cobertura cai para 93,3%. Multiplicar por \(\sqrt{\hat\phi}\) corrige o <em>tamanho médio</em> da variância, não a sua <em>forma</em>. O mesmo vale para contagens com \(\operatorname{Var} = \mu + \mu^2/\theta\): a quasi-Poisson dá peso \(\propto\mu\) justamente às observações mais ruidosas — o artigo <a href="{note:negative-binomial}">Da Poisson à binomial negativa</a> mostra a cobertura dela caindo para 88,6% nesse caso.</li>
+<li><strong>Quando você precisa de probabilidades.</strong> Não há distribuição, então não há \(\Pr(Y = 0)\), quantis preditivos, intervalos de predição ou simulação de novos dados. Para prever “quantas apólices terão zero sinistros”, é preciso um modelo completo (binomial negativa, beta-binomial).</li>
+<li><strong>Quando você precisa de verossimilhança.</strong> Sem \(\ell\) não há AIC, BIC, razão de verossimilhanças entre famílias diferentes, nem inferência bayesiana. \(Q^+\) e o QAIC são remendos úteis, não substitutos completos.</li>
+<li><strong>Com dados binários (0/1).</strong> Para \(Y \in \{0, 1\}\), \(\operatorname{Var}(Y) = \mu(1-\mu)\) <em>obrigatoriamente</em>: não existe sobredispersão em uma Bernoulli, e \(\phi\) não é identificável. Simulamos 2.000 conjuntos de \(n = 200\) respostas binárias com uma forte heterogeneidade não observada (um efeito aleatório \(\mathcal N(0;\ 1{,}5^2)\) na escala logit) e ajustamos a quasi-binomial: \(\hat\phi\) teve média 1,009, com 95% dos valores entre 0,979 e 1,046. A heterogeneidade existe, mas \(\hat\phi\) não a vê. Ela só aparece agrupando (\(m_i \gt 1\)) ou com um modelo misto.</li>
+<li><strong>Quando o problema é a média, não a variância.</strong> Uma covariável esquecida, uma interação ausente ou uma relação não linear inflam \(\hat\phi\). A quasi “absorve” o sintoma com erros-padrão maiores, mas os coeficientes continuam viesados. Acerte \(\mathbb E[Y]\) primeiro — é a única hipótese da qual a consistência depende (5.1).</li>
+<li><strong>Com dependência.</strong> Medidas repetidas no mesmo indivíduo e unidades agrupadas violam a independência que (18) usa. A extensão natural é a GEE, que é quasi-verossimilhança com uma matriz de correlação de trabalho — ou um modelo misto.</li>
+<li><strong>Com estruturas que a média e a variância não capturam.</strong> Excesso de zeros estrutural, truncamento, mistura de populações: aí a forma da distribuição é o fenômeno, e um modelo para ela (inflacionado de zeros, <em>hurdle</em>) é necessário.</li>
+</ol>
+
+<h2><span class="n">§11</span>Na prática: R e Python</h2>
+
+<pre class="code"># R — quasi-Poisson e quasi-binomial
+qp &lt;- glm(insetos ~ inseticida, family = quasipoisson, data = d)
+summary(qp)$dispersion                      # phi-hat de Pearson (17)
+anova(update(qp, . ~ 1), qp, test = "F")    # teste F (20)
+
+qb &lt;- glm(cbind(germ, 30 - germ) ~ semente * extrato, family = quasibinomial, data = g)
+
+# variância de Wedderburn: família quasi com V e deviance próprias
+wedd &lt;- quasi(link = "logit", variance = "mu(1-mu)")
+wedd$variance   &lt;- function(mu) (mu * (1 - mu))^2
+wedd$dev.resids &lt;- function(y, mu, wt)
+  wt * 2 * ((2*y - 1) * (qlogis(y) - qlogis(mu)) - 2 + y/mu + (1 - y)/(1 - mu))
+fw &lt;- glm(prop ~ local + variedade, family = wedd, data = folha)</pre>
+
+<pre class="code">import statsmodels.api as sm
+import statsmodels.formula.api as smf
+
+# quasi-Poisson: o ajuste da Poisson com phi estimado por Pearson
+qp = smf.glm("insetos ~ inseticida", data=d, family=sm.families.Poisson()).fit(scale="X2")
+print(qp.scale)                       # phi-hat (17)
+sand = smf.glm("insetos ~ inseticida", data=d, family=sm.families.Poisson()).fit(cov_type="HC0")  # (19)
+
+# quasi-binomial com proporções e número de sementes como peso
+qb = smf.glm("germ + falha ~ semente * extrato", data=g,          # duas colunas: sucessos e fracassos
+             family=sm.families.Binomial()).fit(scale="X2")</pre>
+
+<p>Para uma \(V\) sem família pronta, o script deste artigo implementa o IRLS (16), o \(\hat\phi\) (17), a deviance (12), o sanduíche (19) e \(Q^+\) (21) em umas 60 linhas de <code>numpy</code>.</p>
+
+<h2><span class="n">§12</span>Resumo</h2>
+
+<ol>
+<li>As equações de escore de um MLG só usam a média \(\mu_i(\boldsymbol\beta)\) e a função de variância \(V(\mu_i)\). Wedderburn (1974) tirou a conclusão: especifique só \(\mathbb E[Y] = \mu\) e \(\operatorname{Var}(Y) = \phi V(\mu)\).</li>
+<li>O quasi-escore \(U = (Y-\mu)/(\phi V(\mu))\) tem média zero, variância \(1/(\phi V)\) e satisfaz a identidade da informação — as três propriedades que sustentam a teoria assintótica da verossimilhança. Sua integral \(Q\) é a quasi-verossimilhança.</li>
+<li>\(\hat{\boldsymbol\beta}\) resolve \(\mathbf D^\top\mathbf V^{-1}(\mathbf y-\boldsymbol\mu) = \mathbf 0\) pelo mesmo IRLS dos MLGs. \(\phi\) cancela; é estimado depois por \(X^2/(n-p)\); a covariância é \(\hat\phi(\mathbf X^\top\mathbf W\mathbf X)^{-1}\). Testes usam \(t\) e \(F\).</li>
+<li>Vantagens: consistência exigindo só a média certa; separação entre \(\boldsymbol\beta\) e \(\phi\); otimalidade entre as equações de estimação lineares (um Gauss–Markov generalizado); a família exponencial como caso particular; qualquer \(V\), inclusive sem distribuição, e \(\phi \lt 1\).</li>
+<li>Exemplos: quasi-Poisson (\(\hat\phi = 3{,}34\), erros-padrão 1,8 vez maiores que os da Poisson), quasi-binomial (erro tipo I de 22,6% → 4,4%) e a variância de Wedderburn (resíduos sem padrão, \(Q^+\) maior, contraste mais preciso).</li>
+<li>São bons quando a variância é proporcional à nominal, o interesse está nos coeficientes, não há distribuição natural ou a amostra é pequena. São ruins quando a forma de \(V\) está errada (perda de eficiência e cobertura), quando se precisa de probabilidades ou verossimilhança, com dados binários, com dependência ou quando o problema está na média.</li>
+</ol>
+
+<h2><span class="n">§13</span>Para ir além</h2>
+
+<ul>
+<li>R. W. M. Wedderburn (1974). <em>Quasi-likelihood functions, generalized linear models, and the Gauss–Newton method</em>. Biometrika, 61(3), 439–447. O artigo original, curto e legível.</li>
+<li>J. A. Nelder e R. W. M. Wedderburn (1972). <em>Generalized linear models</em>. Journal of the Royal Statistical Society A, 135(3), 370–384.</li>
+<li>P. McCullagh (1983). <em>Quasi-likelihood functions</em>. Annals of Statistics, 11(1), 59–67. A teoria assintótica.</li>
+<li>P. McCullagh e J. A. Nelder (1989). <em>Generalized Linear Models</em>, 2ª ed., caps. 9 e 10. Chapman &amp; Hall. Inclui os dados da mancha-da-folha.</li>
+<li>J. A. Nelder e D. Pregibon (1987). <em>An extended quasi-likelihood function</em>. Biometrika, 74(2), 221–232.</li>
+<li>K.-Y. Liang e S. L. Zeger (1986). <em>Longitudinal data analysis using generalized linear models</em>. Biometrika, 73(1), 13–22. As GEE.</li>
+<li>V. P. Godambe (1960). <em>An optimum property of regular maximum likelihood estimation</em>. Annals of Mathematical Statistics, 31(4), 1208–1211. A origem da teoria de equações de estimação ótimas.</li>
+<li>D. A. Williams (1982). <em>Extra-binomial variation in logistic linear models</em>. Applied Statistics, 31(2), 144–148.</li>
+<li>J.-D. Lebreton, K. P. Burnham, J. Clobert e D. R. Anderson (1992). <em>Modeling survival and testing biological hypotheses using marked animals</em>. Ecological Monographs, 62(1), 67–118. Origem do QAIC.</li>
+<li>A. Agresti (2015). <em>Foundations of Linear and Generalized Linear Models</em>, cap. 8. Wiley.</li>
+</ul>

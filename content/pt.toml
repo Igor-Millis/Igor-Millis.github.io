@@ -557,3 +557,13 @@ kind = "engenharia · docker"
 date = "2026-11-11"
 minutes = 25
 abstract = "Para quem nunca usou Docker: por que “na minha máquina funciona” acontece, como um container resolve isso e o que muda em relação a uma máquina virtual. Depois, mão na massa — o primeiro container, um Dockerfile próprio, camadas, volumes e uma aplicação com Docker Compose."
+
+[research.notes.quasi-likelihood]
+title = "Quasi-verossimilhança em MLG"
+seo_title = "Modelos quasi em MLG: origem, fundamentação, estimadores e quando usar quasi-Poisson e quasi-binomial"
+description = "Quasi-verossimilhança em modelos lineares generalizados: a origem com Wedderburn (1974), o quasi-escore e suas propriedades, a quasi-deviance, IRLS, o estimador de Pearson para a dispersão, sanduíche, testes F, a otimalidade tipo Gauss–Markov e três exemplos — quasi-Poisson, quasi-binomial e a variância de Wedderburn — com simulações de quando funcionam e quando falham."
+kind = "estatística · mlg"
+tags = ["Machine Learning", "MLG", "Modelagem", "Estatística"]
+date = "2026-11-12"
+minutes = 35
+abstract = "As equações de um MLG só usam a média e a função de variância. Wedderburn tirou a consequência em 1974: especifique só essas duas e esqueça a distribuição. A origem, as demonstrações, os estimadores, as vantagens algébricas e três exemplos — com simulações de quando os modelos quasi são a escolha certa e quando não são."

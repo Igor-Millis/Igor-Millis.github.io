@@ -557,3 +557,13 @@ kind = "engineering · docker"
 date = "2026-11-11"
 minutes = 25
 abstract = "For people who have never used Docker: why “works on my machine” happens, how a container fixes it and how it differs from a virtual machine. Then hands-on — a first container, your own Dockerfile, layers, volumes and an application with Docker Compose."
+
+[research.notes.quasi-likelihood]
+title = "Quasi-likelihood in GLMs"
+seo_title = "Quasi models in GLMs: origin, theory, estimators and when to use quasi-Poisson and quasi-binomial"
+description = "Quasi-likelihood in generalized linear models: its origin with Wedderburn (1974), the quasi-score and its properties, the quasi-deviance, IRLS, the Pearson dispersion estimator, sandwich, F tests, the Gauss–Markov-type optimality and three examples — quasi-Poisson, quasi-binomial and Wedderburn's variance — with simulations of when they work and when they fail."
+kind = "statistics · glm"
+tags = ["Machine Learning", "GLM", "Modeling", "Statistics"]
+date = "2026-11-12"
+minutes = 35
+abstract = "The equations of a GLM only use the mean and the variance function. Wedderburn drew the conclusion in 1974: specify just those two and forget the distribution. The origin, the proofs, the estimators, the algebraic advantages and three examples — with simulations of when quasi models are the right choice and when they are not."

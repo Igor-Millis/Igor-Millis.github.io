@@ -1,0 +1,366 @@
+<p>To fit a GLM you choose a distribution — Poisson, binomial, Gamma — and maximise the likelihood. But look closely at the equations the algorithm actually solves and the distribution almost disappears: only the <strong>mean</strong> \(\mu_i\) and the <strong>variance function</strong> \(V(\mu_i)\) are left. Robert Wedderburn noticed this in 1974 and drew the conclusion: if only the mean and the variance matter, you can <em>specify only the mean and the variance</em> and throw away the rest of the distribution. The result is <strong>quasi-likelihood</strong>, the basis of quasi-Poisson, quasi-binomial and of models for data that follow no known distribution at all. This article tells where it came from, proves why it works, shows the estimators and the algebraic properties that make it so convenient and — with three examples and four simulations — when it is the right tool and when it is not. Every number comes from a <a href="https://github.com/Igor-Millis/Igor-Millis.github.io/tree/main/research/quasi">reproducible script</a>.</p>
+
+<div class="note"><strong>What you need to know first.</strong> The structure of a GLM (random component, linear predictor \(\eta_i = \mathbf x_i^\top\boldsymbol\beta\), link \(g(\mu_i) = \eta_i\)), maximum likelihood and the idea of a standard error. Matrix algebra helps in §4–§5. The article <a href="{note:negative-binomial}">From Poisson to the negative binomial</a> handles overdispersion the opposite way — by modelling the whole distribution — and the two complement each other.</div>
+
+<h2><span class="n">§1</span>What a GLM really uses from the distribution</h2>
+
+<p>In a GLM the response belongs to the <strong>exponential family</strong>:</p>
+
+<div class="eq">\[ f(y;\theta,\phi) = \exp\!\left\{\frac{y\theta - b(\theta)}{\phi} + c(y,\phi)\right\}, \qquad \mathbb E[Y] = \mu = b'(\theta), \qquad \operatorname{Var}(Y) = \phi\, b''(\theta) = \phi\, V(\mu). \]<span class="tag-n">(1)</span></div>
+
+<p>\(\theta\) is the canonical parameter, \(\phi\) the dispersion parameter, and \(V(\mu) = b''(\theta)\), written as a function of \(\mu\), is the <strong>variance function</strong>: \(V(\mu) = \mu\) for the Poisson, \(\mu(1-\mu)\) for the binomial (for proportions), \(\mu^2\) for the Gamma, \(1\) for the normal. Now differentiate the log-likelihood of one observation with respect to a coefficient \(\beta_j\), using the chain rule \(\beta_j \to \eta \to \mu \to \theta\):</p>
+
+<div class="eq">\[ \frac{\partial \ell_i}{\partial\beta_j} = \underbrace{\frac{y_i - b'(\theta_i)}{\phi}}_{\partial\ell_i/\partial\theta_i}\cdot\underbrace{\frac{1}{V(\mu_i)}}_{d\theta_i/d\mu_i}\cdot\underbrace{\frac{\partial\mu_i}{\partial\beta_j}}_{\text{link}} = \frac{y_i - \mu_i}{\phi\, V(\mu_i)}\,\frac{\partial\mu_i}{\partial\beta_j}. \]<span class="tag-n">(2)</span></div>
+
+<p>(The middle term comes from \(d\mu/d\theta = b''(\theta) = V(\mu)\).) Summing over observations, the <strong>score equations</strong> that define the maximum likelihood estimator are</p>
+
+<div class="eq">\[ \sum_{i=1}^{n} \frac{y_i - \mu_i}{\phi\, V(\mu_i)}\,\frac{\partial\mu_i}{\partial\beta_j} = 0, \qquad j = 1,\dots,p. \]<span class="tag-n">(3)</span></div>
+
+<p>Read (3) carefully. There is no \(b(\cdot)\), no \(c(y,\phi)\), no shape of the density. Only the mean \(\mu_i(\boldsymbol\beta)\) and the variance \(V(\mu_i)\) appear. Two distributions with the same mean and the same variance function would give exactly the same \(\hat{\boldsymbol\beta}\). This is the observation everything else follows from.</p>
+
+<h2><span class="n">§2</span>The origin: Wedderburn and leaf blotch</h2>
+
+<p>GLMs were proposed by John Nelder and Robert Wedderburn in 1972. Two years later Wedderburn — a young statistician at Rothamsted Experimental Station — published “Quasi-likelihood functions, generalized linear models, and the Gauss–Newton method” in <em>Biometrika</em>. The concrete problem was a dataset on <strong>leaf blotch</strong> (<em>Rhynchosporium secalis</em>) in barley: the <em>percentage of leaf area</em> affected, for 10 varieties at 9 sites.</p>
+
+<p>These data are proportions, but they are <strong>not binomial</strong>: there are no “\(m\) trials” and “\(y\) successes”, just a continuous area. There is no natural distribution for them. Still, the model for the mean is obvious — \(\operatorname{logit}\mu_{ij} = \alpha_i + \beta_j\), variety plus site — and something can be said about the variance: it must go to zero as the proportion goes to 0 or 1. Wedderburn showed that the binomial variance, \(\mu(1-\mu)\), did not describe the residuals well and proposed</p>
+
+<div class="eq">\[ V(\mu) = \mu^2(1-\mu)^2, \]<span class="tag-n">(4)</span></div>
+
+<p>which corresponds to <em>no</em> distribution in the exponential family. The paper's question was: can \(\boldsymbol\beta\) be estimated by solving (3) with an arbitrary \(V\), even with no likelihood behind it? And does the resulting estimator have good properties? The answer, yes and yes, is the content of §3–§5. §8 redoes the example with simulated data in the same format.</p>
+
+<p>Others completed the idea:</p>
+
+<ul>
+<li><strong>Peter McCullagh (1983)</strong>, in the <em>Annals of Statistics</em>, gave the asymptotic theory: consistency, normality and the covariance matrix of the estimator, including for dependent observations.</li>
+<li><strong>Kung-Yee Liang and Scott Zeger (1986)</strong> extended the idea to longitudinal and clustered data: <strong>GEE</strong> (generalized estimating equations) are multivariate quasi-likelihood equations with a “working” correlation matrix.</li>
+<li><strong>John Nelder and Daryl Pregibon (1987)</strong> proposed the <strong>extended quasi-likelihood</strong>, which makes it possible to compare different variance functions (§4.6).</li>
+<li>The book by <strong>McCullagh and Nelder (1989)</strong>, ch. 9, consolidated the method — it is where most statisticians learned it, and where the original leaf-blotch data are printed.</li>
+</ul>
+
+<p>Wedderburn died in 1975, a year after the paper, before turning 30. The quasi-Poisson and quasi-binomial that are now in every package — <code>family = quasipoisson</code> in R — are a direct consequence of it.</p>
+
+<h2><span class="n">§3</span>The mathematical foundation</h2>
+
+<h3>3.1 The quasi-score</h3>
+
+<p>Assume only two things about an observation \(Y\):</p>
+
+<div class="eq">\[ \mathbb E[Y] = \mu, \qquad \operatorname{Var}(Y) = \phi\, V(\mu), \]<span class="tag-n">(5)</span></div>
+
+<p>with \(V\) a known function and \(\phi \gt 0\) possibly unknown. Nothing about the shape of the distribution. Define the <strong>quasi-score</strong> by imitating the term in (2):</p>
+
+<div class="eq">\[ U(\mu; Y) = \frac{Y - \mu}{\phi\, V(\mu)}. \]<span class="tag-n">(6)</span></div>
+
+<p>A true likelihood score, \(\partial\ell/\partial\mu\), has three properties that support the whole asymptotic theory of maximum likelihood. The quasi-score has the same three, <strong>using only (5)</strong>.</p>
+
+<p><strong>Property 1 — zero mean.</strong></p>
+
+<div class="eq">\[ \mathbb E[U] = \frac{\mathbb E[Y] - \mu}{\phi V(\mu)} = 0. \]<span class="tag-n">(7)</span></div>
+
+<p><strong>Property 2 — the variance.</strong> Since \(\mu\) and \(V(\mu)\) are constants,</p>
+
+<div class="eq">\[ \operatorname{Var}(U) = \frac{\operatorname{Var}(Y)}{\phi^2 V(\mu)^2} = \frac{\phi V(\mu)}{\phi^2 V(\mu)^2} = \frac{1}{\phi V(\mu)}. \]<span class="tag-n">(8)</span></div>
+
+<p><strong>Property 3 — the information identity.</strong> Differentiate \(U\) with respect to \(\mu\) (quotient rule):</p>
+
+<div class="eq">\[ \frac{\partial U}{\partial\mu} = \frac{-\phi V(\mu) - (Y - \mu)\,\phi V'(\mu)}{\phi^2 V(\mu)^2} \quad\Longrightarrow\quad -\mathbb E\!\left[\frac{\partial U}{\partial\mu}\right] = \frac{\phi V(\mu) + 0}{\phi^2 V(\mu)^2} = \frac{1}{\phi V(\mu)} = \operatorname{Var}(U). \]<span class="tag-n">(9)</span></div>
+
+<p>The term with \(V'(\mu)\) vanishes because it multiplies \(Y - \mu\), which has mean zero. The equality “\(-\mathbb E[\text{derivative of the score}] = \operatorname{Var}(\text{score})\)” is the <strong>Bartlett identity</strong> that, for a likelihood, makes the Fisher information both the expected curvature and the variance of the score. It is what gives \(\operatorname{Cov}(\hat{\boldsymbol\beta}) \approx \mathcal I^{-1}\). Since (7)–(9) hold, every asymptotic argument of maximum likelihood that uses only these three properties also holds for the quasi-score.</p>
+
+<h3>3.2 The quasi-likelihood</h3>
+
+<p>If \(U\) behaves like the derivative of a log-likelihood, integrate it:</p>
+
+<div class="eq">\[ Q(\mu; y) = \int_{y}^{\mu} \frac{y - t}{\phi\, V(t)}\, dt, \qquad Q(\boldsymbol\mu;\mathbf y) = \sum_{i=1}^n Q(\mu_i; y_i). \]<span class="tag-n">(10)</span></div>
+
+<p>This is the <strong>quasi-(log-)likelihood</strong>. By construction \(\partial Q/\partial\mu = U\) and, by the chain rule, \(\partial Q/\partial\beta_j = \sum_i U_i\,\partial\mu_i/\partial\beta_j\): maximising \(Q\) is solving (3). The lower limit \(y\) only fixes the constant — it makes \(Q(y;y) = 0\) — and affects nothing that depends on \(\boldsymbol\beta\). For each variance function the integral gives (with \(\phi = 1\) and up to terms that depend only on \(y\)):</p>
+
+<div class="tbl-wrap"><table><thead><tr><th scope=col>\(V(\mu)\)</th><th scope=col>\(Q(\mu;y)\)</th><th scope=col>matching distribution</th></tr></thead><tbody>
+<tr><td>\(1\)</td><td>\(-(y-\mu)^2/2\)</td><td>normal</td></tr>
+<tr><td>\(\mu\)</td><td>\(y\log\mu - \mu\)</td><td>Poisson</td></tr>
+<tr><td>\(\mu(1-\mu)\)</td><td>\(y\log\frac{\mu}{1-\mu} + \log(1-\mu)\)</td><td>binomial (proportion)</td></tr>
+<tr><td>\(\mu^2\)</td><td>\(-y/\mu - \log\mu\)</td><td>Gamma</td></tr>
+<tr><td>\(\mu^3\)</td><td>\(-y/(2\mu^2) + 1/\mu\)</td><td>inverse Gaussian</td></tr>
+<tr><td>\(\mu^{p}\), \(p \ne 0,1,2\)</td><td>\(\frac{y\,\mu^{1-p}}{1-p} - \frac{\mu^{2-p}}{2-p}\)</td><td>Tweedie (only for some \(p\))</td></tr>
+<tr><td>\(\mu + \mu^2/k\)</td><td>\(y\log\frac{\mu}{k+\mu} + k\log\frac{k}{k+\mu}\)</td><td>negative binomial with fixed \(k\)</td></tr>
+<tr class=hl><td>\(\mu^2(1-\mu)^2\)</td><td>\((2y-1)\log\frac{\mu}{1-\mu} - \frac{y}{\mu} - \frac{1-y}{1-\mu}\)</td><td><b>none</b></td></tr>
+</tbody></table></div>
+<p class="cap">When an exponential-family distribution with that \(V\) exists, \(Q\) equals its log-likelihood (up to terms in \(y\)). The last row is Wedderburn's: a “likelihood” with no distribution.</p>
+
+<p><strong>Example: checking Wedderburn's row.</strong> Differentiate each term of \(Q = (2y-1)\log\frac{\mu}{1-\mu} - \frac{y}{\mu} - \frac{1-y}{1-\mu}\):</p>
+
+<div class="eq">\[ \frac{\partial Q}{\partial\mu} = \frac{2y-1}{\mu(1-\mu)} + \frac{y}{\mu^2} - \frac{1-y}{(1-\mu)^2} = \frac{(2y-1)\,\mu(1-\mu) + y(1-\mu)^2 - (1-y)\mu^2}{\mu^2(1-\mu)^2}. \]<span class="tag-n">(11)</span></div>
+
+<p>Expanding the numerator: \((2y\mu - 2y\mu^2 - \mu + \mu^2) + (y - 2y\mu + y\mu^2) - (\mu^2 - y\mu^2) = y - \mu\). So \(\partial Q/\partial\mu = (y-\mu)/[\mu^2(1-\mu)^2]\), as it should be. Any row of the table can be checked the same way.</p>
+
+<h3>3.3 The quasi-deviance</h3>
+
+<p>As with a likelihood, the measure of fit is the distance to the saturated model (\(\mu_i = y_i\)):</p>
+
+<div class="eq">\[ D(\mathbf y;\boldsymbol\mu) = -2\phi\, Q(\boldsymbol\mu;\mathbf y) = 2\sum_{i=1}^n \int_{\mu_i}^{y_i} \frac{y_i - t}{V(t)}\, dt. \]<span class="tag-n">(12)</span></div>
+
+<p>Multiplying by \(\phi\) removes the dispersion parameter: \(D\) depends only on \(V\). For \(V = \mu\) it is the Poisson deviance, \(2\sum[y\log(y/\mu) - (y - \mu)]\), and so on. It is used to compare <em>nested models with the same \(V\)</em> (§4.5) — and <strong>not</strong> to compare different variance functions, because each \(V\) defines a different scale.</p>
+
+<h2><span class="n">§4</span>The estimators</h2>
+
+<h3>4.1 The coefficients: the quasi-score equations</h3>
+
+<p>In matrix notation, with \(\mathbf D = \partial\boldsymbol\mu/\partial\boldsymbol\beta^\top\) (an \(n\times p\) matrix, \(D_{ij} = \partial\mu_i/\partial\beta_j\)) and \(\mathbf V = \operatorname{diag}\{V(\mu_i)\}\), equations (3) become</p>
+
+<div class="eq">\[ \mathbf U(\boldsymbol\beta) = \frac{1}{\phi}\,\mathbf D^\top \mathbf V^{-1} (\mathbf y - \boldsymbol\mu) = \mathbf 0. \]<span class="tag-n">(13)</span></div>
+
+<p>\(\hat{\boldsymbol\beta}\) is the root of (13). Note that \(\phi\) multiplies the whole equation and can be cancelled: <strong>\(\hat{\boldsymbol\beta}\) does not depend on \(\phi\)</strong>.</p>
+
+<h3>4.2 The algorithm: Fisher scoring = IRLS = Gauss–Newton</h3>
+
+<p>Fisher scoring replaces the derivative of \(\mathbf U\) by its expectation, \(-\mathbb E[\partial\mathbf U/\partial\boldsymbol\beta^\top] = \mathbf D^\top\mathbf V^{-1}\mathbf D/\phi\) (the matrix version of (9)), and iterates</p>
+
+<div class="eq">\[ \boldsymbol\beta^{(r+1)} = \boldsymbol\beta^{(r)} + \big(\mathbf D^\top\mathbf V^{-1}\mathbf D\big)^{-1}\mathbf D^\top\mathbf V^{-1}(\mathbf y - \boldsymbol\mu), \]<span class="tag-n">(14)</span></div>
+
+<p>with everything evaluated at \(\boldsymbol\beta^{(r)}\). Once again \(\phi\) cancels. To see that this is the GLM IRLS, write \(\mathbf D = \boldsymbol\Delta\mathbf X\), with \(\boldsymbol\Delta = \operatorname{diag}(d\mu_i/d\eta_i)\), and define the weights and the working response</p>
+
+<div class="eq">\[ \mathbf W = \boldsymbol\Delta\mathbf V^{-1}\boldsymbol\Delta = \operatorname{diag}\!\left\{\frac{(d\mu_i/d\eta_i)^2}{V(\mu_i)}\right\}, \qquad \mathbf z = \boldsymbol\eta + \boldsymbol\Delta^{-1}(\mathbf y - \boldsymbol\mu). \]<span class="tag-n">(15)</span></div>
+
+<p>Then \(\mathbf D^\top\mathbf V^{-1}\mathbf D = \mathbf X^\top\mathbf W\mathbf X\) and \(\mathbf D^\top\mathbf V^{-1}(\mathbf y-\boldsymbol\mu) = \mathbf X^\top\mathbf W\boldsymbol\Delta^{-1}(\mathbf y-\boldsymbol\mu)\), and (14) becomes</p>
+
+<div class="eq">\[ \boldsymbol\beta^{(r+1)} = (\mathbf X^\top\mathbf W\mathbf X)^{-1}\mathbf X^\top\mathbf W\big[\mathbf X\boldsymbol\beta^{(r)} + \boldsymbol\Delta^{-1}(\mathbf y-\boldsymbol\mu)\big] = (\mathbf X^\top\mathbf W\mathbf X)^{-1}\mathbf X^\top\mathbf W\mathbf z: \]<span class="tag-n">(16)</span></div>
+
+<p>a weighted least-squares regression of \(\mathbf z\) on \(\mathbf X\), repeated until convergence. It is the same algorithm that fits any GLM; the only thing that changes from one quasi model to another is the function \(V\) inside the weights. The “Gauss–Newton” in Wedderburn's title comes from here: (14) is exactly the Gauss–Newton step for minimising \(\sum_i (y_i - \mu_i)^2/V_i\) with the \(V_i\) frozen at the current iteration — weighted nonlinear least squares.</p>
+
+<p><strong>Example.</strong> On the insect dataset of §6 (four sprays, log link, \(V(\mu) = \mu\)), the iterations of (16) from a naive start are:</p>
+
+<!--qp-trace-->
+
+<h3>4.3 The dispersion \(\phi\): the Pearson estimator</h3>
+
+<p>By (5), \(\mathbb E[(Y_i - \mu_i)^2/V(\mu_i)] = \phi\) for every observation. This suggests the moment estimator</p>
+
+<div class="eq">\[ \hat\phi = \frac{1}{n - p}\sum_{i=1}^{n} \frac{(y_i - \hat\mu_i)^2}{V(\hat\mu_i)} = \frac{X^2}{n - p}, \]<span class="tag-n">(17)</span></div>
+
+<p>Pearson's \(X^2\) statistic divided by the degrees of freedom. The \(n - p\) instead of \(n\) compensates for the \(p\) estimated parameters, exactly as in \(s^2 = \text{RSS}/(n-p)\) in linear regression (which is the case \(V = 1\)). An alternative is \(D/(n-p)\), the deviance over the degrees of freedom, but it is biased when counts are small or proportions are near 0 and 1; Pearson's \(\hat\phi\) is consistent whenever (5) holds, and it is the default in R and in <code>statsmodels</code>.</p>
+
+<h3>4.4 The covariance of \(\hat{\boldsymbol\beta}\)</h3>
+
+<p>Expand (13) around the true value: \(\mathbf 0 = \mathbf U(\hat{\boldsymbol\beta}) \approx \mathbf U(\boldsymbol\beta) - \mathcal I(\hat{\boldsymbol\beta} - \boldsymbol\beta)\), with \(\mathcal I = \mathbf D^\top\mathbf V^{-1}\mathbf D/\phi\). So \(\hat{\boldsymbol\beta} - \boldsymbol\beta \approx \mathcal I^{-1}\mathbf U(\boldsymbol\beta)\) and, since the observations are independent,</p>
+
+<div class="eq">\[ \operatorname{Cov}(\hat{\boldsymbol\beta}) \approx \mathcal I^{-1}\operatorname{Cov}(\mathbf U)\,\mathcal I^{-1} = \mathcal I^{-1}\mathcal I\,\mathcal I^{-1} = \phi\,\big(\mathbf D^\top\mathbf V^{-1}\mathbf D\big)^{-1} = \phi\,(\mathbf X^\top\mathbf W\mathbf X)^{-1}. \]<span class="tag-n">(18)</span></div>
+
+<p>The middle step uses \(\operatorname{Cov}(\mathbf U) = \mathcal I\), the matrix version of (8)–(9). In practice \(\phi\) is replaced by \(\hat\phi\) from (17). Result: <strong>the standard errors of the quasi model are those of the “nominal” GLM multiplied by \(\sqrt{\hat\phi}\)</strong>. For quasi-Poisson, the Poisson ones times \(\sqrt{\hat\phi}\); for quasi-binomial, the binomial ones times \(\sqrt{\hat\phi}\).</p>
+
+<p>And if the variance function is wrong — if the true variance is \(\boldsymbol\Sigma \ne \phi\mathbf V\)? Then \(\operatorname{Cov}(\mathbf U) \ne \mathcal I\) and the correct covariance is the <strong>sandwich</strong></p>
+
+<div class="eq">\[ \operatorname{Cov}(\hat{\boldsymbol\beta}) \approx \big(\mathbf D^\top\mathbf V^{-1}\mathbf D\big)^{-1}\;\mathbf D^\top\mathbf V^{-1}\boldsymbol\Sigma\,\mathbf V^{-1}\mathbf D\;\big(\mathbf D^\top\mathbf V^{-1}\mathbf D\big)^{-1}, \]<span class="tag-n">(19)</span></div>
+
+<p>estimated by replacing \(\boldsymbol\Sigma\) with \(\operatorname{diag}\{(y_i - \hat\mu_i)^2\}\). It assumes no form for the variance, but it is noisy when \(n\) is small (§9 measures this).</p>
+
+<h3>4.5 Tests: \(t\) and \(F\) instead of \(z\) and \(\chi^2\)</h3>
+
+<p>Since \(\phi\) is estimated, inference follows the linear-regression template, not the likelihood one:</p>
+
+<ul>
+<li><strong>One coefficient:</strong> \(t = \hat\beta_j/\text{SE}(\hat\beta_j)\), compared with \(t_{n-p}\).</li>
+<li><strong>Nested models</strong> (the smaller with \(p_0\) parameters, the larger with \(p_1\)):</li>
+</ul>
+
+<div class="eq">\[ F = \frac{(D_0 - D_1)/(p_1 - p_0)}{\hat\phi_1} \;\overset{\text{approx.}}{\sim}\; F_{p_1 - p_0,\; n - p_1}, \]<span class="tag-n">(20)</span></div>
+
+<p>with \(\hat\phi_1\) estimated in the larger model. If \(\phi\) were known and equal to 1, \((D_0 - D_1)\) would be the likelihood-ratio test with \(\chi^2_{p_1-p_0}\). Dividing by \(\hat\phi\) “discounts” the overdispersion, and using \(F\) instead of \(\chi^2\) discounts the uncertainty of having estimated \(\hat\phi\).</p>
+
+<h3>4.6 When variance functions must be compared</h3>
+
+<p>\(Q\) cannot choose between \(V(\mu) = \mu(1-\mu)\) and \(V(\mu) = \mu^2(1-\mu)^2\): the two live on different scales. Nelder and Pregibon (1987) solved this with the <strong>extended quasi-likelihood</strong></p>
+
+<div class="eq">\[ Q^{+} = -\frac12\sum_{i=1}^n\left[\frac{d_i}{\phi} + \log\big(2\pi\phi\, V(y_i)\big)\right], \]<span class="tag-n">(21)</span></div>
+
+<p>where \(d_i\) is observation \(i\)'s contribution to the deviance (12). The \(\log V(y_i)\) term is what allows different \(V\)s to be compared: \(Q^+\) is the saddlepoint approximation to the log-likelihood, and for the normal and inverse Gaussian it is exact. Maximising over \(\phi\) gives \(\hat\phi = D/n\). For model selection with overdispersion, ecologists also use the <strong>QAIC</strong> of Lebreton et al. (1992), \(\text{QAIC} = -2\ell/\hat c + 2k\), with \(\hat c = \hat\phi\) and \(k\) counting \(\phi\).</p>
+
+<h2><span class="n">§5</span>The algebraic advantages</h2>
+
+<p>The properties below are why quasi-likelihood is so widely used. Each one is a short calculation.</p>
+
+<h3>5.1 Consistency needs only the right mean</h3>
+
+<p>Take the expectation of (13) at the true value of \(\boldsymbol\beta\):</p>
+
+<div class="eq">\[ \mathbb E[\mathbf U(\boldsymbol\beta)] = \frac{1}{\phi}\,\mathbf D^\top\mathbf V^{-1}\,\mathbb E[\mathbf y - \boldsymbol\mu] = \mathbf 0 \quad\text{whenever}\quad \mathbb E[Y_i] = \mu_i(\boldsymbol\beta). \]<span class="tag-n">(22)</span></div>
+
+<p>The calculation never used the variance. An estimating equation with zero expectation at the true value (an <em>unbiased estimating equation</em>) yields, under regularity conditions, a consistent estimator. So \(\hat{\boldsymbol\beta}\) is consistent <strong>even if \(V\) is wrong</strong>. A wrong variance spoils the standard errors (which (19) fixes) and the efficiency (§5.3), but it does not point the estimator at the wrong place.</p>
+
+<h3>5.2 \(\phi\) separates from \(\boldsymbol\beta\)</h3>
+
+<p>We have seen that \(\phi\) cancels in (13) and (14). Algebraically, this means the problem splits in two: first estimate \(\boldsymbol\beta\) as if \(\phi = 1\); then \(\phi\) by (17); finally, the covariance (18) is the nominal one multiplied by \(\hat\phi\). <strong>Example:</strong> in §6, quasi-Poisson returns exactly the same \(\hat\beta\) as Poisson (in the table, a single column of estimates serves both). That is why switching from Poisson to quasi-Poisson never changes a prediction; it only changes the uncertainty.</p>
+
+<h3>5.3 Optimality: the “Gauss–Markov” of estimating equations</h3>
+
+<p>Why \(\mathbf D^\top\mathbf V^{-1}(\mathbf y-\boldsymbol\mu)\) in particular? Consider any estimating equation <strong>linear in \(\mathbf y\)</strong>,</p>
+
+<div class="eq">\[ \mathbf g(\boldsymbol\beta) = \mathbf A^\top(\mathbf y - \boldsymbol\mu) = \mathbf 0, \]<span class="tag-n">(23)</span></div>
+
+<p>with \(\mathbf A\) any \(n\times p\) matrix (which may depend on \(\boldsymbol\beta\)). By the same argument as in (18), the root has \(\hat{\boldsymbol\beta} - \boldsymbol\beta \approx (\mathbf A^\top\mathbf D)^{-1}\mathbf A^\top(\mathbf y-\boldsymbol\mu)\) and asymptotic covariance</p>
+
+<div class="eq">\[ \mathbf C(\mathbf A) = (\mathbf A^\top\mathbf D)^{-1}\,\mathbf A^\top\boldsymbol\Sigma\mathbf A\,(\mathbf D^\top\mathbf A)^{-1}, \qquad \boldsymbol\Sigma = \operatorname{Cov}(\mathbf y) = \phi\mathbf V. \]<span class="tag-n">(24)</span></div>
+
+<p>The quasi-likelihood choice is \(\mathbf A^\star = \boldsymbol\Sigma^{-1}\mathbf D\), which gives \(\mathbf C(\mathbf A^\star) = (\mathbf D^\top\boldsymbol\Sigma^{-1}\mathbf D)^{-1}\). <strong>Claim:</strong> \(\mathbf C(\mathbf A) - \mathbf C(\mathbf A^\star)\) is positive semidefinite for every \(\mathbf A\). <strong>Proof.</strong> Define</p>
+
+<div class="eq">\[ \mathbf M = (\mathbf A^\top\mathbf D)^{-1}\mathbf A^\top - (\mathbf D^\top\boldsymbol\Sigma^{-1}\mathbf D)^{-1}\mathbf D^\top\boldsymbol\Sigma^{-1}. \]<span class="tag-n">(25)</span></div>
+
+<p>\(\mathbf M\boldsymbol\Sigma\mathbf M^\top\) is positive semidefinite (it is a covariance). Expanding it, both cross terms equal</p>
+
+<div class="eq">\[ (\mathbf A^\top\mathbf D)^{-1}\mathbf A^\top\boldsymbol\Sigma\,\boldsymbol\Sigma^{-1}\mathbf D\,(\mathbf D^\top\boldsymbol\Sigma^{-1}\mathbf D)^{-1} = \underbrace{(\mathbf A^\top\mathbf D)^{-1}\mathbf A^\top\mathbf D}_{\mathbf I}\,(\mathbf D^\top\boldsymbol\Sigma^{-1}\mathbf D)^{-1} = \mathbf C(\mathbf A^\star), \]<span class="tag-n">(26)</span></div>
+
+<p>and the last term is also \(\mathbf C(\mathbf A^\star)\). Therefore</p>
+
+<div class="eq">\[ \mathbf 0 \preceq \mathbf M\boldsymbol\Sigma\mathbf M^\top = \mathbf C(\mathbf A) - 2\,\mathbf C(\mathbf A^\star) + \mathbf C(\mathbf A^\star) = \mathbf C(\mathbf A) - \mathbf C(\mathbf A^\star). \quad\blacksquare \]<span class="tag-n">(27)</span></div>
+
+<p>Among all estimators defined by equations linear in \(\mathbf y\), the quasi-likelihood one has the smallest asymptotic variance (Godambe, 1960; McCullagh, 1983). It is the generalisation of the Gauss–Markov theorem: with \(V = 1\) and the identity link, \(\mathbf A^\star \propto \mathbf X\) and (23) are the least-squares normal equations. Two practical consequences: (i) <strong>getting the shape of \(V\) right buys efficiency</strong> — §9 measures how much; (ii) the guarantee is only within the linear class: if the true distribution is known and is <em>not</em> in the exponential family, full maximum likelihood can be more efficient.</p>
+
+<h3>5.4 The exponential family is a special case</h3>
+
+<p>If there is an exponential-family distribution with variance function \(V\), then \(Q\) <em>is</em> its log-likelihood (up to terms in \(y\)) — compare (2) with (6) and integrate. In that case the quasi-likelihood estimator is the maximum likelihood estimator, with all its efficiency. Quasi-likelihood is not an approximate stand-in for the GLM: it is the general theory, and the classical GLM is the case in which there is a distribution behind it.</p>
+
+<h3>5.5 More freedom with the same algorithm</h3>
+
+<ul>
+<li><strong>Any positive \(V\)</strong>, even with no distribution (like (4)), fits in the same IRLS (16).</li>
+<li><strong>\(\phi\) free in both directions:</strong> \(\hat\phi \lt 1\) (underdispersion) is as admissible as \(\hat\phi \gt 1\). In the Poisson and binomial, \(\phi = 1\) is imposed.</li>
+<li><strong>Responses outside the “official” support:</strong> quasi-Poisson accepts continuous non-negative \(y\) (spending, concentrations), and quasi-binomial accepts continuous proportions — \(Q\) only requires the integral (10) to exist.</li>
+</ul>
+
+<h2><span class="n">§6</span>Example 1 — quasi-Poisson: insects per plot</h2>
+
+<p>Four sprays (A, B, C, D) are applied to 12 plots each, and the number of live insects per plot is counted. The true means are 15, 12, 4 and 6, but plots differ from one another (microclimate, edges, vegetation), and the data were generated with \(\operatorname{Var}(Y) = 3\mu\) — exactly the case quasi-Poisson describes, with \(\phi = 3\). The first diagnostic needs no model: with groups, compare mean and variance.</p>
+
+<!--qp-groups-->
+
+<p>The model is \(\log\mu_{i} = \beta_0 + \beta_1[\text{B}] + \beta_2[\text{C}] + \beta_3[\text{D}]\). Fitting Poisson and quasi-Poisson:</p>
+
+<!--qp-fit-->
+
+<p>Three readings:</p>
+
+<ul>
+<li><strong>\(\hat\phi = 3.34\)</strong>, close to the true 3. The Poisson standard errors are \(\sqrt{3.34} = 1.83\) times too small.</li>
+<li><strong>The interval for B − A</strong> goes from \([-0.272,\ 0.170]\) to \([-0.467,\ 0.365]\). As a rate ratio, \(e^{\hat\beta_1} = 0.95\): the two sprays are indistinguishable in both models, but Poisson promises almost twice the precision the data have.</li>
+<li><strong>The global test</strong> of the spray effect is still significant — \(F_{3,44} = 7.18\), p = 0.0005 — but the evidence is more than ten orders of magnitude less extreme than Poisson's (\(\chi^2_3 = 72.0\), p \(\approx 10^{-15}\)). With smaller effects, this gap is where false positives live.</li>
+</ul>
+
+<p>The sandwich column lies between the other two for some coefficients and above quasi-Poisson for C − A. With 12 plots per group it estimates a separate variance per group and is much noisier than quasi-Poisson, which pools all 48 observations into a single \(\hat\phi\).</p>
+
+<h2><span class="n">§7</span>Example 2 — quasi-binomial: seed germination</h2>
+
+<p>Two seed types are germinated on plates of 30 seeds, with water or with a plant extract; eight plates per combination. The question is whether the extract acts differently on the two types — the <strong>interaction</strong>. Seeds on the same plate share moisture and temperature, so they germinate in a correlated way: the number germinated per plate is not binomial. If each plate's probability varies around the mean with intra-plate correlation \(\rho\), the variance is</p>
+
+<div class="eq">\[ \operatorname{Var}(Y_i) = m\,\mu_i(1-\mu_i)\,\big[1 + (m-1)\rho\big], \]<span class="tag-n">(28)</span></div>
+
+<p>that is, the binomial variance times \(\phi = 1 + (m-1)\rho\). With the same \(m\) on every plate this is exactly quasi-binomial. Here \(\rho = 0.06\) gives \(\phi = 2.74\), and <strong>the true interaction is zero</strong>.</p>
+
+<!--qb-fit-->
+
+<p>This dataset is instructive precisely because it is “unlucky”. The type 1 · extract combination germinated 15% against 31% expected, which produced an estimated interaction of 1.2 where the true one is zero, and \(\hat\phi = 1.54\), well below the true 2.74. The binomial rejects with p \(\approx 3\times 10^{-5}\); quasi-binomial also rejects, with p = 0.002. A single sample cannot tell which method is calibrated. For that, we repeat the same design 2,000 times, always with no interaction, and count rejections at 5%:</p>
+
+<ul>
+<li><strong>binomial (\(\chi^2_1\)): rejects 22.6% of the time</strong> — more than four times the nominal level;</li>
+<li><strong>quasi-binomial (\(F_{1,28}\)): rejects 4.4%</strong> — within Monte Carlo error of 5%.</li>
+</ul>
+
+<p>Across those 2,000 repetitions \(\hat\phi\) averaged 2.77 (true 2.74), with 80% of values between 1.92 and 3.68: our sample was in the lowest 10%. Quasi-binomial is calibrated in aggregate, and the variability of \(\hat\phi\) with 28 degrees of freedom is the price of not knowing \(\phi\) — the \(F\) test already accounts for it.</p>
+
+<div class="note"><strong>Plates of different sizes.</strong> By (28), if \(m_i\) varies, \(\phi_i = 1 + (m_i - 1)\rho\) varies with it, and a single \(\phi\) is only an approximation. Williams (1982) proposed weights that correct for this; the full-likelihood alternative is the beta-binomial.</div>
+
+<h2><span class="n">§8</span>Example 3 — Wedderburn's variance: continuous proportions</h2>
+
+<p>Back to 1974. We simulate data in the leaf-blotch format: 10 varieties × 9 sites, the proportion of leaf area affected with \(\operatorname{logit}\mu_{ij} = \alpha_i + \beta_j\) — from almost zero to almost 1 — and a Beta distribution whose variance is exactly \(\mu^2(1-\mu)^2\). We fit the same mean model with two variance functions: the binomial \(\mu(1-\mu)\) (quasi-binomial, what many people would do) and Wedderburn's (4).</p>
+
+<!--wd-fig-->
+
+<!--wd-table-->
+
+<ul>
+<li><strong>The residual pattern.</strong> With the binomial variance, the mean squared residual rises from 0.68 in the lowest fifth to 1.55 in the fourth fifth: the assumed variance is too large for small proportions relative to those in the middle. With Wedderburn's, the five fifths stay between 0.84 and 1.14. It is the same diagnosis Wedderburn made in 1974. (The pattern is less dramatic than the theoretical ratio \(\mu(1-\mu)\) would suggest, because the wrong \(V\) itself distorts the fit: with weights \(\propto\mu(1-\mu)\), the extreme observations barely count and end up poorly fitted.)</li>
+<li><strong>\(\hat\phi\) does not compare models.</strong> 0.158 versus 1.113 does not mean the first fits “better”; the two \(V\)s are on different scales. \(Q^+\) is what compares them: 121.8 against 97.1, in favour of \(\mu^2(1-\mu)^2\).</li>
+<li><strong>Efficiency.</strong> The contrast variety 10 − variety 1 (true 3.5) comes out at 4.00 with SE 0.50 under the right variance, and 4.17 with SE 0.68 under the binomial one. The sandwich tells the same story (0.35 against 0.46): even with robust standard errors, the wrong variance wastes information — the theorem of §5.3 at work.</li>
+</ul>
+
+<h2><span class="n">§9</span>When quasi models are good</h2>
+
+<p>To measure rather than opine, four simulation studies with 2,000 datasets each. S1 and S3 generate counts with \(\operatorname{Var} = 3\mu\) (the quasi-Poisson assumption is true); S2 generates continuous positive data with \(\operatorname{Var} = 0.25\,\mu^2\) and fits them with the wrong \(V\) (\(\mu\)) and the right one (\(\mu^2\)).</p>
+
+<!--q-sim-->
+
+<p>Quasi-likelihood is a good choice when:</p>
+
+<ol>
+<li><strong>The overdispersion is proportional to the nominal variance.</strong> In S1, Poisson covers 73.8% and quasi-Poisson 94.5%. This is the case for aggregated counts of homogeneous units, for proportions with a constant group size (28), and for any situation in which a plot of variance against mean (like the table in §6) shows a roughly constant ratio.</li>
+<li><strong>The interest is in \(\boldsymbol\beta\), not in the distribution.</strong> Effects, rate ratios, odds ratios, hypothesis tests: all of these need only the mean and honest standard errors.</li>
+<li><strong>There is no reasonable distribution.</strong> Continuous proportions, indices, counts with weak and unknown dependence — leaf blotch is the textbook case.</li>
+<li><strong>The sample is small and \(V\) is plausible.</strong> In S3, with \(n = 12\), quasi-Poisson with the \(t\) quantile covers 95.2%, while the sandwich drops to 85.8%: a single parameter \(\phi\) is far more stable than one variance per observation. Note the difference between the normal quantile (92.0%) and \(t\) (95.2%): with small \(n\), using \(t\) and \(F\) matters.</li>
+<li><strong>You want robustness without complication.</strong> The fit is that of the nominal GLM, and \(\hat{\boldsymbol\beta}\) stays consistent even if \(V\) is wrong (5.1).</li>
+</ol>
+
+<h2><span class="n">§10</span>When quasi models are bad</h2>
+
+<ol>
+<li><strong>When the shape of the variance is wrong.</strong> In S2, using \(V = \mu\) for data with variance \(\propto\mu^2\) keeps \(\hat\beta_1\) unbiased, but the actual standard deviation of the estimator rises from 0.124 to 0.162 — a variance 1.7 times larger, which is like throwing away about 40% of the data. And the reported standard error (0.148 on average) understates the real one (0.162): coverage drops to 93.3%. Multiplying by \(\sqrt{\hat\phi}\) fixes the <em>average size</em> of the variance, not its <em>shape</em>. The same holds for counts with \(\operatorname{Var} = \mu + \mu^2/\theta\): quasi-Poisson gives weight \(\propto\mu\) precisely to the noisiest observations — the article <a href="{note:negative-binomial}">From Poisson to the negative binomial</a> shows its coverage falling to 88.6% in that case.</li>
+<li><strong>When you need probabilities.</strong> There is no distribution, so there is no \(\Pr(Y = 0)\), no predictive quantiles, no prediction intervals and no simulation of new data. To predict “how many policies will have zero claims”, you need a full model (negative binomial, beta-binomial).</li>
+<li><strong>When you need a likelihood.</strong> Without \(\ell\) there is no AIC, no BIC, no likelihood ratio between different families and no Bayesian inference. \(Q^+\) and QAIC are useful patches, not full substitutes.</li>
+<li><strong>With binary (0/1) data.</strong> For \(Y \in \{0, 1\}\), \(\operatorname{Var}(Y) = \mu(1-\mu)\) <em>necessarily</em>: there is no overdispersion in a Bernoulli, and \(\phi\) is not identifiable. We simulated 2,000 datasets of \(n = 200\) binary responses with strong unobserved heterogeneity (a \(\mathcal N(0,\ 1.5^2)\) random effect on the logit scale) and fitted quasi-binomial: \(\hat\phi\) averaged 1.009, with 95% of values between 0.979 and 1.046. The heterogeneity exists, but \(\hat\phi\) cannot see it. It only shows up with grouping (\(m_i \gt 1\)) or with a mixed model.</li>
+<li><strong>When the problem is the mean, not the variance.</strong> A forgotten covariate, a missing interaction or a nonlinear relationship inflate \(\hat\phi\). The quasi model “absorbs” the symptom with larger standard errors, but the coefficients stay biased. Get \(\mathbb E[Y]\) right first — it is the only assumption consistency depends on (5.1).</li>
+<li><strong>With dependence.</strong> Repeated measures on the same individual and clustered units violate the independence that (18) uses. The natural extension is GEE, which is quasi-likelihood with a working correlation matrix — or a mixed model.</li>
+<li><strong>With structure the mean and variance do not capture.</strong> Structural excess zeros, truncation, mixtures of populations: here the shape of the distribution is the phenomenon, and a model for it (zero-inflated, hurdle) is needed.</li>
+</ol>
+
+<h2><span class="n">§11</span>In practice: R and Python</h2>
+
+<pre class="code"># R — quasi-Poisson and quasi-binomial
+qp &lt;- glm(insects ~ spray, family = quasipoisson, data = d)
+summary(qp)$dispersion                      # Pearson phi-hat (17)
+anova(update(qp, . ~ 1), qp, test = "F")    # F test (20)
+
+qb &lt;- glm(cbind(germ, 30 - germ) ~ seed * extract, family = quasibinomial, data = g)
+
+# Wedderburn's variance: a quasi family with its own V and deviance
+wedd &lt;- quasi(link = "logit", variance = "mu(1-mu)")
+wedd$variance   &lt;- function(mu) (mu * (1 - mu))^2
+wedd$dev.resids &lt;- function(y, mu, wt)
+  wt * 2 * ((2*y - 1) * (qlogis(y) - qlogis(mu)) - 2 + y/mu + (1 - y)/(1 - mu))
+fw &lt;- glm(prop ~ site + variety, family = wedd, data = leaf)</pre>
+
+<pre class="code">import statsmodels.api as sm
+import statsmodels.formula.api as smf
+
+# quasi-Poisson: the Poisson fit with phi estimated by Pearson
+qp = smf.glm("insects ~ spray", data=d, family=sm.families.Poisson()).fit(scale="X2")
+print(qp.scale)                       # phi-hat (17)
+sand = smf.glm("insects ~ spray", data=d, family=sm.families.Poisson()).fit(cov_type="HC0")  # (19)
+
+# quasi-binomial
+qb = smf.glm("germ + fail ~ seed * extract", data=g,          # two columns: successes and failures
+             family=sm.families.Binomial()).fit(scale="X2")</pre>
+
+<p>For a \(V\) with no ready-made family, this article's script implements the IRLS (16), \(\hat\phi\) (17), the deviance (12), the sandwich (19) and \(Q^+\) (21) in about 60 lines of <code>numpy</code>.</p>
+
+<h2><span class="n">§12</span>Summary</h2>
+
+<ol>
+<li>The score equations of a GLM use only the mean \(\mu_i(\boldsymbol\beta)\) and the variance function \(V(\mu_i)\). Wedderburn (1974) drew the conclusion: specify only \(\mathbb E[Y] = \mu\) and \(\operatorname{Var}(Y) = \phi V(\mu)\).</li>
+<li>The quasi-score \(U = (Y-\mu)/(\phi V(\mu))\) has mean zero, variance \(1/(\phi V)\) and satisfies the information identity — the three properties behind the asymptotic theory of likelihood. Its integral \(Q\) is the quasi-likelihood.</li>
+<li>\(\hat{\boldsymbol\beta}\) solves \(\mathbf D^\top\mathbf V^{-1}(\mathbf y-\boldsymbol\mu) = \mathbf 0\) with the same IRLS as GLMs. \(\phi\) cancels; it is estimated afterwards by \(X^2/(n-p)\); the covariance is \(\hat\phi(\mathbf X^\top\mathbf W\mathbf X)^{-1}\). Tests use \(t\) and \(F\).</li>
+<li>Advantages: consistency requiring only the right mean; separation of \(\boldsymbol\beta\) and \(\phi\); optimality among linear estimating equations (a generalised Gauss–Markov); the exponential family as a special case; any \(V\), even with no distribution, and \(\phi \lt 1\).</li>
+<li>Examples: quasi-Poisson (\(\hat\phi = 3.34\), standard errors 1.8 times larger than Poisson's), quasi-binomial (type I error 22.6% → 4.4%) and Wedderburn's variance (patternless residuals, larger \(Q^+\), a more precise contrast).</li>
+<li>They are good when the variance is proportional to the nominal one, the interest is in the coefficients, there is no natural distribution or the sample is small. They are bad when the shape of \(V\) is wrong (loss of efficiency and coverage), when probabilities or a likelihood are needed, with binary data, with dependence, or when the problem is in the mean.</li>
+</ol>
+
+<h2><span class="n">§13</span>Further reading</h2>
+
+<ul>
+<li>R. W. M. Wedderburn (1974). <em>Quasi-likelihood functions, generalized linear models, and the Gauss–Newton method</em>. Biometrika, 61(3), 439–447. The original paper, short and readable.</li>
+<li>J. A. Nelder and R. W. M. Wedderburn (1972). <em>Generalized linear models</em>. Journal of the Royal Statistical Society A, 135(3), 370–384.</li>
+<li>P. McCullagh (1983). <em>Quasi-likelihood functions</em>. Annals of Statistics, 11(1), 59–67. The asymptotic theory.</li>
+<li>P. McCullagh and J. A. Nelder (1989). <em>Generalized Linear Models</em>, 2nd ed., ch. 9 and 10. Chapman &amp; Hall. Includes the leaf-blotch data.</li>
+<li>J. A. Nelder and D. Pregibon (1987). <em>An extended quasi-likelihood function</em>. Biometrika, 74(2), 221–232.</li>
+<li>K.-Y. Liang and S. L. Zeger (1986). <em>Longitudinal data analysis using generalized linear models</em>. Biometrika, 73(1), 13–22. GEE.</li>
+<li>V. P. Godambe (1960). <em>An optimum property of regular maximum likelihood estimation</em>. Annals of Mathematical Statistics, 31(4), 1208–1211. The origin of optimal estimating-equation theory.</li>
+<li>D. A. Williams (1982). <em>Extra-binomial variation in logistic linear models</em>. Applied Statistics, 31(2), 144–148.</li>
+<li>J.-D. Lebreton, K. P. Burnham, J. Clobert and D. R. Anderson (1992). <em>Modeling survival and testing biological hypotheses using marked animals</em>. Ecological Monographs, 62(1), 67–118. Origin of QAIC.</li>
+<li>A. Agresti (2015). <em>Foundations of Linear and Generalized Linear Models</em>, ch. 8. Wiley.</li>
+</ul>

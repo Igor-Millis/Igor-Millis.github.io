@@ -8,6 +8,7 @@ from .charts import reliability as reliability_svg
 from .bets import COMPONENTS as BETS_COMPONENTS
 from .bootstrap import COMPONENTS as BOOT_COMPONENTS
 from .negbin import COMPONENTS as NB_COMPONENTS
+from .quasi import COMPONENTS as QL_COMPONENTS
 from .core import NOTES, ROOT, Site, attr, esc, integer, num
 from .layout import page, section
 
@@ -523,12 +524,14 @@ def note(site: Site, lang: str, slug: str) -> str:
         html_body = html_body.replace("{note:%s}" % other, site.url(lang, f"note:{other}"))
     # Component placeholders: <!--name--> in the note body -> rendered component
     components = {"explorer": threshold_explorer, "reliability": reliability_figure,
-                  "calibration-table": calibration_table, **BETS_COMPONENTS, **BOOT_COMPONENTS, **NB_COMPONENTS}
+                  "calibration-table": calibration_table, **BETS_COMPONENTS, **BOOT_COMPONENTS, **NB_COMPONENTS, **QL_COMPONENTS}
     for name, render in components.items():
         if f"<!--{name}-->" in html_body:
             html_body = html_body.replace(f"<!--{name}-->", render(site, lang))
     by = (f'<div class="byline"><span>{esc(site.config["author"]["name"])}</span><time datetime="{n["date"]}">{n["date"]}</time>'
           f'<span>{n["minutes"]} {esc(ui["min_read"])}</span><span class="accent">{esc(n["kind"])}</span></div>')
+    if n.get("tags"):
+        by += tags(n["tags"])
     head = page_head(f'<a href="{site.url(lang, "research")}" style="text-decoration:none">{esc(ui["back_research"])}</a>',
                      esc(n["title"]), esc(n["abstract"]), by)
     body = head + f'<section class="sec"><div class="wrap"><article class="article rv">{html_body}</article></div></section>'
@@ -546,6 +549,8 @@ def note(site: Site, lang: str, slug: str) -> str:
         "author": {"@type": "Person", "name": site.config["author"]["name"], "url": site.abs_url(lang, "about")},
         "url": site.abs_url(lang, key),
     }
+    if n.get("tags"):
+        ld["keywords"] = ", ".join(n["tags"])
     return page(site, lang, key, title=n["seo_title"], description=n["description"], body=body,
                 scripts=tuple(n.get("scripts", ())), head_extra=katex, jsonld=ld, og_type="article")
 
