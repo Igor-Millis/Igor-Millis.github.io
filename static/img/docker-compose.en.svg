@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="seta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2496ED"/>
+    </marker>
+    <marker id="setaCinza" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#5b6b7a"/>
+    </marker>
+  </defs>
+  <rect width="900" height="400" fill="#ffffff"/>
+
+  <!-- compose.yaml -->
+  <rect x="20" y="70" width="200" height="250" rx="12" fill="#fff8e1" stroke="#f0a500" stroke-width="2"/>
+  <text x="120" y="100" text-anchor="middle" font-size="16" font-weight="700" fill="#8a5a00">📄 compose.yaml</text>
+  <g font-family="Consolas, Menlo, monospace" font-size="12" fill="#1d2b36" xml:space="preserve">
+    <text x="36" y="132">services:</text>
+    <text x="36" y="152">  api:</text>
+    <text x="36" y="170">    build: .</text>
+    <text x="36" y="188">    ports: 5000:5000</text>
+    <text x="36" y="214">  redis:</text>
+    <text x="36" y="232">    image: redis:7</text>
+    <text x="36" y="250">    volumes: …</text>
+  </g>
+  <text x="120" y="296" text-anchor="middle" font-size="12" fill="#5b6b7a">the "dinner menu"</text>
+
+  <line x1="228" y1="195" x2="290" y2="195" stroke="#5b6b7a" stroke-width="2.5" marker-end="url(#setaCinza)"/>
+  <text x="258" y="170" text-anchor="middle" font-size="12" font-family="Consolas, Menlo, monospace" fill="#5b6b7a">docker</text>
+  <text x="258" y="184" text-anchor="middle" font-size="12" font-family="Consolas, Menlo, monospace" fill="#5b6b7a">compose up</text>
+
+  <!-- browser -->
+  <rect x="300" y="12" width="160" height="44" rx="10" fill="#f4f6f8" stroke="#c9d1d9"/>
+  <text x="380" y="40" text-anchor="middle" font-size="13" fill="#1d2b36">🌐 localhost:5000</text>
+  <line x1="400" y1="58" x2="400" y2="128" stroke="#2496ED" stroke-width="2.5" marker-end="url(#seta)"/>
+
+  <!-- network -->
+  <rect x="300" y="88" width="580" height="250" rx="16" fill="#f4f6f8" stroke="#9aa5b1" stroke-width="1.5" stroke-dasharray="7 5"/>
+  <text x="864" y="112" text-anchor="end" font-size="13" font-weight="600" fill="#37474f">🔌 internal network created by Compose</text>
+
+  <!-- api -->
+  <rect x="330" y="135" width="200" height="120" rx="12" fill="#e3f2fd" stroke="#2496ED" stroke-width="2"/>
+  <text x="430" y="166" text-anchor="middle" font-size="16" font-weight="700" fill="#0d47a1">📦 api</text>
+  <text x="430" y="192" text-anchor="middle" font-size="13" fill="#1d2b36">Flask (your code)</text>
+  <text x="430" y="214" text-anchor="middle" font-size="12" fill="#5b6b7a">port 5000 published</text>
+  <text x="430" y="234" text-anchor="middle" font-size="12" fill="#5b6b7a">to the outside</text>
+
+  <line x1="535" y1="195" x2="640" y2="195" stroke="#2496ED" stroke-width="2.5" marker-end="url(#seta)"/>
+  <text x="588" y="182" text-anchor="middle" font-size="12" font-family="Consolas, Menlo, monospace" fill="#2496ED">host="redis"</text>
+
+  <!-- redis -->
+  <rect x="648" y="135" width="200" height="120" rx="12" fill="#ffebee" stroke="#e53935" stroke-width="2"/>
+  <text x="748" y="166" text-anchor="middle" font-size="16" font-weight="700" fill="#b71c1c">📦 redis</text>
+  <text x="748" y="192" text-anchor="middle" font-size="13" fill="#1d2b36">visit counter</text>
+  <text x="748" y="214" text-anchor="middle" font-size="12" fill="#5b6b7a">no published port:</text>
+  <text x="748" y="234" text-anchor="middle" font-size="12" fill="#5b6b7a">only the api can reach it</text>
+
+  <!-- volume -->
+  <line x1="748" y1="257" x2="748" y2="288" stroke="#43a047" stroke-width="2.5"/>
+  <rect x="660" y="288" width="176" height="38" rx="8" fill="#e8f5e9" stroke="#43a047" stroke-width="2"/>
+  <text x="748" y="312" text-anchor="middle" font-size="13" font-weight="600" fill="#1b5e20">🔐 volume redis-data</text>
+
+  <text x="450" y="375" text-anchor="middle" font-size="13" fill="#5b6b7a">Services find each other by name, like extensions in the same office.</text>
+</svg>

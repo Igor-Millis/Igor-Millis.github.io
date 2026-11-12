@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="seta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#9aa5b1"/>
+    </marker>
+  </defs>
+  <rect width="900" height="470" fill="#ffffff"/>
+
+  <text x="200" y="36" text-anchor="middle" font-size="18" font-weight="700" fill="#1d2b36">Dockerfile</text>
+  <text x="640" y="36" text-anchor="middle" font-size="18" font-weight="700" fill="#1d2b36">Image layers</text>
+
+  <!-- container layer -->
+  <rect x="470" y="60" width="340" height="50" rx="8" fill="#ffffff" stroke="#2496ED" stroke-width="2" stroke-dasharray="7 5"/>
+  <text x="640" y="82" text-anchor="middle" font-size="14" font-weight="700" fill="#2496ED">✏️ the container's writable layer</text>
+  <text x="640" y="100" text-anchor="middle" font-size="12" fill="#5b6b7a">created by "docker run" · dies with the container</text>
+
+  <text x="840" y="230" font-size="13" fill="#7e57c2" font-weight="700" transform="rotate(90 840 230)" text-anchor="middle">IMAGE (read-only)</text>
+  <line x1="826" y1="122" x2="826" y2="440" stroke="#7e57c2" stroke-width="2"/>
+
+  <!-- layers, top = most recent -->
+  <g font-family="Consolas, Menlo, monospace" font-size="14">
+    <!-- COPY . . -->
+    <rect x="40" y="128" width="320" height="48" rx="6" fill="#f4f6f8" stroke="#c9d1d9"/>
+    <text x="56" y="158" fill="#1d2b36">COPY . .</text>
+    <rect x="470" y="128" width="340" height="48" rx="6" fill="#ffcdd2" stroke="#e53935"/>
+    <text x="640" y="150" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#b71c1c">your code</text>
+    <text x="640" y="168" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#b71c1c">changes all the time → rebuilt</text>
+
+    <!-- RUN pip -->
+    <rect x="40" y="186" width="320" height="48" rx="6" fill="#f4f6f8" stroke="#c9d1d9"/>
+    <text x="56" y="216" fill="#1d2b36">RUN pip install -r …</text>
+    <rect x="470" y="186" width="340" height="48" rx="6" fill="#c8e6c9" stroke="#43a047"/>
+    <text x="640" y="208" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#1b5e20">installed libraries</text>
+    <text x="640" y="226" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#1b5e20">✔ from cache</text>
+
+    <!-- COPY requirements -->
+    <rect x="40" y="244" width="320" height="48" rx="6" fill="#f4f6f8" stroke="#c9d1d9"/>
+    <text x="56" y="274" fill="#1d2b36">COPY requirements.txt .</text>
+    <rect x="470" y="244" width="340" height="48" rx="6" fill="#c8e6c9" stroke="#43a047"/>
+    <text x="640" y="266" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#1b5e20">dependency list</text>
+    <text x="640" y="284" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#1b5e20">✔ from cache</text>
+
+    <!-- WORKDIR -->
+    <rect x="40" y="302" width="320" height="48" rx="6" fill="#f4f6f8" stroke="#c9d1d9"/>
+    <text x="56" y="332" fill="#1d2b36">WORKDIR /app</text>
+    <rect x="470" y="302" width="340" height="48" rx="6" fill="#c8e6c9" stroke="#43a047"/>
+    <text x="640" y="324" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#1b5e20">/app folder</text>
+    <text x="640" y="342" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#1b5e20">✔ from cache</text>
+
+    <!-- FROM -->
+    <rect x="40" y="360" width="320" height="80" rx="6" fill="#f4f6f8" stroke="#c9d1d9"/>
+    <text x="56" y="405" fill="#1d2b36">FROM python:3.12-slim</text>
+    <rect x="470" y="360" width="340" height="80" rx="6" fill="#d1c4e9" stroke="#7e57c2"/>
+    <text x="640" y="392" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#311b92">base image (Linux + Python)</text>
+    <text x="640" y="412" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#311b92">shared with every image</text>
+    <text x="640" y="428" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#311b92">built on the same base</text>
+  </g>
+
+  <!-- mapping arrows -->
+  <line x1="364" y1="152" x2="464" y2="152" stroke="#9aa5b1" stroke-width="1.5" marker-end="url(#seta)"/>
+  <line x1="364" y1="210" x2="464" y2="210" stroke="#9aa5b1" stroke-width="1.5" marker-end="url(#seta)"/>
+  <line x1="364" y1="268" x2="464" y2="268" stroke="#9aa5b1" stroke-width="1.5" marker-end="url(#seta)"/>
+  <line x1="364" y1="326" x2="464" y2="326" stroke="#9aa5b1" stroke-width="1.5" marker-end="url(#seta)"/>
+  <line x1="364" y1="400" x2="464" y2="400" stroke="#9aa5b1" stroke-width="1.5" marker-end="url(#seta)"/>
+
+  <text x="200" y="110" text-anchor="middle" font-size="13" fill="#5b6b7a">each instruction = one layer</text>
+  <text x="450" y="462" text-anchor="middle" font-size="13" fill="#5b6b7a">Example: you only edited app.py → only the red layer is rebuilt.</text>
+</svg>

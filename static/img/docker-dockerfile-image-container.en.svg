@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 430" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="seta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1d2b36"/>
+    </marker>
+    <marker id="setaAzul" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2496ED"/>
+    </marker>
+  </defs>
+  <rect width="900" height="430" fill="#ffffff"/>
+
+  <!-- Dockerfile -->
+  <rect x="30" y="200" width="190" height="150" rx="12" fill="#fff8e1" stroke="#f0a500" stroke-width="2"/>
+  <text x="125" y="232" text-anchor="middle" font-size="18" font-weight="700" fill="#8a5a00">📄 Dockerfile</text>
+  <text x="125" y="256" text-anchor="middle" font-size="13" fill="#5b6b7a">the recipe</text>
+  <g font-family="Consolas, Menlo, monospace" font-size="12" fill="#1d2b36">
+    <text x="48" y="285">FROM python:3.12</text>
+    <text x="48" y="303">COPY . .</text>
+    <text x="48" y="321">RUN pip install …</text>
+    <text x="48" y="339">CMD [...]</text>
+  </g>
+
+  <!-- build arrow -->
+  <line x1="228" y1="275" x2="342" y2="275" stroke="#1d2b36" stroke-width="2.5" marker-end="url(#seta)"/>
+  <text x="285" y="264" text-anchor="middle" font-size="14" font-weight="700" font-family="Consolas, Menlo, monospace" fill="#1d2b36">build</text>
+
+  <!-- Imagem -->
+  <rect x="350" y="200" width="190" height="150" rx="12" fill="#ede7f6" stroke="#7e57c2" stroke-width="2"/>
+  <text x="445" y="232" text-anchor="middle" font-size="18" font-weight="700" fill="#4527a0">💿 Image</text>
+  <text x="445" y="256" text-anchor="middle" font-size="13" fill="#5b6b7a">the frozen cake</text>
+  <text x="445" y="292" text-anchor="middle" font-size="13" fill="#1d2b36">ready-made package,</text>
+  <text x="445" y="311" text-anchor="middle" font-size="13" fill="#1d2b36">read-only</text>
+  <text x="445" y="330" text-anchor="middle" font-size="13" fill="#1d2b36">(the "mold")</text>
+
+  <!-- run arrows -->
+  <line x1="548" y1="250" x2="660" y2="214" stroke="#1d2b36" stroke-width="2.5" marker-end="url(#seta)"/>
+  <line x1="548" y1="275" x2="660" y2="275" stroke="#1d2b36" stroke-width="2.5" marker-end="url(#seta)"/>
+  <line x1="548" y1="300" x2="660" y2="336" stroke="#1d2b36" stroke-width="2.5" marker-end="url(#seta)"/>
+  <text x="600" y="240" text-anchor="middle" font-size="14" font-weight="700" font-family="Consolas, Menlo, monospace" fill="#1d2b36">run</text>
+
+  <!-- Containers -->
+  <g text-anchor="middle">
+    <rect x="668" y="190" width="200" height="46" rx="10" fill="#e3f2fd" stroke="#2496ED" stroke-width="2"/>
+    <text x="768" y="219" font-size="15" font-weight="600" fill="#0d47a1">📦 Container 1 ▶ running</text>
+    <rect x="668" y="252" width="200" height="46" rx="10" fill="#e3f2fd" stroke="#2496ED" stroke-width="2"/>
+    <text x="768" y="281" font-size="15" font-weight="600" fill="#0d47a1">📦 Container 2 ▶ running</text>
+    <rect x="668" y="314" width="200" height="46" rx="10" fill="#e3f2fd" stroke="#2496ED" stroke-width="2"/>
+    <text x="768" y="343" font-size="15" font-weight="600" fill="#0d47a1">📦 Container 3 ▶ running</text>
+    <text x="768" y="392" font-size="13" fill="#5b6b7a">the served slices (the "objects")</text>
+  </g>
+
+  <!-- Registry -->
+  <rect x="300" y="24" width="290" height="96" rx="14" fill="#e8f5e9" stroke="#43a047" stroke-width="2"/>
+  <text x="445" y="58" text-anchor="middle" font-size="18" font-weight="700" fill="#1b5e20">☁️ Registry (e.g. Docker Hub)</text>
+  <text x="445" y="84" text-anchor="middle" font-size="13" fill="#5b6b7a">the image supermarket</text>
+  <text x="445" y="104" text-anchor="middle" font-size="12" fill="#5b6b7a">nginx · postgres · python · your image…</text>
+
+  <!-- push / pull -->
+  <line x1="420" y1="196" x2="420" y2="128" stroke="#2496ED" stroke-width="2.5" marker-end="url(#setaAzul)"/>
+  <text x="410" y="167" text-anchor="end" font-size="14" font-weight="700" font-family="Consolas, Menlo, monospace" fill="#2496ED">push</text>
+  <line x1="470" y1="124" x2="470" y2="192" stroke="#2496ED" stroke-width="2.5" marker-end="url(#setaAzul)"/>
+  <text x="480" y="167" font-size="14" font-weight="700" font-family="Consolas, Menlo, monospace" fill="#2496ED">pull</text>
+</svg>

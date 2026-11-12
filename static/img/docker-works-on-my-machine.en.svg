@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 500" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="seta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#5b6b7a"/>
+    </marker>
+  </defs>
+  <rect width="900" height="500" fill="#ffffff"/>
+
+  <!-- SEM DOCKER -->
+  <text x="30" y="40" font-size="20" font-weight="700" fill="#c0392b">Without Docker</text>
+
+  <rect x="30" y="60" width="300" height="170" rx="14" fill="#f4f6f8" stroke="#c9d1d9"/>
+  <text x="180" y="88" text-anchor="middle" font-size="16" font-weight="600" fill="#1d2b36">💻 Your computer</text>
+  <rect x="55" y="102" width="250" height="32" rx="6" fill="#ffffff" stroke="#2496ED"/>
+  <text x="180" y="123" text-anchor="middle" font-size="14" fill="#1d2b36">your code</text>
+  <rect x="55" y="140" width="250" height="32" rx="6" fill="#e8f5e9" stroke="#43a047"/>
+  <text x="180" y="161" text-anchor="middle" font-size="14" fill="#1d2b36">Python 3.12 ✔</text>
+  <rect x="55" y="178" width="250" height="32" rx="6" fill="#e8f5e9" stroke="#43a047"/>
+  <text x="180" y="199" text-anchor="middle" font-size="14" fill="#1d2b36">right libraries ✔</text>
+
+  <line x1="340" y1="118" x2="555" y2="118" stroke="#5b6b7a" stroke-width="2.5" marker-end="url(#seta)"/>
+  <text x="448" y="106" text-anchor="middle" font-size="14" fill="#5b6b7a">ships only the code</text>
+
+  <rect x="570" y="60" width="300" height="170" rx="14" fill="#f4f6f8" stroke="#c9d1d9"/>
+  <text x="720" y="88" text-anchor="middle" font-size="16" font-weight="600" fill="#1d2b36">🖥️ Server</text>
+  <rect x="595" y="102" width="250" height="32" rx="6" fill="#ffffff" stroke="#2496ED"/>
+  <text x="720" y="123" text-anchor="middle" font-size="14" fill="#1d2b36">your code</text>
+  <rect x="595" y="140" width="250" height="32" rx="6" fill="#fdecea" stroke="#c0392b"/>
+  <text x="720" y="161" text-anchor="middle" font-size="14" fill="#1d2b36">Python 3.8 ✘</text>
+  <rect x="595" y="178" width="250" height="32" rx="6" fill="#fdecea" stroke="#c0392b"/>
+  <text x="720" y="199" text-anchor="middle" font-size="14" fill="#1d2b36">missing library ✘</text>
+  <text x="720" y="252" text-anchor="middle" font-size="15" font-weight="600" fill="#c0392b">💥 "But it works on my machine!"</text>
+
+  <line x1="30" y1="280" x2="870" y2="280" stroke="#e1e6eb" stroke-width="2" stroke-dasharray="6 6"/>
+
+  <!-- COM DOCKER -->
+  <text x="30" y="318" font-size="20" font-weight="700" fill="#2496ED">With Docker</text>
+
+  <rect x="30" y="335" width="300" height="140" rx="14" fill="#f4f6f8" stroke="#c9d1d9"/>
+  <text x="180" y="360" text-anchor="middle" font-size="16" font-weight="600" fill="#1d2b36">💻 Your computer</text>
+  <rect x="50" y="372" width="260" height="88" rx="10" fill="#e3f2fd" stroke="#2496ED" stroke-width="2"/>
+  <text x="180" y="394" text-anchor="middle" font-size="13" font-weight="700" fill="#1565c0">📦 CONTAINER</text>
+  <text x="180" y="418" text-anchor="middle" font-size="13" fill="#1d2b36">your code</text>
+  <text x="180" y="438" text-anchor="middle" font-size="13" fill="#1d2b36">+ Python 3.12 + libraries</text>
+
+  <line x1="340" y1="416" x2="555" y2="416" stroke="#2496ED" stroke-width="2.5" marker-end="url(#seta)"/>
+  <text x="448" y="404" text-anchor="middle" font-size="14" fill="#2496ED">ships the whole container</text>
+
+  <rect x="570" y="335" width="300" height="140" rx="14" fill="#f4f6f8" stroke="#c9d1d9"/>
+  <text x="720" y="360" text-anchor="middle" font-size="16" font-weight="600" fill="#1d2b36">🖥️ Server</text>
+  <rect x="590" y="372" width="260" height="88" rx="10" fill="#e3f2fd" stroke="#2496ED" stroke-width="2"/>
+  <text x="720" y="394" text-anchor="middle" font-size="13" font-weight="700" fill="#1565c0">📦 THE SAME CONTAINER</text>
+  <text x="720" y="418" text-anchor="middle" font-size="13" fill="#1d2b36">your code</text>
+  <text x="720" y="438" text-anchor="middle" font-size="13" fill="#1d2b36">+ Python 3.12 + libraries ✔</text>
+</svg>

@@ -1,0 +1,635 @@
+<h2><span class="n">§1</span>A frase mais famosa da programação</h2>
+<p>Toda pessoa que já trabalhou com software ouviu (ou falou) isto:</p>
+<div class="note"><p><em>"Mas na minha máquina funciona!"</em></p>
+</div>
+<p>A cena é sempre parecida. Você passa semanas construindo um sistema. Ele roda perfeito no seu notebook. Aí você manda para um colega, ou sobe para o servidor, e… quebra. Erro estranho, biblioteca faltando, versão errada de alguma coisa.</p>
+<p>Por quê? Porque o seu programa <strong>não é só o seu código</strong>. Ele depende de um monte de coisa invisível ao redor:</p>
+<ul>
+<li>a versão da linguagem (Python 3.8? 3.12?);</li>
+<li>as bibliotecas instaladas (e as versões <em>delas</em>);</li>
+<li>o sistema operacional (Windows, macOS, Ubuntu, Debian…);</li>
+<li>variáveis de ambiente, arquivos de configuração, pastas que "por acaso" existiam no seu computador;</li>
+<li>programas auxiliares (um banco de dados, um Redis, o <code>ffmpeg</code>, o <code>libssl</code> …).</li>
+</ul>
+<p>Seu código é como uma planta: ele só cresce bem no solo certo, com a luz certa e a água certa. Quando você muda a planta de vaso, ela pode morrer — não porque a planta está errada, mas porque o <strong>ambiente</strong> mudou.</p>
+<p>O Docker resolve exatamente isso: <strong>ele permite levar a planta junto com o vaso, a terra e o clima.</strong></p>
+<figure><img src="/img/docker-works-on-my-machine.pt.svg" alt="A diferença entre mandar só o código e mandar o código com o ambiente" width="900" height="500" loading="lazy"><figcaption>A diferença entre mandar só o código e mandar o código com o ambiente</figcaption></figure>
+<h2><span class="n">§2</span>Uma história de navios (e por que o nome é "contêiner")</h2>
+<p>Antes de falar de computador, vale uma volta rápida em 1950.</p>
+<p>Naquela época, carregar um navio era um caos. Cada mercadoria tinha um formato: sacos de café, barris de óleo, caixas de madeira, pianos, carros. Estivadores passavam <strong>dias</strong> encaixando tudo no porão como um Tetris gigante. Mercadorias quebravam, eram roubadas, e cada porto tinha um jeito diferente de trabalhar.</p>
+<p>Aí veio uma ideia ridiculamente simples: <strong>o contêiner padronizado</strong>. Uma caixa de metal com tamanho fixo e encaixes padronizados nos cantos.</p>
+<p>O pulo do gato não é a caixa em si — é o <strong>padrão</strong>:</p>
+<ul>
+<li>O navio não precisa saber se dentro tem café ou piano. Ele só sabe carregar contêineres.</li>
+<li>O guindaste não precisa saber. O caminhão não precisa saber. O trem não precisa saber.</li>
+<li>Quem <em>enche</em> o contêiner se preocupa com o conteúdo. Quem <em>transporta</em> se preocupa só com a caixa.</li>
+</ul>
+<p>O custo de transporte despencou e o comércio mundial mudou para sempre.</p>
+<p>O Docker faz <strong>a mesma coisa com software</strong>:</p>
+<div class="tbl-wrap"><table class="txt">
+<thead>
+<tr>
+<th scope=col>Mundo dos navios</th>
+<th scope=col>Mundo do Docker</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mercadoria (café, piano…)</td>
+<td>Sua aplicação + tudo que ela precisa</td>
+</tr>
+<tr>
+<td>Contêiner padronizado</td>
+<td><strong>Container</strong> Docker</td>
+</tr>
+<tr>
+<td>Navio, trem, caminhão</td>
+<td>Seu notebook, o servidor, a nuvem (AWS, Azure, GCP…)</td>
+</tr>
+<tr>
+<td>"O navio não precisa saber o que tem dentro"</td>
+<td>"O servidor não precisa ter Python, Node, Java instalados — só Docker"</td>
+</tr>
+</tbody>
+</table></div>
+<p>É por isso que o logo do Docker é uma baleia carregando contêineres.</p>
+<h2><span class="n">§3</span>Então, o que é o Docker, afinal?</h2>
+<p>Definição curta:</p>
+<div class="note"><p><strong>Docker é uma ferramenta que empacota uma aplicação junto com tudo que ela precisa para rodar (sistema, bibliotecas, configurações) em uma unidade isolada e portátil chamada <em>container</em>.</strong></p>
+</div>
+<p>Em outras palavras, em vez de entregar <em>"aqui está meu código, boa sorte instalando o resto"</em>, você entrega <em>"aqui está uma caixa que já funciona; é só ligar"</em>.</p>
+<p>Três promessas resumem o Docker:</p>
+<ol>
+<li><strong>Funciona igual em qualquer lugar.</strong> Se rodou no seu notebook, roda no do colega, no servidor e na nuvem.</li>
+<li><strong>Isolado.</strong> Cada container tem sua própria "bolha". Você pode ter um app usando Python 3.8 e outro usando Python 3.12 lado a lado, sem um saber do outro.</li>
+<li><strong>Descartável e reproduzível.</strong> Quebrou? Apaga e cria de novo em segundos, idêntico ao original.</li>
+</ol>
+<h2><span class="n">§4</span>"Mas isso não é uma máquina virtual?"</h2>
+<p>Ótima pergunta — e a confusão é muito comum. A resposta é: <strong>parecido no objetivo, bem diferente no jeito.</strong></p>
+<h3>A analogia das casas e dos apartamentos</h3>
+<ul>
+<li><strong>Máquina virtual (VM)</strong> é como construir <strong>várias casas</strong> num terreno. Cada casa tem sua própria fundação, encanamento, rede elétrica, caixa d'água. Totalmente independente — mas cara e demorada de construir.</li>
+<li><strong>Container</strong> é como um <strong>prédio de apartamentos</strong>. Cada apartamento tem sua porta trancada, sua privacidade, seus móveis. Mas todos <strong>compartilham</strong> a fundação, a estrutura e a entrada de água do prédio. Muito mais barato e rápido de ocupar.</li>
+</ul>
+<p>Tecnicamente, a "fundação compartilhada" é o <strong>kernel</strong> do sistema operacional — o núcleo que conversa com o hardware (CPU, memória, disco).</p>
+<ul>
+<li>Uma <strong>VM</strong> simula um computador inteiro e carrega <strong>um sistema operacional completo</strong> dentro dela (com seu próprio kernel). Pesa gigabytes e leva minutos para ligar.</li>
+<li>Um <strong>container</strong> <strong>reaproveita o kernel</strong> da máquina hospedeira e isola só o que importa: os arquivos, os processos, a rede. Pesa megabytes e liga em segundos (às vezes em milissegundos).</li>
+</ul>
+<figure><img src="/img/docker-vm-vs-container.pt.svg" alt="Máquina virtual versus container" width="900" height="460" loading="lazy"><figcaption>Máquina virtual versus container</figcaption></figure>
+<div class="tbl-wrap"><table class="txt">
+<thead>
+<tr>
+<th scope=col></th>
+<th scope=col>Máquina Virtual</th>
+<th scope=col>Container</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>O que carrega</td>
+<td>SO inteiro + app</td>
+<td>Só o app e suas dependências</td>
+</tr>
+<tr>
+<td>Tamanho típico</td>
+<td>Gigabytes</td>
+<td>Megabytes</td>
+</tr>
+<tr>
+<td>Tempo para iniciar</td>
+<td>Minutos</td>
+<td>Segundos</td>
+</tr>
+<tr>
+<td>Quantos cabem num servidor</td>
+<td>Dezenas</td>
+<td>Centenas</td>
+</tr>
+<tr>
+<td>Isolamento</td>
+<td>Muito forte (hardware virtual)</td>
+<td>Forte, mas compartilha o kernel</td>
+</tr>
+</tbody>
+</table></div>
+<div class="note"><p><strong>Curiosidade:</strong> no Windows e no macOS, o Docker Desktop roda uma VM Linux bem leve por baixo dos panos (no Windows, normalmente via WSL 2). Isso acontece porque a imensa maioria dos containers é feita para o kernel <strong>Linux</strong>. Você não precisa se preocupar com isso no dia a dia — mas é bom saber que existe.</p>
+</div>
+<p><strong>Container não substitui VM em tudo.</strong> Se você precisa rodar Windows dentro de um Linux, ou quer isolamento máximo entre clientes que não confiam um no outro, VM ainda é a ferramenta certa. Na prática, é muito comum rodar containers <em>dentro</em> de VMs na nuvem.</p>
+<h2><span class="n">§5</span>Os 4 conceitos que você precisa dominar</h2>
+<p>Se você entender estas quatro palavras, entendeu 80% do Docker:</p>
+<ol>
+<li><strong>Dockerfile</strong></li>
+<li><strong>Imagem</strong></li>
+<li><strong>Container</strong></li>
+<li><strong>Registry</strong> (ex.: Docker Hub)</li>
+</ol>
+<h3>A analogia da cozinha</h3>
+<div class="tbl-wrap"><table class="txt">
+<thead>
+<tr>
+<th scope=col>Conceito</th>
+<th scope=col>Analogia</th>
+<th scope=col>O que é de verdade</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Dockerfile</strong></td>
+<td>A <strong>receita</strong> do bolo</td>
+<td>Um arquivo de texto com o passo a passo para montar o ambiente</td>
+</tr>
+<tr>
+<td><strong>Imagem</strong></td>
+<td>Um <strong>bolo congelado</strong> pronto, embalado</td>
+<td>O resultado "empacotado" da receita. É só leitura, não muda</td>
+</tr>
+<tr>
+<td><strong>Container</strong></td>
+<td>Uma <strong>fatia servida</strong> no prato</td>
+<td>Uma instância rodando da imagem. Você pode ter várias ao mesmo tempo</td>
+</tr>
+<tr>
+<td><strong>Registry</strong></td>
+<td>O <strong>supermercado</strong> onde ficam os bolos congelados</td>
+<td>Um "repositório" online de imagens (Docker Hub, GitHub Container Registry…)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Se você programa, outra analogia ajuda muito:</p>
+<div class="note"><p><strong>Imagem está para Container assim como Classe está para Objeto.</strong>
+A imagem é o molde; o container é a coisa viva criada a partir do molde. De uma mesma imagem você cria quantos containers quiser.</p>
+</div>
+<p>E o fluxo completo fica assim:</p>
+<figure><img src="/img/docker-dockerfile-image-container.pt.svg" alt="Fluxo: Dockerfile vira imagem com build, imagem vira container com run, e imagens circulam pelo registry com push e pull" width="900" height="430" loading="lazy"><figcaption>Fluxo: Dockerfile vira imagem com build, imagem vira container com run, e imagens circulam pelo registry com push e pull</figcaption></figure>
+<ul>
+<li><code>docker build</code> → transforma a <strong>receita</strong> (Dockerfile) em <strong>imagem</strong>.</li>
+<li><code>docker run</code> → liga um <strong>container</strong> a partir de uma imagem.</li>
+<li><code>docker push</code> → manda sua imagem para o <strong>registry</strong>.</li>
+<li><code>docker pull</code> → baixa uma imagem do registry.</li>
+</ul>
+<p>Guarde esse desenho. Todo o resto é detalhe em cima dele.</p>
+<h2><span class="n">§6</span>Mão na massa: seu primeiro container</h2>
+<h3>Instalando</h3>
+<ul>
+<li><strong>Windows / macOS:</strong> instale o <a href="https://www.docker.com/products/docker-desktop/">Docker Desktop</a>. No Windows, ele vai pedir para ativar o WSL 2 — aceite.</li>
+<li><strong>Linux:</strong> siga o guia oficial da sua distribuição em <a href="https://docs.docker.com/engine/install/">docs.docker.com/engine/install</a>.</li>
+</ul>
+<p>Para conferir se deu certo, abra o terminal e rode:</p>
+<pre class="code">docker --version
+</pre>
+<h3>O "Olá, mundo"</h3>
+<pre class="code">docker run hello-world
+</pre>
+<p>Parece pouco, mas muita coisa aconteceu aqui:</p>
+<ol>
+<li>O Docker procurou a imagem <code>hello-world</code> no seu computador.</li>
+<li>Não achou, então <strong>baixou</strong> do Docker Hub (um <code>pull</code> automático).</li>
+<li>Criou um <strong>container</strong> a partir dela.</li>
+<li>O container rodou, imprimiu a mensagem de boas-vindas e <strong>terminou</strong>.</li>
+</ol>
+<p>Esse último ponto é importante: <strong>um container vive enquanto o processo principal dele estiver rodando.</strong> O <code>hello-world</code> só imprime um texto e acaba — então o container acaba junto.</p>
+<h3>Um servidor web em um comando</h3>
+<p>Agora algo mais legal. Vamos subir um servidor web de verdade (o Nginx) sem instalar nada:</p>
+<pre class="code">docker run -d -p 8080:80 --name meu-site nginx
+</pre>
+<p>Abra o navegador em <strong>http://localhost:8080</strong>. Você vai ver a página "Welcome to nginx!".</p>
+<p>Destrinchando o comando:</p>
+<div class="tbl-wrap"><table class="txt">
+<thead>
+<tr>
+<th scope=col>Pedaço</th>
+<th scope=col>Significado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>docker run</code></td>
+<td>Crie e ligue um container</td>
+</tr>
+<tr>
+<td><code>-d</code></td>
+<td><em>detached</em>: rode em segundo plano e me devolva o terminal</td>
+</tr>
+<tr>
+<td><code>-p 8080:80</code></td>
+<td>Ligue a porta <strong>8080 do meu computador</strong> à porta <strong>80 do container</strong></td>
+</tr>
+<tr>
+<td><code>--name meu-site</code></td>
+<td>Dê um nome amigável ao container</td>
+</tr>
+<tr>
+<td><code>nginx</code></td>
+<td>A imagem a ser usada</td>
+</tr>
+</tbody>
+</table></div>
+<p>Agora brinque com ele:</p>
+<pre class="code">docker ps                  # lista os containers rodando
+docker logs meu-site       # mostra o que o container imprimiu
+docker stop meu-site       # desliga
+docker start meu-site      # liga de novo
+docker rm -f meu-site      # desliga (se precisar) e apaga
+</pre>
+<h3>Entendendo o <code>-p 8080:80</code> (portas)</h3>
+<p>Lembra da analogia do prédio? Cada container é um apartamento com sua própria numeração interna. O Nginx, <em>dentro</em> do apartamento, atende na porta 80. Mas quem está do lado de fora (seu navegador) não enxerga o interior do apartamento.</p>
+<p>O <code>-p 8080:80</code> é como colocar uma <strong>campainha na portaria</strong>: <em>"quem tocar o 8080 aqui embaixo, encaminha para o 80 do apartamento meu-site"</em>.</p>
+<figure><img src="/img/docker-ports.pt.svg" alt="Mapeamento de portas: a porta 8080 do computador encaminha para a porta 80 do container" width="900" height="340" loading="lazy"><figcaption>Mapeamento de portas: a porta 8080 do computador encaminha para a porta 80 do container</figcaption></figure>
+<p>Isso permite, por exemplo, rodar <strong>três Nginx ao mesmo tempo</strong>, cada um respondendo numa porta diferente do seu computador:</p>
+<pre class="code">docker run -d -p 8081:80 nginx
+docker run -d -p 8082:80 nginx
+docker run -d -p 8083:80 nginx
+</pre>
+<p>Todos os três usam a porta 80 <em>por dentro</em> — sem conflito, porque cada um está no seu próprio apartamento.</p>
+<h3>Entrando dentro do container</h3>
+<p>Quer espiar por dentro? Dá para abrir um terminal <em>dentro</em> de um container rodando:</p>
+<pre class="code">docker run -d --name espiao nginx
+docker exec -it espiao bash
+</pre>
+<p>Agora você está "dentro". Rode <code>ls /</code>, <code>cat /etc/os-release</code>… Você vai perceber que lá dentro existe um mini Linux (Debian, no caso do Nginx), mesmo que você esteja no Windows. Digite <code>exit</code> para sair.</p>
+<h3>Usando programas sem instalar</h3>
+<p>Este é um dos usos mais subestimados do Docker: <strong>testar coisas sem sujar seu computador.</strong></p>
+<p>Quer um Python 3.12 para testar algo rapidinho, mas não quer instalar?</p>
+<pre class="code">docker run -it --rm python:3.12 python
+</pre>
+<p>O <code>--rm</code> apaga o container automaticamente quando você sair. Zero bagunça.</p>
+<p>Quer um banco PostgreSQL para um projeto da faculdade?</p>
+<pre class="code">docker run -d --name banco -e POSTGRES_PASSWORD=senha123 -p 5432:5432 postgres:16
+</pre>
+<p>Pronto, um Postgres completo rodando. Quando não precisar mais: <code>docker rm -f banco</code>. Nada de desinstaladores, serviços esquecidos rodando no boot ou conflitos de versão.</p>
+<div class="note"><p><strong>Sobre as tags (<code>:3.12</code>, <code>:16</code>):</strong> o que vem depois dos dois-pontos é a <strong>versão</strong> da imagem. <code>python:3.12</code> e <code>python:3.8</code> são imagens diferentes. Se você não especificar, o Docker usa <code>:latest</code> — o que é prático para brincar, mas <strong>perigoso em projetos reais</strong>, porque "latest" muda com o tempo. Em projeto sério, sempre fixe a versão.</p>
+</div>
+<h2><span class="n">§7</span>Criando a sua própria imagem: o Dockerfile</h2>
+<p>Até agora só usamos imagens prontas. Mas o poder de verdade aparece quando você empacota <strong>a sua</strong> aplicação.</p>
+<p>Vamos criar uma API mínima em Python. Crie uma pasta <code>meu-app</code> com três arquivos:</p>
+<p><strong><code>app.py</code></strong></p>
+<pre class="code">from flask import Flask
+
+app = Flask(__name__)
+
+@app.route(&quot;/&quot;)
+def ola():
+    return &quot;Olá! Eu estou rodando dentro de um container&quot;
+</pre>
+<p><strong><code>requirements.txt</code></strong></p>
+<pre class="code">flask==3.0.3
+</pre>
+<p><strong><code>Dockerfile</code></strong> (sem extensão, com "D" maiúsculo)</p>
+<pre class="code"># 1. Comece a partir de uma imagem que já tem Python instalado
+FROM python:3.12-slim
+
+# 2. Defina a pasta de trabalho dentro do container
+WORKDIR /app
+
+# 3. Copie a lista de dependências e instale
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 4. Copie o resto do código
+COPY . .
+
+# 5. Documente a porta que o app usa
+EXPOSE 5000
+
+# 6. O comando que roda quando o container liga
+CMD [&quot;flask&quot;, &quot;--app&quot;, &quot;app&quot;, &quot;run&quot;, &quot;--host=0.0.0.0&quot;, &quot;--port=5000&quot;]
+</pre>
+<p>Lendo em português, o Dockerfile diz:</p>
+<div class="note"><p><em>"Pegue um Linux enxuto que já vem com Python 3.12. Crie a pasta <code>/app</code>. Copie a lista de bibliotecas e instale. Copie meu código. Quando alguém ligar o container, rode o Flask."</em></p>
+</div>
+<p>Agora construa a imagem e rode:</p>
+<pre class="code">docker build -t meu-app .
+docker run -d -p 5000:5000 --name api meu-app
+</pre>
+<p>Acesse <strong>http://localhost:5000</strong>. Sua aplicação está rodando num container — e <strong>você nem precisa ter Python instalado no seu computador</strong> para isso funcionar. Qualquer pessoa com Docker pode rodar exatamente o mesmo ambiente.</p>
+<div class="note"><p><strong>Por que <code>--host=0.0.0.0</code>?</strong> Por padrão, o Flask só aceita conexões vindas "de dentro da própria máquina" (<code>127.0.0.1</code>). Só que a "própria máquina", para ele, é o container! Seu navegador está <em>fora</em>. O <code>0.0.0.0</code> diz "aceite conexões de qualquer lugar". Esse é provavelmente <strong>o erro mais comum de quem está começando</strong> — o app sobe, mas o navegador não conecta.</p>
+</div>
+<h3>As instruções mais usadas</h3>
+<div class="tbl-wrap"><table class="txt">
+<thead>
+<tr>
+<th scope=col>Instrução</th>
+<th scope=col>Para que serve</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FROM</code></td>
+<td>Imagem base de onde você parte (sempre a primeira linha)</td>
+</tr>
+<tr>
+<td><code>WORKDIR</code></td>
+<td>Pasta "atual" dentro do container</td>
+</tr>
+<tr>
+<td><code>COPY</code></td>
+<td>Copia arquivos do seu computador para a imagem</td>
+</tr>
+<tr>
+<td><code>RUN</code></td>
+<td>Executa um comando <strong>durante o build</strong> (ex.: instalar pacotes)</td>
+</tr>
+<tr>
+<td><code>ENV</code></td>
+<td>Define variáveis de ambiente</td>
+</tr>
+<tr>
+<td><code>EXPOSE</code></td>
+<td>Documenta qual porta o app usa (não publica a porta sozinho!)</td>
+</tr>
+<tr>
+<td><code>CMD</code></td>
+<td>Comando padrão executado <strong>quando o container liga</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>A confusão clássica: <strong><code>RUN</code> vs <code>CMD</code></strong>.
+- <code>RUN</code> acontece <strong>uma vez, na hora de construir</strong> a imagem (é preparar a receita).
+- <code>CMD</code> acontece <strong>toda vez que um container liga</strong> (é servir o prato).</p>
+<h3>O arquivo <code>.dockerignore</code></h3>
+<p>Assim como o <code>.gitignore</code>, ele diz o que <strong>não</strong> copiar para dentro da imagem. Crie na mesma pasta:</p>
+<pre class="code">__pycache__/
+.venv/
+.git/
+*.log
+.env
+</pre>
+<p>Isso deixa a imagem menor, o build mais rápido e evita vazar coisas sensíveis (como o <code>.env</code> com senhas).</p>
+<h2><span class="n">§8</span>Camadas: o segredo da velocidade</h2>
+<p>Aqui está uma intuição que separa quem <em>usa</em> Docker de quem <em>entende</em> Docker.</p>
+<p>Uma imagem não é um bloco único. Ela é uma <strong>pilha de camadas</strong>, como uma lasanha — e <strong>cada instrução do Dockerfile cria uma camada</strong>.</p>
+<figure><img src="/img/docker-layers.pt.svg" alt="Imagem como pilha de camadas: cada instrução do Dockerfile gera uma camada; o container adiciona uma camada fina de escrita por cima" width="900" height="470" loading="lazy"><figcaption>Imagem como pilha de camadas: cada instrução do Dockerfile gera uma camada; o container adiciona uma camada fina de escrita por cima</figcaption></figure>
+<p>Duas consequências muito práticas:</p>
+<p><strong>1. Cache.</strong> Quando você roda <code>docker build</code> de novo, o Docker reaproveita todas as camadas que não mudaram. Ele só refaz a partir da <strong>primeira camada que mudou</strong> — e tudo que vem depois dela.</p>
+<p>É por isso que no nosso Dockerfile copiamos o <code>requirements.txt</code> <strong>antes</strong> do resto do código:</p>
+<pre class="code">COPY requirements.txt .        # muda raramente
+RUN pip install -r requirements.txt   # demorado, mas fica em cache
+COPY . .                       # muda toda hora
+</pre>
+<p>Se você editar o <code>app.py</code>, só a última camada é refeita. O <code>pip install</code> (que pode levar minutos) vem do cache. Se você fizesse <code>COPY . .</code> antes do <code>pip install</code>, <strong>qualquer</strong> alteração no código forçaria reinstalar todas as bibliotecas. </p>
+<div class="note"><p><strong>Regra de ouro:</strong> coloque no topo do Dockerfile o que muda pouco, e no final o que muda muito.</p>
+</div>
+<p><strong>2. Compartilhamento.</strong> Se você tem dez imagens diferentes que começam com <code>FROM python:3.12-slim</code>, essa camada base fica <strong>uma única vez</strong> no disco. As dez imagens apontam para ela. Economia enorme de espaço e de download.</p>
+<p><strong>E o container?</strong> Quando você liga um container, o Docker coloca uma <strong>camada fina de escrita</strong> em cima da imagem (que é só leitura). Tudo que o container altera vai para essa camada. É por isso que você pode ter 50 containers da mesma imagem gastando quase nada de disco a mais.</p>
+<p>…e isso nos leva a um problema importante.</p>
+<h2><span class="n">§9</span>Containers são descartáveis — e seus dados?</h2>
+<p>Aquela camada de escrita do container <strong>morre junto com ele</strong>. Se você apagar o container do Postgres, <strong>todos os dados do banco vão embora</strong>.</p>
+<p>Isso não é um bug, é uma <strong>filosofia</strong>: containers devem ser como <strong>gado, não como animais de estimação</strong>. Você não cuida de um container específico com carinho; se ele adoecer, você troca por outro idêntico. Mas os <em>dados</em> precisam sobreviver.</p>
+<p>A solução são os <strong>volumes</strong>.</p>
+<h3>A analogia do quarto de hotel</h3>
+<p>Um container é como um <strong>quarto de hotel</strong>. Quando você faz check-out, a camareira limpa tudo. Se você esqueceu algo no quarto, já era.</p>
+<p>Um <strong>volume</strong> é como o <strong>cofre/guarda-volumes do hotel</strong>: fica <em>fora</em> do quarto. Você pode trocar de quarto quantas vezes quiser — suas coisas continuam guardadas.</p>
+<figure><img src="/img/docker-volumes.pt.svg" alt="Volumes: os dados ficam fora do container e sobrevivem quando ele é apagado" width="900" height="380" loading="lazy"><figcaption>Volumes: os dados ficam fora do container e sobrevivem quando ele é apagado</figcaption></figure>
+<p>Na prática:</p>
+<pre class="code"># cria um container Postgres guardando os dados no volume &quot;dados-banco&quot;
+docker run -d --name banco \
+  -e POSTGRES_PASSWORD=senha123 \
+  -v dados-banco:/var/lib/postgresql/data \
+  postgres:16
+</pre>
+<p>O <code>-v dados-banco:/var/lib/postgresql/data</code> significa: <em>"a pasta onde o Postgres guarda os dados, dentro do container, na verdade fica no volume <code>dados-banco</code>"</em>.</p>
+<p>Agora você pode <code>docker rm -f banco</code>, criar outro container com o mesmo <code>-v</code>, e os dados estarão lá.</p>
+<p>Existem dois tipos principais:</p>
+<div class="tbl-wrap"><table class="txt">
+<thead>
+<tr>
+<th scope=col>Tipo</th>
+<th scope=col>Exemplo</th>
+<th scope=col>Quando usar</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Volume nomeado</strong></td>
+<td><code>-v dados-banco:/caminho</code></td>
+<td>Dados de bancos e serviços. O Docker gerencia onde fica.</td>
+</tr>
+<tr>
+<td><strong>Bind mount</strong></td>
+<td><code>-v ./meu-codigo:/app</code></td>
+<td>Ligar uma pasta <strong>do seu computador</strong> ao container. Ótimo em desenvolvimento: você edita o código no seu editor e o container vê a mudança na hora.</td>
+</tr>
+</tbody>
+</table></div>
+<h2><span class="n">§10</span>Vários containers juntos: Docker Compose</h2>
+<p>Aplicações reais raramente são um container só. Normalmente você tem algo como:</p>
+<ul>
+<li>uma <strong>API</strong> (seu código);</li>
+<li>um <strong>banco de dados</strong> (Postgres);</li>
+<li>um <strong>cache</strong> (Redis);</li>
+<li>talvez um <strong>frontend</strong>.</li>
+</ul>
+<p>Subir tudo isso com quatro comandos <code>docker run</code> gigantes, lembrando de portas, volumes, senhas e redes, é chato e propenso a erro.</p>
+<p>O <strong>Docker Compose</strong> resolve: você descreve <strong>todo o sistema</strong> num arquivo <code>compose.yaml</code> e sobe tudo com <strong>um comando</strong>.</p>
+<p>Se o Dockerfile é a receita de <strong>um prato</strong>, o Compose é o <strong>cardápio do jantar inteiro</strong>: entrada, prato principal, sobremesa, e em que ordem servir.</p>
+<p>Vamos evoluir nossa API para contar visitas usando Redis.</p>
+<p><strong><code>app.py</code></strong></p>
+<pre class="code">from flask import Flask
+import redis
+
+app = Flask(__name__)
+cache = redis.Redis(host=&quot;redis&quot;, port=6379)
+
+@app.route(&quot;/&quot;)
+def ola():
+    visitas = cache.incr(&quot;visitas&quot;)
+    return f&quot;Olá! Esta página foi vista {visitas} vezes.&quot;
+</pre>
+<p><strong><code>requirements.txt</code></strong></p>
+<pre class="code">flask==3.0.3
+redis==5.0.8
+</pre>
+<p><strong><code>compose.yaml</code></strong></p>
+<pre class="code">services:
+  api:
+    build: .
+    ports:
+      - &quot;5000:5000&quot;
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - dados-redis:/data
+
+volumes:
+  dados-redis:
+</pre>
+<p>E agora, a mágica:</p>
+<pre class="code">docker compose up -d
+</pre>
+<p>Acesse <strong>http://localhost:5000</strong> e recarregue a página algumas vezes. O contador sobe.</p>
+<figure><img src="/img/docker-compose.pt.svg" alt="Docker Compose: um arquivo descreve a API e o Redis, que conversam por uma rede interna" width="900" height="400" loading="lazy"><figcaption>Docker Compose: um arquivo descreve a API e o Redis, que conversam por uma rede interna</figcaption></figure>
+<p>Repare num detalhe lindo: no código Python, conectamos no Redis usando <code>host="redis"</code>. <strong>"redis" é o nome do serviço no <code>compose.yaml</code>.</strong> O Compose cria automaticamente uma <strong>rede interna</strong> onde cada serviço encontra os outros <strong>pelo nome</strong>, como se fosse um ramal telefônico interno. Repare também que o Redis <strong>não</strong> tem <code>ports:</code> — ele não precisa ser acessível de fora, só pela API. Mais seguro.</p>
+<p>Comandos do dia a dia:</p>
+<pre class="code">docker compose up -d        # sobe tudo em segundo plano
+docker compose ps           # status dos serviços
+docker compose logs -f api  # acompanha os logs da API
+docker compose down         # desliga e remove os containers (volumes ficam)
+docker compose up -d --build  # reconstrói as imagens e sobe de novo
+</pre>
+<p>Para um projeto novo na equipe, o onboarding vira: <em>"clone o repositório e rode <code>docker compose up</code>"</em>. Sem documento de 30 passos de instalação.</p>
+<h2><span class="n">§11</span>Colinha: comandos essenciais</h2>
+<h3>Imagens</h3>
+<pre class="code">docker images                 # lista imagens locais
+docker pull nginx:1.27        # baixa uma imagem
+docker build -t nome:tag .    # constrói uma imagem a partir do Dockerfile da pasta atual
+docker rmi nome:tag           # apaga uma imagem
+</pre>
+<h3>Containers</h3>
+<pre class="code">docker run [opções] imagem    # cria e liga um container
+docker ps                     # containers rodando
+docker ps -a                  # todos, inclusive parados
+docker stop nome              # para
+docker start nome             # liga um container parado
+docker rm nome                # apaga (precisa estar parado; use -f para forçar)
+docker logs -f nome           # acompanha os logs
+docker exec -it nome sh       # abre um terminal dentro do container
+</pre>
+<h3>Opções mais usadas do <code>docker run</code></h3>
+<div class="tbl-wrap"><table class="txt">
+<thead>
+<tr>
+<th scope=col>Opção</th>
+<th scope=col>Significado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-d</code></td>
+<td>Roda em segundo plano</td>
+</tr>
+<tr>
+<td><code>-it</code></td>
+<td>Modo interativo com terminal</td>
+</tr>
+<tr>
+<td><code>--rm</code></td>
+<td>Apaga o container quando ele terminar</td>
+</tr>
+<tr>
+<td><code>-p HOST:CONTAINER</code></td>
+<td>Publica uma porta</td>
+</tr>
+<tr>
+<td><code>-v ORIGEM:DESTINO</code></td>
+<td>Monta um volume ou pasta</td>
+</tr>
+<tr>
+<td><code>-e CHAVE=valor</code></td>
+<td>Define variável de ambiente</td>
+</tr>
+<tr>
+<td><code>--name nome</code></td>
+<td>Dá um nome ao container</td>
+</tr>
+</tbody>
+</table></div>
+<h3>Faxina</h3>
+<pre class="code">docker system df              # quanto espaço o Docker está usando
+docker system prune           # remove containers parados, redes sem uso e imagens órfãs
+</pre>
+<div class="note"><p><code>docker system prune -a --volumes</code> é a "bomba nuclear": apaga também imagens não usadas e <strong>volumes</strong> — ou seja, pode apagar dados de banco. Use sabendo o que está fazendo.</p>
+</div>
+<h2><span class="n">§12</span>Erros comuns de quem está começando</h2>
+<p><strong>"Rodei o container e ele morreu na hora."</strong>
+Lembre: o container vive enquanto o processo principal vive. Rode <code>docker logs nome-do-container</code> para ver o erro. Muitas vezes é um comando errado no <code>CMD</code> ou uma variável de ambiente faltando.</p>
+<p><strong>"O app está rodando, mas o navegador não conecta."</strong>
+Duas causas campeãs: (1) você esqueceu o <code>-p</code> para publicar a porta; (2) o app está escutando em <code>127.0.0.1</code> em vez de <code>0.0.0.0</code> dentro do container.</p>
+<p><strong>"Apaguei o container e perdi meus dados."</strong>
+Faltou volume. Tudo que precisa sobreviver deve ir para um volume.</p>
+<p><strong>"Mudei o código e nada mudou."</strong>
+A imagem é uma <em>foto</em> do momento do build. Mudou o código? Precisa de <code>docker build</code> de novo (ou <code>docker compose up --build</code>). Em desenvolvimento, um bind mount evita isso.</p>
+<p><strong>"No container, <code>localhost</code> não acha meu banco."</strong>
+Dentro de um container, <code>localhost</code> é <strong>o próprio container</strong>, não o seu computador. Use o nome do serviço (com Compose) ou <code>host.docker.internal</code> para alcançar a máquina hospedeira (no Docker Desktop).</p>
+<p><strong>"Meu disco está cheio."</strong>
+Imagens e containers antigos se acumulam. <code>docker system df</code> mostra o tamanho; <code>docker system prune</code> limpa.</p>
+<h2><span class="n">§13</span>Boas práticas (o "nível seguinte")</h2>
+<ul>
+<li><strong>Fixe versões.</strong> <code>FROM python:3.12-slim</code> em vez de <code>FROM python</code>. Reprodutibilidade é o motivo de usar Docker, afinal.</li>
+<li><strong>Prefira imagens enxutas.</strong> Variantes <code>-slim</code> e <code>-alpine</code> são bem menores. Menos coisa instalada = imagem mais leve e menos superfície para falhas de segurança.</li>
+<li><strong>Ordene o Dockerfile pensando no cache.</strong> O que muda pouco em cima, o que muda muito embaixo.</li>
+<li><strong>Use <code>.dockerignore</code>.</strong></li>
+<li><strong>Nunca coloque senhas dentro da imagem.</strong> Nada de <code>ENV SENHA=...</code> no Dockerfile nem copiar o <code>.env</code> para a imagem. Passe segredos na hora de rodar (<code>-e</code>, <code>env_file</code> no Compose, ou ferramentas de segredos).</li>
+<li><strong>Um processo principal por container.</strong> A API num container, o banco em outro. Não tente enfiar tudo numa caixa só — combine-os com Compose.</li>
+<li><strong>Não rode como root quando der.</strong> Muitas imagens permitem definir um usuário comum com a instrução <code>USER</code>. É uma camada extra de segurança.</li>
+</ul>
+<h2><span class="n">§14</span>O que o Docker <strong>não</strong> é</h2>
+<p>Para fechar o mapa mental, vale desfazer alguns mitos:</p>
+<ul>
+<li><strong>Não é uma linguagem de programação.</strong> É uma ferramenta de empacotamento e execução.</li>
+<li><strong>Não é uma máquina virtual</strong> (como vimos, compartilha o kernel).</li>
+<li><strong>Não é só para "DevOps".</strong> Cientistas de dados, estudantes e desenvolvedores de qualquer área se beneficiam dele.</li>
+<li><strong>Não é obrigatório para tudo.</strong> Um script de 20 linhas que só você usa provavelmente não precisa de container. Docker brilha quando há <strong>dependências</strong>, <strong>várias pessoas</strong> ou <strong>vários ambientes</strong> envolvidos.</li>
+<li><strong>Não é o mesmo que Kubernetes.</strong> O Docker roda containers numa máquina. O <strong>Kubernetes</strong> orquestra <strong>milhares</strong> de containers em <strong>muitas</strong> máquinas (decide onde cada um roda, reinicia os que caem, escala conforme a demanda). Se Docker é o contêiner, Kubernetes é a administração do porto inteiro.</li>
+</ul>
+<h2><span class="n">§15</span>Resumindo tudo em um parágrafo</h2>
+<p>Seu software depende de um ambiente, e ambientes são diferentes em cada máquina. O <strong>Docker</strong> resolve isso empacotando o app <strong>junto com o ambiente</strong>. Você escreve uma receita (<strong>Dockerfile</strong>), constrói um pacote imutável (<strong>imagem</strong>), e liga quantas cópias quiser desse pacote (<strong>containers</strong>), que são leves porque compartilham o kernel do sistema hospedeiro. Imagens são feitas de <strong>camadas</strong> reaproveitáveis, circulam por <strong>registries</strong> como o Docker Hub, guardam dados importantes em <strong>volumes</strong>, expõem serviços por <strong>portas</strong> e, quando o sistema tem várias peças, são orquestradas juntas pelo <strong>Docker Compose</strong>.</p>
+<p>Se você entendeu este parágrafo, você saiu do zero.</p>
+<h2><span class="n">§16</span>Próximos passos</h2>
+<ol>
+<li><strong>Pratique.</strong> Pegue um projeto seu (da faculdade, do trabalho, um side project) e escreva um Dockerfile para ele.</li>
+<li><strong>Explore o <a href="https://hub.docker.com/">Docker Hub</a>.</strong> Veja as imagens oficiais de bancos, linguagens e ferramentas que você já usa.</li>
+<li><strong>Leia a documentação oficial</strong>, que é excelente: <a href="https://docs.docker.com/get-started/">docs.docker.com/get-started</a>.</li>
+<li><strong>Aprenda multi-stage builds</strong> — uma técnica para gerar imagens muito menores separando o ambiente de compilação do de execução.</li>
+<li><strong>Quando se sentir confortável</strong>, dê uma olhada em CI/CD (rodar testes em containers a cada commit) e, depois, em Kubernetes.</li>
+</ol>
+<h2><span class="n">§17</span>Glossário rápido</h2>
+<div class="tbl-wrap"><table class="txt">
+<thead>
+<tr>
+<th scope=col>Termo</th>
+<th scope=col>Em uma frase</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Container</strong></td>
+<td>Uma instância isolada e em execução de uma imagem.</td>
+</tr>
+<tr>
+<td><strong>Imagem</strong></td>
+<td>Um pacote imutável com app + dependências, usado para criar containers.</td>
+</tr>
+<tr>
+<td><strong>Dockerfile</strong></td>
+<td>Arquivo de texto com as instruções para construir uma imagem.</td>
+</tr>
+<tr>
+<td><strong>Camada (layer)</strong></td>
+<td>Cada "andar" de uma imagem; reaproveitada entre builds e entre imagens.</td>
+</tr>
+<tr>
+<td><strong>Registry</strong></td>
+<td>Repositório remoto de imagens (ex.: Docker Hub).</td>
+</tr>
+<tr>
+<td><strong>Tag</strong></td>
+<td>A "versão" de uma imagem (o que vem depois dos <code>:</code>).</td>
+</tr>
+<tr>
+<td><strong>Volume</strong></td>
+<td>Armazenamento que vive fora do container e sobrevive a ele.</td>
+</tr>
+<tr>
+<td><strong>Bind mount</strong></td>
+<td>Uma pasta do seu computador "espelhada" dentro do container.</td>
+</tr>
+<tr>
+<td><strong>Docker Compose</strong></td>
+<td>Ferramenta para definir e subir vários containers juntos com um arquivo YAML.</td>
+</tr>
+<tr>
+<td><strong>Kernel</strong></td>
+<td>Núcleo do sistema operacional; containers compartilham o do hospedeiro.</td>
+</tr>
+<tr>
+<td><strong>Docker Desktop</strong></td>
+<td>Aplicativo para Windows/macOS que instala e roda o Docker (com uma VM Linux leve por baixo).</td>
+</tr>
+</tbody>
+</table></div>
+
+<p class="cap">Referências: <a href="https://docs.docker.com/get-started/">documentação oficial do Docker</a> (guia de introdução, referência do Dockerfile e do Docker Compose); <a href="https://hub.docker.com/">Docker Hub</a>. Diagramas feitos por mim para este artigo.</p>

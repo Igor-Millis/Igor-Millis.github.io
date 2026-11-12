@@ -548,3 +548,12 @@ kind = "ia · claude skills"
 date = "2026-11-10"
 minutes = 16
 abstract = "O que é uma skill, como o Claude decide usá-la e como montar uma do zero — demonstrado com uma skill que ensina o Claude a fazer gráficos com os princípios de Storytelling com Dados."
+
+[research.notes.docker-from-scratch]
+title = "Docker do zero: o que é, por que existe e como usar"
+seo_title = "Docker do zero: o que é, por que existe e como usar (com analogias, diagramas e exemplos práticos)"
+description = "Guia do zero sobre Docker: o problema do “na minha máquina funciona”, container versus máquina virtual, Dockerfile, imagem, container e registry, portas, camadas e cache, volumes e Docker Compose — com analogias, diagramas e comandos para testar."
+kind = "engenharia · docker"
+date = "2026-11-11"
+minutes = 25
+abstract = "Para quem nunca usou Docker: por que “na minha máquina funciona” acontece, como um container resolve isso e o que muda em relação a uma máquina virtual. Depois, mão na massa — o primeiro container, um Dockerfile próprio, camadas, volumes e uma aplicação com Docker Compose."

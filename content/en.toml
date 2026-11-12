@@ -548,3 +548,12 @@ kind = "ai · claude skills"
 date = "2026-11-10"
 minutes = 16
 abstract = "What a skill is, how Claude decides to use it and how to build one from scratch — demonstrated with a skill that teaches Claude to make charts with the principles of Storytelling with Data."
+
+[research.notes.docker-from-scratch]
+title = "Docker from scratch: what it is, why it exists and how to use it"
+seo_title = "Docker from scratch: what it is, why it exists and how to use it (with analogies, diagrams and hands-on examples)"
+description = "A from-scratch guide to Docker: the “works on my machine” problem, containers versus virtual machines, Dockerfile, image, container and registry, ports, layers and cache, volumes and Docker Compose — with analogies, diagrams and commands to try."
+kind = "engineering · docker"
+date = "2026-11-11"
+minutes = 25
+abstract = "For people who have never used Docker: why “works on my machine” happens, how a container fixes it and how it differs from a virtual machine. Then hands-on — a first container, your own Dockerfile, layers, volumes and an application with Docker Compose."
