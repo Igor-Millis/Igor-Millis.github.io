@@ -51,6 +51,7 @@ def build() -> int:
             "edudata": pages.edudata(site, lang),
             "credit": pages.credit(site, lang),
             "recommender": pages.recommender(site, lang),
+            "readmission": pages.readmission(site, lang),
             "research": pages.research(site, lang),
         }
         for slug in NOTES:

@@ -564,6 +564,7 @@ kbd { font: 400 11px var(--f-mono); border: 1px solid var(--line-strong); border
 /* Adaptive Recommender page: tab groups of any size, CI whiskers, formula and weekend boxes */
 .pipe.pipe-9 { grid-template-columns: repeat(9, minmax(0, 1fr)); }
 .pipe.pipe-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.pipe.pipe-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 @media (max-width: 960px) {
   .pipe.pipe-9, .pipe.pipe-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .pipe.pipe-9 button, .pipe.pipe-6 button { border-bottom: 1px solid var(--line); }

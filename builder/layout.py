@@ -17,7 +17,7 @@ THEME_ICON = (
 
 
 def _section_of(key: str) -> str:
-    if key in ("work", "edudata", "credit", "recommender"):
+    if key in ("work", "edudata", "credit", "recommender", "readmission"):
         return "work"
     if key == "research" or key.startswith("note:"):
         return "research"
@@ -52,6 +52,7 @@ def _cmdk_data(site: Site, lang: str, key: str) -> str:
     items = [
         {"label": ui["nav_home"], "hint": "/", "href": site.url(lang, "home")},
         {"label": ui["nav_work"], "hint": "02", "href": site.url(lang, "work")},
+        {"label": "Diabetes Readmission", "hint": ui["nav_work"], "href": site.url(lang, "readmission")},
         {"label": "EduData", "hint": ui["nav_work"], "href": site.url(lang, "edudata")},
         {"label": "Credit Default API", "hint": ui["nav_work"], "href": site.url(lang, "credit")},
         {"label": "Adaptive Recommender", "hint": ui["nav_work"], "href": site.url(lang, "recommender")},

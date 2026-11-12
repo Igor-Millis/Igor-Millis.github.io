@@ -473,6 +473,151 @@ s10_body = '''<ul>
 <p class="cap">Projeto pessoal de fim de semana, feito para aprender. Dados reais: Online Retail II (Chen, D., UCI Machine Learning Repository, CC BY 4.0), baixado em tempo de execução e não redistribuído.</p>'''
 
 
+[work.readmission]
+title = "Readmissão em Diabetes — regressão logística vs. gradient boosting num dataset clínico irregular"
+description = "Readmissão em 30 dias de 99.340 internações de pacientes diabéticos (UCI Diabetes 130-US): regressão logística com splines contra floresta aleatória e LightGBM, validação agrupada por paciente, mais de 40 métricas, calibração, curvas de decisão e inferência com erros-padrão clusterizados via IRLS implementado do zero."
+name = "Readmissão em Diabetes"
+kicker = "machine learning · regressão logística · avaliação de modelos"
+summary = "Um dataset clínico famoso e irregular: alvo raro, sinal fraco, 97% de ausência numa coluna, 716 códigos de diagnóstico e pacientes repetidos. Até onde vai uma regressão logística bem especificada contra o gradient boosting — medido com todas as métricas que importam?"
+tags = ["Regressão logística", "scikit-learn", "LightGBM", "statsmodels", "NumPy", "Hugging Face", "pytest"]
+meta = ["AUC 0,670 vs 0,681", "99.340 internações · 8 modelos"]
+spec = [
+  ["dataset", "Diabetes 130-US Hospitals 1999–2008 (UCI · Strack et al., 2014)"],
+  ["tarefa", "classificação binária · readmissão em até 30 dias (11,4%)"],
+  ["modelo principal", "regressão logística · log das contagens + B-splines cúbicos · L2"],
+  ["comparados", "variantes de RL (6) · floresta aleatória · LightGBM · + 3 RLs enriquecidas"],
+  ["validação", "divisão, CV e bootstrap por paciente (StratifiedGroupKFold)"],
+  ["modelo no hub", "huggingface.co/igorlimamillis/diabetes-readmission-logistic"],
+]
+stats = [
+  ["99.340", "internações · 69.987 pacientes"],
+  ["11,4%", "readmitidos em até 30 dias"],
+  ["94%", "do ganho do boosting sobre o acaso, retido pela RL"],
+  ["40+", "métricas por modelo · ICs por paciente"],
+]
+model_names = { prevalence = "Só a prevalência", lr_one = "RL · só internações prévias", lr_linear = "RL · termos lineares", lr_spline = "RL · log + splines (principal)", lr_enet = "RL · splines + L1/L2", lr_balanced = "RL · splines + class_weight", rf = "Floresta aleatória", lgbm = "LightGBM" }
+
+s1_label = "01 · problema"
+s1_title = "Um dataset famoso que não facilita"
+s1_body = '''<p>Nos EUA, hospitais são penalizados quando o paciente volta em até 30 dias. Sinalizar na alta os diabéticos de maior risco permitiria à equipe ligar para eles, revisar a medicação ou antecipar uma consulta. O dataset <em>Diabetes 130-US Hospitals</em> da UCI (101.766 internações, 1999–2008) é o benchmark público padrão para isso — e é difícil.</p>
+<p>A pergunta aqui não é “qual algoritmo ganha o ranking”, e sim <strong>até onde vai uma regressão logística bem especificada</strong>, o que o gradient boosting acrescenta e o que cada métrica de fato revela quando o alvo é raro e o sinal é fraco.</p>'''
+irr_cols = ["irregularidade", "evidência", "o que foi feito"]
+irr_rows = [
+  ["alvo raro e fraco", "11,4% readmitidos em &lt; 30 dias; melhor AUC ≈ 0,68", "regras de pontuação próprias, PR AUC, calibração; limiares escolhidos fora do fold"],
+  ["óbitos e hospice", "2.423 internações não podem ser readmitidas", "removidas — senão morrer parece “proteger”"],
+  ["pacientes repetidos", "69.987 pacientes; 46% das internações de reincidentes", "divisão, ajuste e bootstrap <strong>por paciente</strong>"],
+  ["ausência massiva", "peso 97% · glicose 95% · HbA1c 83% · especialidade 49% · pagador 40%", "peso descartado; “não medido” mantido como nível"],
+  ["códigos de alta cardinalidade", "716 diagnósticos CID-9 primários · 72 especialidades", "9 capítulos do CID-9; 12 especialidades principais; níveis raros agrupados por fold"],
+  ["caudas pesadas", "internações prévias 0–21 · idas ao PS 0–76", "log1p + B-splines cúbicos dentro do pipeline"],
+  ["IDs guardados como números", "admissão / alta / origem são códigos nominais", "mapeados para grupos com sentido clínico"],
+]
+irr_cap = "Auditoria do arquivo bruto (101.766 internações). Coorte após exclusões: 99.340 internações, 69.987 pacientes."
+
+s2_label = "02 · validação"
+s2_title = "Dividir por paciente — e verificar se fez diferença"
+s2_body = '''<p>Quase metade das internações é de pacientes vistos mais de uma vez. Uma divisão aleatória põe a mesma pessoa no treino e no teste, e um modelo flexível pode reconhecer pessoas em vez de aprender risco. Por isso o teste tem <strong>13.998 pacientes nunca vistos no treino</strong>, os hiperparâmetros são ajustados com <code>StratifiedGroupKFold</code> de 5 folds e os intervalos de confiança vêm de um <strong>bootstrap por paciente</strong>.</p>
+<p>Depois medi quanto o atalho teria custado:</p>'''
+rf_deep_name = "Floresta, folhas de tamanho 1"
+leak_series = ["CV, divisão aleatória por internação", "CV, divisão por paciente", "pacientes do teste"]
+leak_head = "checagem de vazamento · CV de 5 folds nos pacientes de treino"
+leak_cap = "AUC ROC média nos 5 folds sobre as 79.567 internações de treino; terceira barra: conjunto de teste. Fonte: results/results.json (leakage)."
+s2_after = '''<p><strong>Um resultado nulo, reportado como tal.</strong> Dividir por internação em vez de por paciente inflou a AUC de CV em no máximo <strong>0,0016</strong> — mesmo numa floresta com folhas de tamanho 1, feita para memorizar. Nenhuma variável identifica o paciente, então há pouco a memorizar. A divisão agrupada continua sendo a certa (é a única que responde “como isso funciona em pacientes novos?”), mas aqui o custo do erro foi pequeno. A AUC de teste fica 0,006–0,009 acima da de CV para todos os modelos igualmente: uma propriedade desta divisão, não de algum modelo.</p>'''
+
+s3_label = "03 · modelos"
+s3_title = "Um pipeline de variáveis, oito modelos"
+s3_body = '''<p>A engenharia de variáveis é uma <strong>função linha a linha</strong> (faixas de idade → anos, códigos CID-9 → capítulos, IDs de alta → destinos, contagem de medicamentos) no início de cada <code>Pipeline</code> do scikit-learn. Tudo o que é aprendido dos dados — padronização, bases de splines, agrupamento de níveis raros — é ajustado dentro de cada fold. Todos os modelos são ajustados nos mesmos folds agrupados pela <strong>log loss</strong>, uma regra de pontuação própria, e não pela acurácia.</p>'''
+models_cols = ["modelo", "o que é", "hiperparâmetros escolhidos", "log loss (CV)"]
+models_cap = "CV de 5 folds agrupada nos pacientes de treino. Log loss menor é melhor; o modelo só com a prevalência marca 0,3537 no teste. Fonte: results/results.json (cv)."
+model_desc = { lr_spline = "log1p(contagens) → B-splines cúbicos, one-hot nas categóricas, L2", lr_enet = "mesmas variáveis, caminho elastic net (saga)", lr_linear = "contagens brutas padronizadas, one-hot, L2", lr_balanced = "RL principal com class_weight=“balanced”", lgbm = "gradient boosting, busca aleatória com 30 configurações", rf = "400 árvores, grade de 6 configurações", lr_one = "uma variável: internações no ano anterior" }
+s3_after = '''<p>O elastic net escolhido é L1 puro e mantém 142 dos 201 coeficientes — esparsidade sem perda. Repare na RL com pesos de classe: mesmas variáveis, mesmo ranking, <strong>o dobro da log loss</strong>. A seção 06 explica por quê.</p>'''
+
+s4_label = "04 · comparação"
+s4_title = "O boosting vence por 0,01 de AUC — diferença real e pequena"
+s4_body = '''<p>Nos pacientes de teste, o LightGBM chega a AUC ROC <strong>0,681</strong> e a regressão logística principal a <strong>0,670</strong>. Medido a partir do acaso (0,5), a logística retém <strong>94% do ganho</strong> que o boosting alcança — com cerca de 200 coeficientes que podem ser lidos, auditados e entregues como fórmula. Uma variável sozinha (internações prévias) já chega a 0,611.</p>'''
+auc_head = "AUC ROC · pacientes de teste · IC 95% por bootstrap de pacientes"
+auc_cap = "B = 1.000 reamostragens de pacientes (não de internações). Fonte: results/results.json (test, ci)."
+rank_title = "Métricas de ordenação (sem limiar)"
+rank_cols = ["modelo", "AUC ROC", "IC 95%", "Gini", "KS", "PR AUC", "lift PR", "recall no top 10%", "recall no top 20%", "lift no top 10%"]
+rank_cap = "PR AUC = precisão média; lift PR = PR AUC / prevalência (0,1135). Recall no top k% = fração de todas as readmissões encontradas entre os k% de maior risco."
+prob_title = "Métricas probabilísticas (regras de pontuação próprias)"
+prob_cols = ["modelo", "Brier", "IC 95%", "skill de Brier", "log loss", "skill de log loss", "slope de discriminação"]
+prob_cap = "Skill = melhora sobre o modelo só com a prevalência (negativo = pior que prever 11,4% para todos). Slope de discriminação = p̂ médio nos readmitidos − p̂ médio nos não readmitidos (R² de Tjur)."
+paired_title = "Diferenças pareadas vs. a RL principal (mesmas reamostragens)"
+paired_cols = ["modelo − RL · splines", "Δ AUC ROC", "Δ PR AUC", "Δ Brier", "Δ log loss", "veredito (AUC)"]
+paired_cap = "Diferença pontual e intervalo de 95% por bootstrap de pacientes. Para Brier e log loss, negativo = melhor que a RL principal."
+verdict_better = "melhor"
+verdict_worse = "pior"
+verdict_tie = "empate"
+s4_after = '''<p><strong>A logística consegue fechar a lacuna?</strong> O boosting ganha duas coisas de graça: códigos de alta cardinalidade e interações. Dei as duas à regressão logística — os códigos CID-9 de 3 dígitos (~700 níveis, raros agrupados) e interações sugeridas pelas árvores (pares de log-contagens, uso prévio × destino da alta):</p>'''
+s4_gap_after = '''<p>A logística mais rica fecha <strong>cerca de um terço da lacuna</strong> (+0,004 de 0,011 de AUC) e ganha mais em PR AUC e log loss, mas o LightGBM continua significativamente à frente. O resto do sinal está em interações de ordem mais alta, que um preditor linear especificado à mão não alcança: neste dataset, a interpretabilidade custa cerca de <strong>0,007 de AUC</strong>. Se vale a pena pagar esse preço é uma decisão de implantação, não de modelagem.</p>'''
+gap_title = "Fechando a lacuna: logísticas mais ricas"
+gap_cols = ["modelo", "coeficientes", "log loss (CV)", "AUC ROC (teste)", "Δ AUC vs RL · splines", "Δ AUC vs LightGBM", "PR AUC", "Brier", "slope de cal."]
+gap_cap = "Mesma divisão, folds e reamostragens bootstrap de cima. Fonte: results/gap.json (scripts/close_the_gap.py)."
+gap_names = { lr_icd3 = "RL · splines + CID-9 de 3 dígitos", lr_inter = "RL · splines + interações", lr_full = "RL · splines + CID-9 + interações" }
+
+s5_label = "05 · limiares"
+s5_title = "Todas as métricas da matriz de confusão, em quatro políticas"
+s5_body = '''<p>Métricas de limiar dependem de uma decisão, então a decisão fica explícita. Três limiares são escolhidos nas <strong>predições out-of-fold do treino</strong> — nunca no teste — e o quarto é o 0,5 padrão da maioria dos tutoriais. Escolha uma política:</p>'''
+thr_tabs = { f1_opt = "F1 máximo (out-of-fold)", youden_opt = "J de Youden máximo", top20 = "sinalizar top 20%", "default_0.5" = "padrão 0,5" }
+thr_cols = ["modelo", "τ", "sinalizados", "acurácia", "acur. bal.", "precisão", "recall", "especificidade", "VPN", "F1", "F2", "MCC", "κ", "RV+", "RV−", "DOR"]
+thr_caps = { f1_opt = "τ maximiza o F1 nas predições out-of-fold de cada modelo. Teste, n = 19.773.", youden_opt = "τ maximiza sensibilidade + especificidade − 1 fora do fold: mais sinalizações, recall maior, precisão menor.", top20 = "τ = percentil 80 dos escores out-of-fold: um orçamento fixo de acompanhamento para 20% das altas.", "default_0.5" = "Com prevalência de 11,4%, modelos calibrados quase nunca chegam a 0,5: acurácia ≈ 0,887, a mesma de prever “não” para todos. Só a RL com pesos de classe se comporta bem aqui — porque suas probabilidades estão infladas." }
+s5_after = '''<p>Duas lições. Primeiro, num limiar razoável todos os modelos, menos a referência de uma variável, caem numa <strong>faixa estreita — F1 0,279–0,297, MCC 0,163–0,187</strong>: métricas de limiar quase não separam modelos; regras de pontuação próprias e diferenças pareadas por bootstrap separam. Segundo, o paradoxo da acurácia à vista: a melhor “acurácia” na aba 0,5 é dos modelos que não sinalizam quase ninguém.</p>'''
+
+s6_label = "06 · calibração"
+s6_title = "class_weight é um bug de calibração, não uma correção de desbalanceamento"
+s6_body = '''<p>Um escore de risco só serve para decidir se “20%” significar 20%. A RL principal e o LightGBM seguem a diagonal (ECE 0,007). A RL com pesos de classe tem a <strong>mesma AUC</strong>, mas prevê risco médio de 47% para um desfecho que acontece 11% das vezes:</p>'''
+cal_head = "diagrama de confiabilidade · decis de risco · pacientes de teste"
+cal_right = "observado vs previsto"
+perfect = "calibração perfeita"
+cal_cap = "Cada ponto é um decil de risco previsto (≈ 1.977 internações). Fonte: results/results.json (reliability)."
+cal_cols = ["modelo", "p̂ médio", "O/E", "intercepto", "slope", "ECE", "MCE", "z de Spiegelhalter", "HL χ²(8)", "p de HL"]
+cal_tcap = "Prevalência observada 0,113. O/E = eventos observados / esperados. Intercepto e slope de uma recalibração logística (ideal 0 e 1). ECE / MCE = desvio absoluto médio / máximo nos decis. HL = Hosmer–Lemeshow; com n ≈ 20.000 ele rejeita desvios pequenos, então leia junto com o slope e o ECE."
+s6_after = '''<p><strong>Por que acontece:</strong> dar peso w aos positivos desloca o intercepto do logito em cerca de log w e deixa as inclinações quase intactas. O ranking se preserva; as probabilidades, não. Mover o limiar faz a mesma troca sem destruir as probabilidades. Uma lição menor: os splines não melhoraram a discriminação (0,6698 vs 0,6698), mas melhoraram a calibração — slope 1,04 vs 1,08, erro máximo por decil 1,3 vs 2,7 pontos, p de Hosmer–Lemeshow 0,077 vs &lt; 0,001.</p>'''
+
+s7_label = "07 · inferência"
+s7_title = "O que puxa a readmissão — com erros-padrão honestos"
+s7_body = '''<p>Para interpretar, ajustei um MLG logístico separado com termos legíveis (contagens por unidade, nível mais frequente como referência, 68 parâmetros) usando <strong>IRLS escrito do zero em NumPy</strong> — Newton–Raphson na log-verossimilhança, com covariância do modelo, sanduíche e <strong>clusterizada por paciente</strong>. Coeficientes e erros-padrão clusterizados batem com o statsmodels em cerca de 10<sup>−14</sup>. Termos com |z| &gt; 3,5:</p>'''
+or_head = "odds ratios · IC 95% com EP clusterizado por paciente · escala log"
+or_up = "aumenta a chance"
+or_down = "reduz a chance"
+or_cap = "Referências: alta para casa, admissão pelo PS, diagnóstico principal circulatório, HbA1c não medida, sem insulina, pagador ausente, especialidade ausente. Fonte: results/results.json (inference)."
+term_labels = { "discharge=Rehab" = "alta para reabilitação", "discharge=Other inpatient facility" = "alta para outra internação", "discharge=SNF/ICF" = "alta para casa de repouso (SNF/ICF)", "discharge=Home + health service" = "alta para casa + atendimento domiciliar", "insulin=Down" = "dose de insulina reduzida", "diag_1_grp=Respiratory" = "diagnóstico principal respiratório", "payer=MC" = "pagador: Medicare", "diabetesMed=No" = "sem medicação para diabetes", "specialty=Cardiology" = "especialidade: cardiologia", "payer=BC" = "pagador: Blue Cross", "payer=CM" = "pagador: CM", number_inpatient = "internações no ano anterior (por 1)", number_diagnoses = "diagnósticos (por 1)" }
+s7_after = '''<ul>
+<li><strong>Internações prévias dominam:</strong> OR 1,30 por internação no ano anterior (z = 35,6).</li>
+<li><strong>Para onde o paciente vai depois</strong> é o segundo sinal: reabilitação OR 3,7, outra unidade de internação 2,0, casa de repouso 1,5 (vs. casa).</li>
+<li><strong>HbA1c medida &gt; 8 se associa a menor risco</strong> (OR 0,86) — em linha com Strack et al.: medir a HbA1c anda junto com acompanhamento mais próximo.</li>
+<li><strong>O cluster pesa de forma desigual:</strong> a razão mediana entre EP clusterizado e EP do modelo é 1,02, mas para idas prévias ao PS é 1,54 — os pacientes com muitas idas ao PS são justamente os que voltam.</li>
+</ul>
+<p class="cap">Associações, não efeitos causais. O modelo preditivo (seção 03) e este modelo inferencial compartilham os dados, não o propósito.</p>'''
+
+s8_label = "08 · decisões"
+s8_title = "Quando vale a pena usar o modelo?"
+s8_body = '''<p>Uma <strong>curva de decisão</strong> converte o limiar numa razão de custos: agir em τ significa que perder uma readmissão custa (1 − τ)/τ vezes um acompanhamento desnecessário. O benefício líquido supera “tratar todos” a partir de τ ≈ 0,05, mas encolhe para perto de zero acima de ~0,25. O modelo se paga em intervenções <strong>baratas</strong> — uma ligação, uma revisão farmacêutica —, não nas caras.</p>'''
+treat_all = "tratar todos"
+treat_none = "tratar ninguém"
+dca_head = "curva de decisão · pacientes de teste"
+dca_right = "benefício líquido vs limiar"
+dca_cap = "Benefício líquido = VP/n − FP/n · τ/(1 − τ) (Vickers & Elkin, 2006). Fonte: results/results.json (dca)."
+s8_mid = '''<p>E a pergunta do tamanho dos dados: reajustar os dois modelos em subconjuntos aleatórios de pacientes mostra onde a flexibilidade extra começa a compensar.</p>'''
+lc_head = "curva de aprendizado · AUC de teste vs tamanho do treino (pacientes subamostrados)"
+lc_cap = "Mesmo conjunto de teste; hiperparâmetros fixos na escolha com todos os dados. Com até 8 mil internações a RL vence; o boosting passa à frente perto de 20 mil. Fonte: results/results.json (learning_curve)."
+sub_title = "Subgrupos (RL principal, pacientes de teste)"
+sub_cols = ["variável", "grupo", "n", "taxa observada", "média prevista", "AUC ROC"]
+sub_cap = "Grupos com n ≥ 300. A discriminação é mais fraca nos pacientes mais velhos; o grupo “raça ausente” tem risco superestimado."
+sub_vars = { age = "idade", sex = "sexo", race = "raça" }
+sub_levels = { Female = "feminino", Male = "masculino", Caucasian = "branca", AfricanAmerican = "afro-americana", Hispanic = "hispânica", Other = "outra", Missing = "ausente" }
+
+s9_label = "09 · entrega"
+s9_title = "Reprodutível, testado, publicado"
+s9_body = '''<ul>
+<li><strong>Código e todos os números:</strong> <a href="{repo}" rel="noopener">repositório no GitHub ↗</a> — quatro scripts (download, experimento, fechar a lacuna, figuras) geram <code>results/results.json</code>; nenhum número desta página foi digitado à mão.</li>
+<li><strong>Modelo:</strong> <a href="{hub}" rel="noopener">Hugging Face Hub ↗</a> — o pipeline principal serializado com <code>skops</code> (sem pickle), com model card, métricas e exemplo de uso.</li>
+<li><strong>Testes:</strong> 23 casos em pytest — agrupamento CID-9, regras da coorte, IRLS vs scikit-learn e statsmodels (coeficientes, EP do modelo e clusterizado), métricas de calibração em dados simulados, fórmula da curva de decisão.</li>
+<li><strong>Limites:</strong> dados dos EUA de 1999–2008 com códigos CID-9; readmissões em outros hospitais não aparecem, então o rótulo subconta; internações terminadas em óbito ou hospice foram excluídas e não devem ser pontuadas. Não é para uso clínico.</li>
+</ul>
+<p class="cap">Dados: Strack et al. (2014), UCI Machine Learning Repository, doi:10.24432/C5230J, CC BY 4.0 — baixados em tempo de execução, não redistribuídos.</p>'''
+
+
 [research]
 title = "Artigos — Igor Millis"
 description = "Artigos e experimentos de Igor Millis: decisões estatísticas, modelagem, machine learning e implementações computacionais."

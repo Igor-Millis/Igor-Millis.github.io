@@ -21,6 +21,7 @@ ROUTES: dict[str, str] = {
     "edudata": "/work/edudata/",
     "credit": "/work/credit-default-api/",
     "recommender": "/work/adaptive-recommender/",
+    "readmission": "/work/diabetes-readmission/",
     "research": "/research/",
 }
 
@@ -50,7 +51,7 @@ class Site:
         self.data = {"credit": _json("data/credit_default.json"), "edudata": _json("data/edudata.json"),
                      "calibration": _json("data/calibration.json"),
                      "bets": _json("data/bets.json"), "bootstrap": _json("data/bootstrap.json"), "negbin": _json("data/negbin.json"),
-                     "quasi": _json("data/quasi.json"),
+                     "quasi": _json("data/quasi.json"), "readmission": _json("data/readmission.json"),
                      "recommender": _json("data/recommender.json")}
 
     # ---- languages -------------------------------------------------------

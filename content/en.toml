@@ -473,6 +473,151 @@ s10_body = '''<ul>
 <p class="cap">Personal weekend project, built to learn. Real data: Online Retail II (Chen, D., UCI Machine Learning Repository, CC BY 4.0), downloaded at runtime and not redistributed.</p>'''
 
 
+[work.readmission]
+title = "Diabetes Readmission — logistic regression vs. gradient boosting on a messy clinical dataset"
+description = "30-day readmission of 99,340 diabetic inpatient encounters (UCI Diabetes 130-US): a splined logistic regression against random forest and LightGBM, patient-grouped validation, 40+ metrics, calibration, decision curves and cluster-robust inference with IRLS written from scratch."
+name = "Diabetes Readmission"
+kicker = "machine learning · logistic regression · model evaluation"
+summary = "A famous, irregular clinical dataset: rare target, weak signal, 97% missing in one column, 716 diagnosis codes and repeated patients. How far does a well-specified logistic regression go against gradient boosting — measured with every metric that matters?"
+tags = ["Logistic regression", "scikit-learn", "LightGBM", "statsmodels", "NumPy", "Hugging Face", "pytest"]
+meta = ["AUC 0.670 vs 0.681", "99,340 encounters · 8 models"]
+spec = [
+  ["dataset", "Diabetes 130-US Hospitals 1999–2008 (UCI · Strack et al., 2014)"],
+  ["task", "binary classification · readmission < 30 days (11.4%)"],
+  ["main model", "logistic regression · log-counts + cubic B-splines · L2"],
+  ["compared", "LR variants (6) · random forest · LightGBM · + 3 richer LRs"],
+  ["validation", "split, CV and bootstrap by patient (StratifiedGroupKFold)"],
+  ["model on the hub", "huggingface.co/igorlimamillis/diabetes-readmission-logistic"],
+]
+stats = [
+  ["99,340", "encounters · 69,987 patients"],
+  ["11.4%", "readmitted within 30 days"],
+  ["94%", "of boosting's lift over chance kept by the LR"],
+  ["40+", "metrics per model · CIs by patient"],
+]
+model_names = { prevalence = "Prevalence only", lr_one = "LR · prior stays only", lr_linear = "LR · linear terms", lr_spline = "LR · log + splines (main)", lr_enet = "LR · splines + L1/L2", lr_balanced = "LR · splines + class_weight", rf = "Random forest", lgbm = "LightGBM" }
+
+s1_label = "01 · problem"
+s1_title = "A famous dataset that fights back"
+s1_body = '''<p>Hospitals in the US are penalised when patients come back within 30 days. Flagging high-risk diabetic patients at discharge would let a team call them, review their medication or schedule an early visit. The UCI <em>Diabetes 130-US Hospitals</em> dataset (101,766 encounters, 1999–2008) is the standard public benchmark for this — and it is a hard one.</p>
+<p>The question here is not “which algorithm wins a leaderboard” but <strong>how far a well-specified logistic regression goes</strong>, what gradient boosting adds on top, and what each metric actually reveals when the target is rare and the signal is weak.</p>'''
+irr_cols = ["irregularity", "evidence", "what was done"]
+irr_rows = [
+  ["rare, weak target", "11.4% readmitted &lt; 30 days; best AUC ≈ 0.68", "proper scores, PR AUC, calibration; thresholds chosen out-of-fold"],
+  ["deaths and hospice", "2,423 encounters cannot be readmitted", "removed — otherwise dying looks “protective”"],
+  ["repeated patients", "69,987 patients; 46% of encounters from repeaters", "split, tune and bootstrap <strong>by patient</strong>"],
+  ["massive missingness", "weight 97% · glucose 95% · HbA1c 83% · specialty 49% · payer 40%", "weight dropped; “not measured” kept as a level"],
+  ["high-cardinality codes", "716 ICD-9 primary diagnoses · 72 specialties", "9 ICD-9 chapters; top-12 specialties; rare levels pooled per fold"],
+  ["heavy tails", "prior stays 0–21 · ER visits 0–76", "log1p + cubic B-splines inside the pipeline"],
+  ["IDs stored as numbers", "admission / discharge / source are nominal codes", "mapped to clinically meaningful groups"],
+]
+irr_cap = "Audit of the raw file (101,766 encounters). Cohort after exclusions: 99,340 encounters, 69,987 patients."
+
+s2_label = "02 · validation"
+s2_title = "Split by patient — and check whether it mattered"
+s2_body = '''<p>Almost half of the encounters belong to patients seen more than once. A random split puts the same person in training and test, which can let a flexible model recognise people instead of learning risk. So the held-out test set is <strong>13,998 patients never seen in training</strong>, hyperparameters are tuned with 5-fold <code>StratifiedGroupKFold</code>, and confidence intervals come from a <strong>patient-level bootstrap</strong>.</p>
+<p>Then I measured what the shortcut would have cost:</p>'''
+rf_deep_name = "Random forest, leaf size 1"
+leak_series = ["CV, random encounter split", "CV, split by patient", "held-out test patients"]
+leak_head = "leakage check · 5-fold CV on the training patients"
+leak_cap = "Mean ROC AUC over 5 folds on the 79,567 training encounters; third bar: held-out test set. Source: results/results.json (leakage)."
+s2_after = '''<p><strong>An honest null result.</strong> Splitting encounters instead of patients inflated CV AUC by at most <strong>0.0016</strong> — even for a forest with leaves of size 1, built to memorise. No feature identifies the patient, so there is little to memorise. The grouped split is still the right one (it is the only one that answers “how does this work on new patients?”), but here the cost of getting it wrong was small. Test AUC sits 0.006–0.009 above CV AUC for every model alike: a property of this particular split, not of any model.</p>'''
+
+s3_label = "03 · models"
+s3_title = "One feature pipeline, eight models"
+s3_body = '''<p>Feature engineering is a <strong>row-wise function</strong> (age bands → years, ICD-9 codes → chapters, discharge IDs → destinations, medication counts) that sits at the start of every scikit-learn <code>Pipeline</code>. Everything learned from data — scaling, spline bases, rare-level pooling — is fitted inside each CV fold. Every model is tuned on the same grouped folds by <strong>log loss</strong>, a proper score, not accuracy.</p>'''
+models_cols = ["model", "what it is", "selected hyperparameters", "CV log loss"]
+models_cap = "Grouped 5-fold CV on the training patients. Lower log loss is better; the prevalence-only model scores 0.3537 on test. Source: results/results.json (cv)."
+model_desc = { lr_spline = "log1p(counts) → cubic B-splines, one-hot categoricals, L2", lr_enet = "same features, elastic-net path (saga)", lr_linear = "standardised raw counts, one-hot, L2", lr_balanced = "main LR with class_weight=“balanced”", lgbm = "gradient boosting, 30-config random search", rf = "400 trees, 6-config grid", lr_one = "one feature: inpatient stays in the prior year" }
+s3_after = '''<p>The selected elastic net is pure L1 and keeps 142 of 201 coefficients — sparsity without loss. Note the class-weighted LR: same features, same ranking, <strong>twice the log loss</strong>. Section 06 explains why.</p>'''
+
+s4_label = "04 · comparison"
+s4_title = "Boosting wins by 0.01 AUC — real, and small"
+s4_body = '''<p>On held-out patients, LightGBM reaches ROC AUC <strong>0.681</strong> and the main logistic regression <strong>0.670</strong>. Measured from chance (0.5), the logistic model keeps <strong>94% of the lift</strong> that boosting achieves — with about 200 coefficients that can be read, audited and shipped as a formula. One feature alone (prior inpatient stays) already gets 0.611.</p>'''
+auc_head = "ROC AUC · held-out patients · 95% patient-level bootstrap CI"
+auc_cap = "B = 1,000 resamples of patients (not encounters). Source: results/results.json (test, ci)."
+rank_title = "Ranking metrics (threshold-free)"
+rank_cols = ["model", "ROC AUC", "95% CI", "Gini", "KS", "PR AUC", "PR lift", "recall @ top 10%", "recall @ top 20%", "lift @ top 10%"]
+rank_cap = "PR AUC = average precision; PR lift = PR AUC / prevalence (0.1135). Recall @ top k% = share of all readmissions found among the k% highest-risk encounters."
+prob_title = "Probabilistic metrics (proper scores)"
+prob_cols = ["model", "Brier", "95% CI", "Brier skill", "log loss", "log-loss skill", "discrimination slope"]
+prob_cap = "Skill = improvement over the prevalence-only model (negative = worse than predicting 11.4% for everyone). Discrimination slope = mean p̂ among readmitted − mean p̂ among not readmitted (Tjur's R²)."
+paired_title = "Paired differences vs. the main LR (same bootstrap resamples)"
+paired_cols = ["model − LR · splines", "Δ ROC AUC", "Δ PR AUC", "Δ Brier", "Δ log loss", "AUC verdict"]
+paired_cap = "Point difference and 95% patient-level bootstrap interval. For Brier and log loss, negative = better than the main LR."
+verdict_better = "better"
+verdict_worse = "worse"
+verdict_tie = "tie"
+s4_after = '''<p><strong>Can the logistic model close the gap?</strong> Boosting gets two things for free: high-cardinality codes and interactions. I gave the logistic regression both — the 3-digit ICD-9 codes (~700 levels, rare ones pooled) and interactions suggested by the trees (pairs of log-counts, prior utilisation × discharge destination):</p>'''
+gap_title = "Closing the gap: richer logistic models"
+gap_cols = ["model", "coefficients", "CV log loss", "test ROC AUC", "Δ AUC vs LR · splines", "Δ AUC vs LightGBM", "PR AUC", "Brier", "cal. slope"]
+gap_cap = "Same split, folds and bootstrap resamples as above. Source: results/gap.json (scripts/close_the_gap.py)."
+s4_gap_after = '''<p>The richest logistic model closes <strong>about a third of the gap</strong> (+0.004 of 0.011 AUC) and gains most in PR AUC and log loss, but LightGBM stays significantly ahead. The rest of the signal lives in higher-order interactions that a hand-specified linear predictor does not reach: on this dataset, interpretability costs about <strong>0.007 AUC</strong>. Whether that is worth paying is a deployment decision, not a modelling one.</p>'''
+gap_names = { lr_icd3 = "LR · splines + 3-digit ICD-9", lr_inter = "LR · splines + interactions", lr_full = "LR · splines + ICD-9 + interactions" }
+
+s5_label = "05 · thresholds"
+s5_title = "Every confusion-matrix metric, at four policies"
+s5_body = '''<p>Threshold metrics depend on a decision, so the decision is made explicit. Three thresholds are chosen on <strong>out-of-fold training predictions</strong> — never on the test set — and the fourth is the default 0.5 that most tutorials use. Pick a policy:</p>'''
+thr_tabs = { f1_opt = "max F1 (out-of-fold)", youden_opt = "max Youden J", top20 = "flag top 20%", "default_0.5" = "default 0.5" }
+thr_cols = ["model", "τ", "flagged", "accuracy", "bal. acc.", "precision", "recall", "specificity", "NPV", "F1", "F2", "MCC", "κ", "LR+", "LR−", "DOR"]
+thr_caps = { f1_opt = "τ maximises F1 on out-of-fold training predictions of each model. Test set, n = 19,773.", youden_opt = "τ maximises sensitivity + specificity − 1 out-of-fold: more flags, higher recall, lower precision.", top20 = "τ = 80th percentile of the out-of-fold scores: a fixed budget of follow-ups for 20% of discharges.", "default_0.5" = "With 11.4% prevalence, calibrated models almost never reach 0.5: accuracy ≈ 0.887, the accuracy of predicting “no” for everyone. Only the class-weighted LR behaves sensibly here — because its probabilities are inflated." }
+s5_after = '''<p>Two lessons. First, at a sensible threshold every model except the one-feature baseline lands in a <strong>narrow band — F1 0.279–0.297, MCC 0.163–0.187</strong>: threshold metrics barely separate models, while proper scores and paired bootstrap differences do. Second, the accuracy paradox in plain sight: the best “accuracy” in the 0.5 tab belongs to models that flag almost nobody.</p>'''
+
+s6_label = "06 · calibration"
+s6_title = "class_weight is a calibration bug, not an imbalance fix"
+s6_body = '''<p>A risk score is only useful for decisions if “20%” means 20%. The main LR and LightGBM both track the diagonal (ECE 0.007). The class-weighted LR has the <strong>same AUC</strong> but predicts a mean risk of 47% for an outcome that happens 11% of the time:</p>'''
+cal_head = "reliability diagram · risk deciles · held-out patients"
+cal_right = "observed vs predicted"
+perfect = "perfect calibration"
+cal_cap = "Each point is one decile of predicted risk (≈ 1,977 encounters). Source: results/results.json (reliability)."
+cal_cols = ["model", "mean p̂", "O/E", "intercept", "slope", "ECE", "MCE", "Spiegelhalter z", "HL χ²(8)", "HL p"]
+cal_tcap = "Observed prevalence 0.113. O/E = observed / expected events. Intercept and slope from a logistic recalibration (ideal 0 and 1). ECE / MCE = mean / max absolute gap over deciles. HL = Hosmer–Lemeshow; with n ≈ 20,000 it rejects small deviations, so read it with the slope and ECE."
+s6_after = '''<p><strong>Why it happens:</strong> weighting the positives by w shifts the logit intercept by about log w and leaves the slopes nearly untouched. Ranking is preserved, probabilities are not. Moving the threshold achieves the same trade-off without destroying the probabilities. A smaller lesson: the splines did not improve discrimination (0.6698 vs 0.6698) but they did improve calibration — slope 1.04 vs 1.08, maximum decile error 1.3 vs 2.7 points, Hosmer–Lemeshow p 0.077 vs &lt; 0.001.</p>'''
+
+s7_label = "07 · inference"
+s7_title = "What drives readmission — with honest standard errors"
+s7_body = '''<p>For interpretation I fitted a separate logistic GLM with readable terms (counts per unit, most frequent level as reference, 68 parameters) using <strong>IRLS written from scratch in NumPy</strong> — Newton–Raphson on the log-likelihood, with model-based, sandwich and <strong>cluster-robust (by patient)</strong> covariance. Coefficients and clustered standard errors match statsmodels to about 10<sup>−14</sup>. Terms with |z| &gt; 3.5:</p>'''
+or_head = "odds ratios · 95% CI with patient-clustered SEs · log scale"
+or_up = "raises the odds"
+or_down = "lowers the odds"
+or_cap = "Reference levels: discharged home, admitted through the ER, primary diagnosis circulatory, HbA1c not measured, no insulin, payer missing, specialty missing. Source: results/results.json (inference)."
+term_labels = { "discharge=Rehab" = "discharged to rehab", "discharge=Other inpatient facility" = "discharged to other inpatient care", "discharge=SNF/ICF" = "discharged to SNF/ICF", "discharge=Home + health service" = "discharged home + home health", "insulin=Down" = "insulin dose lowered", "diag_1_grp=Respiratory" = "primary diagnosis respiratory", "payer=MC" = "payer: Medicare", "diabetesMed=No" = "no diabetes medication", "specialty=Cardiology" = "specialty: cardiology", "payer=BC" = "payer: Blue Cross", "payer=CM" = "payer: CM", number_inpatient = "inpatient stays, prior year (per 1)", number_diagnoses = "diagnoses (per 1)" }
+s7_after = '''<ul>
+<li><strong>Prior inpatient stays dominate:</strong> OR 1.30 per stay in the previous year (z = 35.6).</li>
+<li><strong>Where the patient goes next</strong> is the second signal: rehab OR 3.7, another inpatient facility 2.0, SNF/ICF 1.5 (vs. home).</li>
+<li><strong>Measured HbA1c &gt; 8 is associated with lower risk</strong> (OR 0.86) — in line with Strack et al.: measuring HbA1c goes with closer follow-up.</li>
+<li><strong>Clustering matters unevenly:</strong> the median clustered/model SE ratio is 1.02, but for prior ER visits it is 1.54 — the patients with many ER visits are exactly the ones who come back.</li>
+</ul>
+<p class="cap">Associations, not causal effects. The predictive model (section 03) and this inferential model share the data, not the purpose.</p>'''
+
+s8_label = "08 · decisions"
+s8_title = "When is the model worth using?"
+s8_body = '''<p>A <strong>decision curve</strong> converts the threshold into a cost ratio: acting at τ means a missed readmission costs (1 − τ)/τ times a needless follow-up. Net benefit beats “treat everyone” from τ ≈ 0.05 upward but shrinks toward zero above ~0.25. The model pays for itself for <strong>cheap</strong> interventions — a phone call, a pharmacist review — not expensive ones.</p>'''
+treat_all = "treat all"
+treat_none = "treat none"
+dca_head = "decision curve · held-out patients"
+dca_right = "net benefit vs threshold"
+dca_cap = "Net benefit = TP/n − FP/n · τ/(1 − τ) (Vickers & Elkin, 2006). Source: results/results.json (dca)."
+s8_mid = '''<p>And the data-size question: refitting both models on random subsets of patients shows where the extra flexibility starts to pay.</p>'''
+lc_head = "learning curve · test AUC vs training size (patients subsampled)"
+lc_cap = "Same test set throughout; hyperparameters fixed at the full-data choice. With ≤ 8k encounters the LR wins; boosting overtakes it around 20k. Source: results/results.json (learning_curve)."
+sub_title = "Subgroups (main LR, held-out patients)"
+sub_cols = ["variable", "group", "n", "observed rate", "mean predicted", "ROC AUC"]
+sub_cap = "Groups with n ≥ 300. Discrimination is weaker for the oldest patients; the “race missing” group is over-predicted."
+sub_vars = { age = "age", sex = "sex", race = "race" }
+sub_levels = { Female = "female", Male = "male", Caucasian = "Caucasian", AfricanAmerican = "African American", Hispanic = "Hispanic", Other = "other", Missing = "missing" }
+
+s9_label = "09 · ship"
+s9_title = "Reproducible, tested, published"
+s9_body = '''<ul>
+<li><strong>Code and every number:</strong> <a href="{repo}" rel="noopener">GitHub repository ↗</a> — four scripts (download, experiment, close-the-gap, figures) write <code>results/results.json</code>; nothing on this page is typed by hand.</li>
+<li><strong>Model:</strong> <a href="{hub}" rel="noopener">Hugging Face Hub ↗</a> — the main pipeline serialised with <code>skops</code> (no pickle), with a model card, metrics and a usage example.</li>
+<li><strong>Tests:</strong> 23 pytest cases — ICD-9 grouping, cohort rules, IRLS vs scikit-learn and statsmodels (coefficients, model and clustered SEs), calibration metrics on simulated data, decision-curve formula.</li>
+<li><strong>Limits:</strong> 1999–2008 US data with ICD-9 codes; readmissions to other hospitals are invisible, so the label under-counts; encounters ending in death or hospice were excluded and must not be scored. Not for clinical use.</li>
+</ul>
+<p class="cap">Data: Strack et al. (2014), UCI Machine Learning Repository, doi:10.24432/C5230J, CC BY 4.0 — downloaded at runtime, not redistributed.</p>'''
+
+
 [research]
 title = "Articles — Igor Millis"
 description = "Articles and experiments by Igor Millis: statistical decisions, modeling, machine learning and computational implementations."

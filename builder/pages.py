@@ -9,6 +9,7 @@ from .bets import COMPONENTS as BETS_COMPONENTS
 from .bootstrap import COMPONENTS as BOOT_COMPONENTS
 from .negbin import COMPONENTS as NB_COMPONENTS
 from .quasi import COMPONENTS as QL_COMPONENTS
+from .readmission import render as _readmission
 from .core import NOTES, ROOT, Site, attr, esc, integer, num
 from .layout import page, section
 
@@ -35,7 +36,8 @@ def tags(items: list[str]) -> str:
 def project_rows(site: Site, lang: str) -> str:
     c = site.content[lang]["work"]
     rows = []
-    for n, key, k in (("01", "edudata", "edudata"), ("02", "credit", "credit"), ("03", "recommender", "recommender")):
+    for n, key, k in (("01", "readmission", "readmission"), ("02", "edudata", "edudata"), ("03", "credit", "credit"),
+                      ("04", "recommender", "recommender")):
         p = c[k]
         rows.append(f"""<a class="row rv" href="{site.url(lang, key)}">
   <span class="n">{n}</span>
@@ -553,6 +555,10 @@ def note(site: Site, lang: str, slug: str) -> str:
         ld["keywords"] = ", ".join(n["tags"])
     return page(site, lang, key, title=n["seo_title"], description=n["description"], body=body,
                 scripts=tuple(n.get("scripts", ())), head_extra=katex, jsonld=ld, og_type="article")
+
+
+def readmission(site: Site, lang: str) -> str:
+    return _readmission(site, lang)
 
 
 def not_found(site: Site) -> str:
