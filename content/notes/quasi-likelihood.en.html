@@ -22,11 +22,37 @@
 
 <p>GLMs were proposed by John Nelder and Robert Wedderburn in 1972. Two years later Wedderburn — a young statistician at Rothamsted Experimental Station — published “Quasi-likelihood functions, generalized linear models, and the Gauss–Newton method” in <em>Biometrika</em>. The concrete problem was a dataset on <strong>leaf blotch</strong> (<em>Rhynchosporium secalis</em>) in barley: the <em>percentage of leaf area</em> affected, for 10 varieties at 9 sites.</p>
 
-<p>These data are proportions, but they are <strong>not binomial</strong>: there are no “\(m\) trials” and “\(y\) successes”, just a continuous area. There is no natural distribution for them. Still, the model for the mean is obvious — \(\operatorname{logit}\mu_{ij} = \alpha_i + \beta_j\), variety plus site — and something can be said about the variance: it must go to zero as the proportion goes to 0 or 1. Wedderburn showed that the binomial variance, \(\mu(1-\mu)\), did not describe the residuals well and proposed</p>
+<p>These data are proportions, but they are <strong>not binomial</strong>: there are no “\(m\) trials” and “\(y\) successes”, just a continuous area. There is no natural distribution for them. Even so, a lot can be said without choosing one — first about the mean, then about the variance.</p>
 
-<div class="eq">\[ V(\mu) = \mu^2(1-\mu)^2, \]<span class="tag-n">(4)</span></div>
+<p><strong>The mean.</strong> The experiment crosses two factors, variety \(i\) and site \(j\), with one observation per combination. The natural model is</p>
 
-<p>which corresponds to <em>no</em> distribution in the exponential family. The paper's question was: can \(\boldsymbol\beta\) be estimated by solving (3) with an arbitrary \(V\), even with no likelihood behind it? And does the resulting estimator have good properties? The answer, yes and yes, is the content of §3–§5. §8 redoes the example with simulated data in the same format.</p>
+<div class="eq">\[ \operatorname{logit}\mu_{ij} = \log\frac{\mu_{ij}}{1-\mu_{ij}} = \alpha_i + \beta_j, \]</div>
+
+<p>with 1 + 9 + 8 = 18 parameters for 90 observations. The logit link does two things. It keeps \(\mu_{ij}\) between 0 and 1 whatever \(\alpha_i\) and \(\beta_j\) are. And it gives the effects a multiplicative reading: \(e^{\alpha_i - \alpha_{i'}}\) is the ratio of the odds of infection of two varieties, the <em>same</em> at every site. A resistant variety cuts the odds by the same factor at a dry site and at a wet one — the no-interaction assumption, which with one observation per cell could not even be tested.</p>
+
+<p><strong>The variance: what is compulsory.</strong> A proportion lives in \([0, 1]\), and that alone bounds the variance. Since \(Y^2 \le Y\) on that interval, \(\mathbb E[Y^2] \le \mathbb E[Y] = \mu\) and</p>
+
+<div class="eq">\[ \operatorname{Var}(Y) = \mathbb E[Y^2] - \mu^2 \;\le\; \mu - \mu^2 = \mu(1-\mu). \]</div>
+
+<p>Every variable in \([0,1]\) obeys this inequality, binomial or not. Consequence: the variance <strong>must</strong> go to zero as the mean proportion goes to 0 or 1. A site where the disease barely appears cannot have widely scattered proportions. But that still leaves many possible shapes, and two are natural candidates: \(\mu(1-\mu)\), the binomial shape, and \(\mu^2(1-\mu)^2\).</p>
+
+<p><strong>The variance: which shape.</strong> The difference between them shows up in the <strong>coefficient of variation</strong>, the standard deviation relative to the mean, near zero:</p>
+
+<div class="eq">\[ \begin{aligned} \operatorname{Var}(Y) = \phi\,\mu(1-\mu) &amp;\;\Rightarrow\; \frac{\operatorname{sd}(Y)}{\mu} = \sqrt{\frac{\phi(1-\mu)}{\mu}} \xrightarrow[\mu\to 0]{} \infty, \\ \operatorname{Var}(Y) = \phi\,\mu^2(1-\mu)^2 &amp;\;\Rightarrow\; \frac{\operatorname{sd}(Y)}{\mu} = \sqrt\phi\,(1-\mu) \xrightarrow[\mu\to 0]{} \sqrt\phi. \end{aligned} \]</div>
+
+<p>With the binomial shape, the coefficient of variation grows like \(1/\sqrt\mu\): a variety losing 1% of its leaf on average would have relative fluctuations more than three times those of one losing 10% (\(\sqrt{99}/\sqrt{9} \approx 3.3\)). With \(\mu^2(1-\mu)^2\), the coefficient of variation is roughly constant for small proportions: a disease on 1% of the leaf fluctuates, proportionally, as much as one on 10%. That is how an epidemic, which grows multiplicatively, is expected to behave. And by symmetry the same holds near 1, swapping the diseased area for the healthy area \(1-\mu\).</p>
+
+<p>There is a second reading, which ties the variance to the link. By the delta method, \(\operatorname{Var}(\operatorname{logit} Y) \approx \operatorname{Var}(Y)\,\big/\,[\mu(1-\mu)]^2\), since \(d\operatorname{logit}(\mu)/d\mu = 1/[\mu(1-\mu)]\). So</p>
+
+<div class="eq">\[ \operatorname{Var}(Y) = \phi\,\mu^2(1-\mu)^2 \quad\Longleftrightarrow\quad \operatorname{Var}(\operatorname{logit} Y) \approx \phi. \]</div>
+
+<p>Wedderburn's variance is exactly the one that makes \(\operatorname{logit} Y\) <strong>homoscedastic</strong>: it translates to the original scale the model an agronomist would fit by transforming the data, \(\operatorname{logit} y_{ij} = \alpha_i + \beta_j + \varepsilon_{ij}\) with constant-variance errors. (The binomial shape does the same for the arcsine square-root transform.) The advantage of not transforming is that the model is still for \(\mathbb E[Y]\), not \(\mathbb E[\operatorname{logit} Y]\), and that proportions equal to 0 — common in disease data — break nothing.</p>
+
+<p>Wedderburn fitted the model with the binomial variance, saw that it did not describe the residuals well and proposed</p>
+
+<div class="eq">\[ V(\mu) = \mu^2(1-\mu)^2. \]<span class="tag-n">(4)</span></div>
+
+<p>No known exponential-family distribution has this variance function. Curiously, the part that depends on \(\mu\) does have the right form: integrating \(d\theta/d\mu = 1/V(\mu)\) gives a “canonical parameter” \(\theta = 2\operatorname{logit}\mu - 1/\mu + 1/(1-\mu)\), and the function \(Q\) of §3.2 can be written as \(y\theta - b(\theta)\), with \(b = \operatorname{logit}\mu + 1/(1-\mu)\). What is missing is a term \(c(y,\phi)\) that makes \(\exp\{\cdot\}\) integrate to 1 — that is, an actual density. Wedderburn did not need it. The paper's question was: can \(\boldsymbol\beta\) be estimated by solving (3) with an arbitrary \(V\), even with no likelihood behind it? And does the resulting estimator have good properties? The answer, yes and yes, is the content of §3–§5. §8 redoes the example with simulated data in the same format.</p>
 
 <p>Others completed the idea:</p>
 
@@ -83,7 +109,7 @@
 <tr><td>\(\mu^3\)</td><td>\(-y/(2\mu^2) + 1/\mu\)</td><td>inverse Gaussian</td></tr>
 <tr><td>\(\mu^{p}\), \(p \ne 0,1,2\)</td><td>\(\frac{y\,\mu^{1-p}}{1-p} - \frac{\mu^{2-p}}{2-p}\)</td><td>Tweedie (only for some \(p\))</td></tr>
 <tr><td>\(\mu + \mu^2/k\)</td><td>\(y\log\frac{\mu}{k+\mu} + k\log\frac{k}{k+\mu}\)</td><td>negative binomial with fixed \(k\)</td></tr>
-<tr class=hl><td>\(\mu^2(1-\mu)^2\)</td><td>\((2y-1)\log\frac{\mu}{1-\mu} - \frac{y}{\mu} - \frac{1-y}{1-\mu}\)</td><td><b>none</b></td></tr>
+<tr class=hl><td>\(\mu^2(1-\mu)^2\)</td><td>\((2y-1)\log\frac{\mu}{1-\mu} - \frac{y}{\mu} - \frac{1-y}{1-\mu}\)</td><td><b>none known</b></td></tr>
 </tbody></table></div>
 <p class="cap">When an exponential-family distribution with that \(V\) exists, \(Q\) equals its log-likelihood (up to terms in \(y\)). The last row is Wedderburn's: a “likelihood” with no distribution.</p>
 

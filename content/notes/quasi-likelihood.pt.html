@@ -22,11 +22,37 @@
 
 <p>Os MLGs foram propostos por John Nelder e Robert Wedderburn em 1972. Dois anos depois, Wedderburn — um jovem estatístico da Rothamsted Experimental Station — publicou na <em>Biometrika</em> “Quasi-likelihood functions, generalized linear models, and the Gauss–Newton method”. O problema concreto era um conjunto de dados sobre a <strong>mancha-da-folha</strong> (<em>Rhynchosporium secalis</em>) em cevada: a <em>porcentagem da área foliar</em> atingida, para 10 variedades em 9 locais.</p>
 
-<p>Esses dados são proporções, mas <strong>não são binomiais</strong>: não há “\(m\) ensaios” e “\(y\) sucessos”, há uma área contínua. Não existe distribuição natural para eles. Mesmo assim, o modelo para a média é óbvio — \(\operatorname{logit}\mu_{ij} = \alpha_i + \beta_j\), variedade mais local — e alguma coisa se pode dizer sobre a variância: ela tem de ir a zero quando a proporção vai a 0 ou a 1. Wedderburn mostrou que a variância binomial, \(\mu(1-\mu)\), não descrevia bem os resíduos e propôs</p>
+<p>Esses dados são proporções, mas <strong>não são binomiais</strong>: não há “\(m\) ensaios” e “\(y\) sucessos”, há uma área contínua. Não existe distribuição natural para eles. Mesmo assim, dá para dizer bastante coisa sem escolher uma — primeiro sobre a média, depois sobre a variância.</p>
 
-<div class="eq">\[ V(\mu) = \mu^2(1-\mu)^2, \]<span class="tag-n">(4)</span></div>
+<p><strong>A média.</strong> O experimento cruza dois fatores, variedade \(i\) e local \(j\), com uma observação por combinação. O modelo natural é</p>
 
-<p>que não corresponde a <em>nenhuma</em> distribuição da família exponencial. A pergunta do artigo era: dá para estimar \(\boldsymbol\beta\) resolvendo (3) com uma \(V\) qualquer, mesmo sem verossimilhança por trás? E o estimador resultante tem boas propriedades? A resposta, sim e sim, é o conteúdo das §3–§5. A §8 refaz o exemplo com dados simulados no mesmo formato.</p>
+<div class="eq">\[ \operatorname{logit}\mu_{ij} = \log\frac{\mu_{ij}}{1-\mu_{ij}} = \alpha_i + \beta_j, \]</div>
+
+<p>com 1 + 9 + 8 = 18 parâmetros para 90 observações. A ligação logit faz duas coisas. Garante que \(\mu_{ij}\) fique entre 0 e 1 quaisquer que sejam \(\alpha_i\) e \(\beta_j\). E dá aos efeitos uma leitura multiplicativa: \(e^{\alpha_i - \alpha_{i'}}\) é a razão entre as chances de infecção de duas variedades, a <em>mesma</em> em todos os locais. Uma variedade resistente reduz a chance pelo mesmo fator num local seco e num local úmido — é a hipótese de ausência de interação, e com uma observação por célula ela nem poderia ser testada.</p>
+
+<p><strong>A variância: o que é obrigatório.</strong> Uma proporção vive em \([0, 1]\), e isso já limita a variância. Como \(Y^2 \le Y\) nesse intervalo, \(\mathbb E[Y^2] \le \mathbb E[Y] = \mu\) e</p>
+
+<div class="eq">\[ \operatorname{Var}(Y) = \mathbb E[Y^2] - \mu^2 \;\le\; \mu - \mu^2 = \mu(1-\mu). \]</div>
+
+<p>Qualquer variável em \([0,1]\) obedece a essa desigualdade, binomial ou não. Consequência: a variância <strong>tem</strong> de ir a zero quando a proporção média vai a 0 ou a 1. Um local onde a doença quase não aparece não pode ter proporções muito espalhadas. Mas isso ainda deixa muitas formas possíveis, e duas são candidatas naturais: \(\mu(1-\mu)\), a forma binomial, e \(\mu^2(1-\mu)^2\).</p>
+
+<p><strong>A variância: qual forma.</strong> A diferença entre elas aparece quando se olha o <strong>coeficiente de variação</strong>, o desvio-padrão relativo à média, perto de zero:</p>
+
+<div class="eq">\[ \begin{aligned} \operatorname{Var}(Y) = \phi\,\mu(1-\mu) &amp;\;\Rightarrow\; \frac{\operatorname{dp}(Y)}{\mu} = \sqrt{\frac{\phi(1-\mu)}{\mu}} \xrightarrow[\mu\to 0]{} \infty, \\ \operatorname{Var}(Y) = \phi\,\mu^2(1-\mu)^2 &amp;\;\Rightarrow\; \frac{\operatorname{dp}(Y)}{\mu} = \sqrt\phi\,(1-\mu) \xrightarrow[\mu\to 0]{} \sqrt\phi. \end{aligned} \]</div>
+
+<p>Com a forma binomial, o coeficiente de variação cresce como \(1/\sqrt\mu\): uma variedade que perde em média 1% da folha teria flutuações relativas mais de três vezes maiores que uma que perde 10% (\(\sqrt{99}/\sqrt{9} \approx 3{,}3\)). Com \(\mu^2(1-\mu)^2\), o coeficiente de variação é aproximadamente constante para proporções pequenas: uma doença em 1% da folha flutua, em proporção, tanto quanto uma em 10%. É o comportamento esperado de uma epidemia, que cresce de forma multiplicativa. E o mesmo vale, por simetria, perto de 1, trocando a área doente pela área sadia \(1-\mu\).</p>
+
+<p>Há uma segunda leitura, que liga a variância à ligação. Pelo método delta, \(\operatorname{Var}(\operatorname{logit} Y) \approx \operatorname{Var}(Y)\,\big/\,[\mu(1-\mu)]^2\), pois \(d\operatorname{logit}(\mu)/d\mu = 1/[\mu(1-\mu)]\). Então</p>
+
+<div class="eq">\[ \operatorname{Var}(Y) = \phi\,\mu^2(1-\mu)^2 \quad\Longleftrightarrow\quad \operatorname{Var}(\operatorname{logit} Y) \approx \phi. \]</div>
+
+<p>A variância de Wedderburn é exatamente a que torna \(\operatorname{logit} Y\) <strong>homocedástico</strong>: ela traduz, na escala original, o modelo que um agrônomo ajustaria transformando os dados, \(\operatorname{logit} y_{ij} = \alpha_i + \beta_j + \varepsilon_{ij}\) com erros de variância constante. (A forma binomial faz o mesmo para a transformação arco-seno da raiz.) A vantagem de não transformar é que o modelo continua sendo para \(\mathbb E[Y]\), e não para \(\mathbb E[\operatorname{logit} Y]\), e que proporções iguais a 0 — comuns em dados de doença — não quebram nada.</p>
+
+<p>Wedderburn ajustou o modelo com a variância binomial, viu que ela não descrevia bem os resíduos e propôs</p>
+
+<div class="eq">\[ V(\mu) = \mu^2(1-\mu)^2. \]<span class="tag-n">(4)</span></div>
+
+<p>Não se conhece nenhuma distribuição da família exponencial com essa função de variância. Curiosamente, a parte que depende de \(\mu\) até tem a forma certa: integrando \(d\theta/d\mu = 1/V(\mu)\) obtém-se o “parâmetro canônico” \(\theta = 2\operatorname{logit}\mu - 1/\mu + 1/(1-\mu)\), e a função \(Q\) da §3.2 se escreve como \(y\theta - b(\theta)\), com \(b = \operatorname{logit}\mu + 1/(1-\mu)\). O que falta é um termo \(c(y,\phi)\) que faça \(\exp\{\cdot\}\) integrar 1 — ou seja, uma densidade de verdade. Wedderburn não precisou dele. A pergunta do artigo era: dá para estimar \(\boldsymbol\beta\) resolvendo (3) com uma \(V\) qualquer, mesmo sem verossimilhança por trás? E o estimador resultante tem boas propriedades? A resposta, sim e sim, é o conteúdo das §3–§5. A §8 refaz o exemplo com dados simulados no mesmo formato.</p>
 
 <p>A ideia foi completada por outros:</p>
 
@@ -83,7 +109,7 @@
 <tr><td>\(\mu^3\)</td><td>\(-y/(2\mu^2) + 1/\mu\)</td><td>normal inversa</td></tr>
 <tr><td>\(\mu^{p}\), \(p \ne 0,1,2\)</td><td>\(\frac{y\,\mu^{1-p}}{1-p} - \frac{\mu^{2-p}}{2-p}\)</td><td>Tweedie (só para alguns \(p\))</td></tr>
 <tr><td>\(\mu + \mu^2/k\)</td><td>\(y\log\frac{\mu}{k+\mu} + k\log\frac{k}{k+\mu}\)</td><td>binomial negativa com \(k\) fixo</td></tr>
-<tr class=hl><td>\(\mu^2(1-\mu)^2\)</td><td>\((2y-1)\log\frac{\mu}{1-\mu} - \frac{y}{\mu} - \frac{1-y}{1-\mu}\)</td><td><b>nenhuma</b></td></tr>
+<tr class=hl><td>\(\mu^2(1-\mu)^2\)</td><td>\((2y-1)\log\frac{\mu}{1-\mu} - \frac{y}{\mu} - \frac{1-y}{1-\mu}\)</td><td><b>nenhuma conhecida</b></td></tr>
 </tbody></table></div>
 <p class="cap">Quando existe uma distribuição da família exponencial com aquela \(V\), \(Q\) coincide com a sua log-verossimilhança (a menos de termos em \(y\)). A última linha é a de Wedderburn: uma “verossimilhança” sem distribuição.</p>
 
