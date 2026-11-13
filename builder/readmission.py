@@ -58,7 +58,7 @@ def _xy(series: list[dict], lang: str, *, x0: float, x1: float, y0: float, y1: f
             stroke = {"ln-a": "var(--accent)", "ln-c": "var(--signal)", "ln-b": "var(--text-2)"}[s["cls"]]
             for x, y in pts:
                 out.append(f'<circle cx="{X(x):.1f}" cy="{Y(y):.1f}" r="4" fill="var(--bg)" stroke="{stroke}" stroke-width="1.5">'
-                           f'<title>{esc(s.get("name", ""))}: x = {num(x, lang, 3)} · y = {num(y, lang, 3)}</title></circle>')
+                           f'<title>{esc(s.get("name", ""))}: x = {xfmt(x) if xfmt else num(x, lang, 3)} · y = {num(y, lang, 3)}</title></circle>')
     return f'<svg viewBox="0 0 {w} {h}" role="img" aria-label="{attr(label)}">{"".join(out)}</svg>'
 
 
