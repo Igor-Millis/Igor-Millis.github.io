@@ -582,3 +582,8 @@ svg .ci { stroke: var(--text-2); stroke-width: 1.2; }
 .weekend strong { color: var(--text); font-weight: 500; }
 .formula.sm { font-size: .8em; }
 .formula .katex-display { margin: .2em 0; }
+/* Diabetes Readmission page: plain-language boxes for non-technical readers */
+.plain { border: 1px solid var(--line); border-left: 2px solid var(--signal); background: var(--signal-bg); padding: 14px 20px 10px; color: var(--text-2); font-size: 15px; line-height: 1.6; max-width: 72ch; margin: 0 0 28px; }
+.plain .label { display: block; color: var(--signal); margin-bottom: 6px; }
+.plain p { margin: 0 0 8px; }
+.plain strong { color: var(--text); font-weight: 500; }

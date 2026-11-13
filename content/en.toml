@@ -617,6 +617,40 @@ s9_body = '''<ul>
 </ul>
 <p class="cap">Data: Strack et al. (2014), UCI Machine Learning Repository, doi:10.24432/C5230J, CC BY 4.0 — downloaded at runtime, not redistributed.</p>'''
 
+plain_label = "in plain words"
+plain_intro_label = "00 · summary"
+plain_intro_title = "In a nutshell"
+plain_intro = '''<p><strong>Where the idea came from.</strong> When a patient with diabetes is discharged, they may need to come back to hospital a few weeks later. That is bad for the patient and expensive for the hospital — in the US, hospitals are even fined when it happens too often.</p>
+<p><strong>What it is for.</strong> Using real data from 100,000 hospital stays in 130 hospitals, I built a system that estimates, at discharge, who is most likely to be back within 30 days. That lets the care team give those people extra attention: a phone call, a medication review, an earlier appointment.</p>
+<p><strong>The result.</strong> I compared a classic, easy-to-explain method (logistic regression) with more modern and complex ones. The classic method delivered about <strong>94% of the best model's performance</strong>, with the advantage that any doctor or manager can see why someone was flagged. The sections below hold the technical detail; each one opens with an explanation like this one.</p>'''
+s1_plain = '''<p><strong>Where it came from.</strong> This is a public dataset used worldwide to study the problem — and known for being messy.</p>
+<p><strong>What it is for.</strong> Before building any model, you need to understand the data's flaws: lots of missing information, patients who appear several times, and few readmissions (only 1 in 9). It is like checking the quality of the CVs before starting a hiring process.</p>
+<p><strong>The result.</strong> I found seven problems in the data and documented how each one was handled in the table below.</p>'''
+s2_plain = '''<p><strong>Where it came from.</strong> Almost half of the stays belong to patients who came back more than once. If the same person shows up both in the data used to “study” and in the data used for the “exam”, the system can cheat: recognise the person instead of learning the risk pattern.</p>
+<p><strong>What it is for.</strong> Making the final score honest: the system is tested only on patients it has never seen. It is like assessing a candidate with a new case, not with the same exercise they already practised.</p>
+<p><strong>The result.</strong> I split the data by patient. I also measured how much cheating would have inflated the score: here, almost nothing. Still, the approach used is the correct one.</p>'''
+s3_plain = '''<p><strong>Where it came from.</strong> There is no single right method for this kind of prediction; good practice is to try several under the same rules.</p>
+<p><strong>What it is for.</strong> Comparing eight approaches fairly — same data, same preparation, same scoring — like a hiring process where every candidate takes the same test.</p>
+<p><strong>The result.</strong> All of them were trained the same way. One of them, which gives “extra weight” to the rare cases, already shows a problem here that section 06 explains.</p>'''
+s4_plain = '''<p><strong>Where it came from.</strong> Complex methods tend to predict better but are harder to explain. The question is: how much do they really gain?</p>
+<p><strong>What it is for.</strong> Measuring the difference and checking whether it is real or luck. The score used (AUC) answers a simple question: take one patient who came back and one who did not — how often does the system give the higher risk to the one who came back? 0.5 is guessing; 1.0 would be perfect.</p>
+<p><strong>The result.</strong> The most complex model scored slightly higher: <strong>0.681 vs 0.670</strong>. The difference is real but small — the simple model keeps 94% of the gain. By “upgrading” the simple model I recovered about a third of that difference.</p>'''
+s5_plain = '''<p><strong>Where it came from.</strong> The system gives each patient a risk percentage, but someone has to decide from what level the team acts — the “cut-off”.</p>
+<p><strong>What it is for.</strong> Showing how results change with that rule. It is like the pass mark in a hiring process: too low and you call too many people; too high and good candidates are left out.</p>
+<p><strong>The result.</strong> Following up the 20% of patients with the highest risk, the system finds almost <strong>4 in 10</strong> of the patients who would come back — twice what random selection would find. The “default” 50% rule does not work here: almost nobody is flagged, yet the overall hit rate still looks great. A warning against trusting a single number.</p>'''
+s6_plain = '''<p><strong>Where it came from.</strong> Ranking who is at higher risk is not enough; the numbers must be trustworthy too. If the system says “20% chance”, about 20 in 100 such patients should actually come back.</p>
+<p><strong>What it is for.</strong> Planning with the numbers: how many calls to make, how much staff to assign.</p>
+<p><strong>The result.</strong> The main model gets the percentages right. A popular technique for rare cases (“class weights”) kept the order right but started reporting an average risk of 47% when the real figure is 11% — like a scale that correctly ranks who is heavier but adds 30 kg to everyone.</p>'''
+s7_plain = '''<p><strong>Where it came from.</strong> Doctors and managers do not trust a “black box”; they want to know why each prediction was made.</p>
+<p><strong>What it is for.</strong> Showing which factors raise or lower the risk, with an honest margin of error.</p>
+<p><strong>The result.</strong> The strongest factor is history: each hospital stay in the previous year raises the odds of coming back by about 30%. The second is where the patient goes after discharge: those sent to rehab have almost four times the odds of those who go home. This shows association, not cause — it does not mean rehab causes the return.</p>'''
+s8_plain = '''<p><strong>Where it came from.</strong> A system is only worth using if it helps decide better than the obvious alternatives: follow up everyone, or no one.</p>
+<p><strong>What it is for.</strong> Showing when using it pays off, how much data the method needs, and for which patient groups it works better or worse.</p>
+<p><strong>The result.</strong> It pays off for cheap actions, such as a phone call or a medication review; for expensive ones the gain disappears. With little data (fewer than about 8,000 stays) the simple method beats the complex one. The system works less well for patients over 70 — a limit to keep in mind.</p>'''
+s9_plain = '''<p><strong>Where it came from.</strong> A project is only worth something if other people can check and use what was done.</p>
+<p><strong>What it is for.</strong> Publishing the code, the numbers and the ready-to-use model, with automated tests that check the calculations.</p>
+<p><strong>The result.</strong> Everything is public on GitHub and Hugging Face, and anyone can reproduce every number on this page. The project is for learning and demonstration; it is not for clinical use.</p>'''
+
 
 [research]
 title = "Articles — Igor Millis"

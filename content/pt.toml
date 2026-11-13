@@ -617,6 +617,40 @@ s9_body = '''<ul>
 </ul>
 <p class="cap">Dados: Strack et al. (2014), UCI Machine Learning Repository, doi:10.24432/C5230J, CC BY 4.0 — baixados em tempo de execução, não redistribuídos.</p>'''
 
+plain_label = "em linguagem simples"
+plain_intro_label = "00 · resumo"
+plain_intro_title = "Em poucas palavras"
+plain_intro = '''<p><strong>De onde veio a ideia.</strong> Quando um paciente com diabetes recebe alta, ele pode precisar voltar ao hospital poucas semanas depois. Isso é ruim para o paciente e caro para o hospital — nos EUA, os hospitais chegam a ser multados quando isso acontece com frequência.</p>
+<p><strong>Para que serve.</strong> Usando dados reais de 100 mil internações em 130 hospitais, criei um sistema que estima, no momento da alta, quem tem mais risco de voltar em até 30 dias. Assim a equipe consegue dar atenção extra a essas pessoas: uma ligação, uma revisão dos remédios, uma consulta mais cedo.</p>
+<p><strong>Resultado.</strong> Comparei um método clássico e fácil de explicar (a regressão logística) com métodos mais modernos e complexos. O clássico entregou cerca de <strong>94% do desempenho</strong> do melhor modelo, com a vantagem de que qualquer médico ou gestor consegue entender por que alguém foi apontado como risco. As seções abaixo trazem os detalhes técnicos; cada uma começa com uma explicação como esta.</p>'''
+s1_plain = '''<p><strong>De onde veio.</strong> Esta é uma base pública muito usada no mundo todo para estudar o tema — e conhecida por ser “bagunçada”.</p>
+<p><strong>Para que serve.</strong> Antes de construir qualquer modelo, é preciso entender os defeitos dos dados: muita informação faltando, pacientes que aparecem várias vezes e poucos casos de retorno (só 1 em cada 9). É como conferir a qualidade dos currículos antes de começar um processo seletivo.</p>
+<p><strong>Resultado.</strong> Encontrei sete problemas nos dados e documentei como cada um foi tratado na tabela abaixo.</p>'''
+s2_plain = '''<p><strong>De onde veio.</strong> Quase metade das internações é de pacientes que voltaram mais de uma vez. Se a mesma pessoa aparece nos dados usados para “estudar” e nos usados para a “prova”, o sistema pode “colar”: reconhecer a pessoa em vez de aprender o padrão de risco.</p>
+<p><strong>Para que serve.</strong> Garantir que a nota final seja honesta: o sistema é testado só com pacientes que ele nunca viu. É como avaliar um candidato com um caso novo, e não com o mesmo exercício que ele já treinou.</p>
+<p><strong>Resultado.</strong> Separei os dados por paciente. Também medi quanto a “cola” teria inflado a nota: aqui, quase nada. Mesmo assim, o jeito adotado é o correto.</p>'''
+s3_plain = '''<p><strong>De onde veio.</strong> Não existe um único método certo para esse tipo de previsão; a boa prática é testar vários sob as mesmas regras.</p>
+<p><strong>Para que serve.</strong> Comparar oito abordagens de forma justa — mesmos dados, mesma preparação, mesmo critério de avaliação —, como um processo seletivo em que todos os candidatos fazem a mesma prova.</p>
+<p><strong>Resultado.</strong> Todas foram treinadas da mesma forma. Uma delas, que dá “peso extra” aos casos raros, já mostrou aqui um problema que a seção 06 explica.</p>'''
+s4_plain = '''<p><strong>De onde veio.</strong> Métodos complexos costumam prever melhor, mas são mais difíceis de explicar. A pergunta é: quanto eles ganham de verdade?</p>
+<p><strong>Para que serve.</strong> Medir a diferença e checar se ela é real ou fruto do acaso. A nota usada (AUC) responde a uma pergunta simples: pegando um paciente que voltou e um que não voltou, com que frequência o sistema dá risco maior para quem voltou? 0,5 equivale a chutar; 1,0 seria perfeito.</p>
+<p><strong>Resultado.</strong> O modelo mais complexo acertou um pouco mais: <strong>0,681 contra 0,670</strong>. A diferença é real, mas pequena — o modelo simples guarda 94% do ganho. Tentando “turbinar” o simples, recuperei cerca de um terço dessa diferença.</p>'''
+s5_plain = '''<p><strong>De onde veio.</strong> O sistema dá uma porcentagem de risco para cada paciente, mas alguém precisa decidir a partir de quanto a equipe age — a “nota de corte”.</p>
+<p><strong>Para que serve.</strong> Mostrar como os resultados mudam conforme essa regra. É como a nota de corte de um processo seletivo: baixa demais, chama gente demais; alta demais, deixa bons candidatos de fora.</p>
+<p><strong>Resultado.</strong> Acompanhando os 20% de pacientes com maior risco, o sistema encontra quase <strong>4 em cada 10</strong> pacientes que voltariam — o dobro do que se encontraria escolhendo ao acaso. Já a regra “padrão” de 50% não funciona aqui: quase ninguém é sinalizado, e mesmo assim a taxa de acerto geral parece ótima. É um alerta para não confiar em um único número.</p>'''
+s6_plain = '''<p><strong>De onde veio.</strong> Não basta ordenar quem tem mais risco; os números também precisam ser confiáveis. Se o sistema diz “20% de chance”, cerca de 20 em cada 100 pacientes assim devem de fato voltar.</p>
+<p><strong>Para que serve.</strong> Permitir planejar com base nos números: quantas ligações fazer, quanta equipe alocar.</p>
+<p><strong>Resultado.</strong> O modelo principal acerta bem as porcentagens. Já uma técnica popular para casos raros (os “pesos de classe”) manteve a ordem certa, mas passou a dizer 47% de risco médio quando o real é 11%. É como uma balança que ordena corretamente quem pesa mais, mas soma 30 kg a todo mundo.</p>'''
+s7_plain = '''<p><strong>De onde veio.</strong> Médicos e gestores não confiam em uma “caixa-preta”; eles querem saber o porquê de cada previsão.</p>
+<p><strong>Para que serve.</strong> Mostrar quais fatores aumentam ou reduzem o risco, com uma margem de erro honesta.</p>
+<p><strong>Resultado.</strong> O fator mais forte é o histórico: cada internação no ano anterior aumenta a chance de voltar em cerca de 30%. O segundo é para onde o paciente vai após a alta: quem segue para reabilitação tem quase quatro vezes a chance de quem vai para casa. Isso mostra associação, não causa — não significa que a reabilitação provoque o retorno.</p>'''
+s8_plain = '''<p><strong>De onde veio.</strong> Um sistema só vale a pena se ajudar a decidir melhor do que as alternativas óbvias: acompanhar todo mundo ou não acompanhar ninguém.</p>
+<p><strong>Para que serve.</strong> Mostrar em quais situações o uso compensa, de quantos dados o método precisa e para quais grupos de pacientes ele funciona melhor ou pior.</p>
+<p><strong>Resultado.</strong> Compensa para ações baratas, como uma ligação ou uma revisão dos remédios; para ações caras, o ganho desaparece. Com poucos dados (menos de cerca de 8 mil internações), o método simples supera o complexo. O sistema funciona pior para pacientes acima de 70 anos — um limite que precisa ser levado em conta.</p>'''
+s9_plain = '''<p><strong>De onde veio.</strong> Um projeto só tem valor se outras pessoas puderem conferir e usar o que foi feito.</p>
+<p><strong>Para que serve.</strong> Publicar o código, os números e o modelo pronto, com testes automáticos que verificam se as contas estão certas.</p>
+<p><strong>Resultado.</strong> Tudo está público no GitHub e no Hugging Face, e qualquer pessoa pode refazer cada número desta página. O projeto tem fins de estudo e demonstração; não é para uso clínico.</p>'''
+
 
 [research]
 title = "Artigos — Igor Millis"

@@ -166,8 +166,13 @@ def render(site: Site, lang: str) -> str:
     fitted = [k for k in models if k != "prevalence"]
     hl_main = {models.index("lr_spline")}
 
+    def plain(html: str) -> str:
+        """Plain-language box for non-technical readers: where the idea came from, what it is for, the result."""
+        return f'<aside class="plain" aria-label="{attr(p["plain_label"])}"><span class="label">{esc(p["plain_label"])}</span>{html}</aside>'
+
     def sec(i: int, inner: str) -> str:
-        return section(esc(p[f"s{i}_label"]), esc(p[f"s{i}_title"]), inner)
+        box = plain(p[f"s{i}_plain"]) if p.get(f"s{i}_plain") else ""
+        return section(esc(p[f"s{i}_label"]), esc(p[f"s{i}_title"]), box + inner)
 
     def prose(i: int, key: str = "body") -> str:
         return f'<div class="prose">{p[f"s{i}_{key}"]}</div>'
@@ -314,7 +319,8 @@ def render(site: Site, lang: str) -> str:
     # ---- 9. reproducibility & limits
     s9 = prose(9).replace("{hub}", hub).replace("{repo}", repo)
 
-    body = _project_head(site, lang, p, repo) + "".join(
+    intro = section(esc(p["plain_intro_label"]), esc(p["plain_intro_title"]), plain(p["plain_intro"]))
+    body = _project_head(site, lang, p, repo) + intro + "".join(
         sec(i, s) for i, s in enumerate((s1, s2, s3, s4, s5, s6, s7, s8, s9), start=1))
     return page(site, lang, "readmission", title=p["title"], description=p["description"], body=body,
                 scripts=("js/recommender.js",), jsonld=_software_ld(site, lang, "readmission", p, repo, ["Python"]))
