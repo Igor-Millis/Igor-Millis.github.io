@@ -746,3 +746,13 @@ tags = ["Machine Learning", "GLM", "Modeling", "Statistics"]
 date = "2026-11-12"
 minutes = 35
 abstract = "The equations of a GLM only use the mean and the variance function. Wedderburn drew the conclusion in 1974: specify just those two and forget the distribution. The origin, the proofs, the estimators, the algebraic advantages and three examples — with simulations of when quasi models are the right choice and when they are not."
+
+[research.notes.hyperparameters]
+title = "Hyperparameters for statisticians"
+seo_title = "Hyperparameters for statisticians: what they are, how to choose them (CV, GCV, REML) and how to optimise them (grid, random search, Bayesian optimisation)"
+description = "An introduction to hyperparameters in the language of statistics: the definition as a bilevel problem, ridge and effective degrees of freedom, cross-validation, GCV, AIC/AICc and marginal likelihood compared over 1,000 simulations, and the optimisation methods — grid, random search, Gaussian-process Bayesian optimisation and successive halving — seen as experimental design, plus the winner's curse and nested cross-validation."
+kind = "statistics · machine learning"
+tags = ["Machine Learning", "Statistics", "Modeling", "Optimization"]
+date = "2026-11-13"
+minutes = 30
+abstract = "The ridge λ, the bandwidth and the loess span are hyperparameters, and statistics has been choosing them for 50 years. What they are, why they cannot be estimated with the parameters, how CV, GCV, AIC and REML compare in a simulation, and how grid, random search, Bayesian optimisation and successive halving tune many at once — with the bias of picking the best of many."

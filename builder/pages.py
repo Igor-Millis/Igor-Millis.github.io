@@ -9,6 +9,7 @@ from .bets import COMPONENTS as BETS_COMPONENTS
 from .bootstrap import COMPONENTS as BOOT_COMPONENTS
 from .negbin import COMPONENTS as NB_COMPONENTS
 from .quasi import COMPONENTS as QL_COMPONENTS
+from .hyper import COMPONENTS as HP_COMPONENTS
 from .readmission import render as _readmission
 from .core import NOTES, ROOT, Site, attr, esc, integer, num
 from .layout import page, section
@@ -526,7 +527,7 @@ def note(site: Site, lang: str, slug: str) -> str:
         html_body = html_body.replace("{note:%s}" % other, site.url(lang, f"note:{other}"))
     # Component placeholders: <!--name--> in the note body -> rendered component
     components = {"explorer": threshold_explorer, "reliability": reliability_figure,
-                  "calibration-table": calibration_table, **BETS_COMPONENTS, **BOOT_COMPONENTS, **NB_COMPONENTS, **QL_COMPONENTS}
+                  "calibration-table": calibration_table, **BETS_COMPONENTS, **BOOT_COMPONENTS, **NB_COMPONENTS, **QL_COMPONENTS, **HP_COMPONENTS}
     for name, render in components.items():
         if f"<!--{name}-->" in html_body:
             html_body = html_body.replace(f"<!--{name}-->", render(site, lang))

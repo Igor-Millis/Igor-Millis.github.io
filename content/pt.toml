@@ -746,3 +746,13 @@ tags = ["Machine Learning", "MLG", "Modelagem", "Estatística"]
 date = "2026-11-12"
 minutes = 35
 abstract = "As equações de um MLG só usam a média e a função de variância. Wedderburn tirou a consequência em 1974: especifique só essas duas e esqueça a distribuição. A origem, as demonstrações, os estimadores, as vantagens algébricas e três exemplos — com simulações de quando os modelos quasi são a escolha certa e quando não são."
+
+[research.notes.hyperparameters]
+title = "Hiperparâmetros para estatísticos"
+seo_title = "Hiperparâmetros para estatísticos: o que são, como escolher (CV, GCV, REML) e como otimizar (grade, busca aleatória, otimização bayesiana)"
+description = "Uma introdução a hiperparâmetros na linguagem da estatística: a definição como problema de dois níveis, ridge e graus de liberdade efetivos, validação cruzada, GCV, AIC/AICc e verossimilhança marginal comparados em 1.000 simulações, e os métodos de otimização — grade, busca aleatória, otimização bayesiana com processo gaussiano e successive halving — vistos como desenho de experimentos, mais a maldição do vencedor e a validação cruzada aninhada."
+kind = "estatística · aprendizado de máquina"
+tags = ["Machine Learning", "Estatística", "Modelagem", "Otimização"]
+date = "2026-11-13"
+minutes = 30
+abstract = "O λ da ridge, a largura de banda e o span do loess são hiperparâmetros, e a estatística os escolhe há 50 anos. O que eles são, por que não dá para estimá-los junto com os parâmetros, como CV, GCV, AIC e REML se comparam numa simulação, e como grade, busca aleatória, otimização bayesiana e successive halving otimizam muitos de uma vez — com o viés de escolher o melhor de muitos."

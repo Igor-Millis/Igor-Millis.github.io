@@ -1,0 +1,282 @@
+<p>Statisticians who move into machine learning often find the word <strong>hyperparameter</strong> strange: it looks like a new concept, full of acronyms and “automatic optimisation” libraries. It is not new. The \(\lambda\) of ridge regression, the bandwidth of a kernel density estimator, the span of loess and the smoothing parameter of a spline are all hyperparameters, and statistics has been choosing them for more than 50 years — with cross-validation, GCV, information criteria and restricted maximum likelihood. What machine learning added was scale: models with ten or twenty hyperparameters, each fit taking minutes or hours. This note defines the concept in a statistician's language, shows why a hyperparameter cannot be estimated together with the parameters, compares the classical selection criteria in a simulation, presents the optimisation methods — grid, random search, Bayesian optimisation and successive halving — and ends with the bias that appears when you pick the best of many. Every number comes from a <a href="https://github.com/Igor-Millis/Igor-Millis.github.io/tree/main/research/hyper">reproducible script</a>.</p>
+
+<div class="note"><strong>What you need beforehand.</strong> Linear regression in matrix notation, the bias and variance of an estimator, and what a validation set is. §3.3 uses the multivariate normal; §4.3 uses Gaussian processes (kriging), explained in the text. The note on the <a href="{note:bootstrap}">bootstrap</a> helps with §5.</div>
+
+<h2><span class="n">§1</span>Parameter or hyperparameter?</h2>
+
+<p>Take Hoerl and Kennard's (1970) ridge regression. For a fixed \(\lambda \ge 0\), the coefficients are</p>
+
+<div class="eq">\[ \hat{\boldsymbol\beta}_\lambda = \arg\min_{\boldsymbol\beta}\; \|\mathbf y - \mathbf X\boldsymbol\beta\|^2 + \lambda\|\boldsymbol\beta\|^2 = (\mathbf X^\top\mathbf X + \lambda\mathbf I)^{-1}\mathbf X^\top\mathbf y. \]<span class="tag-n">(1)</span></div>
+
+<p>There are two layers here. \(\boldsymbol\beta\) is chosen <em>by the fitting criterion</em>: given \(\lambda\), minimising (1) gives a single \(\hat{\boldsymbol\beta}_\lambda\). But \(\lambda\) cannot be chosen by the same criterion: minimise (1) over \(\lambda\) as well and the answer is always \(\lambda = 0\), because the penalty can only add to the sum. That is the operational definition this note uses:</p>
+
+<div class="note">A <strong>hyperparameter</strong> is a quantity that defines <em>which</em> estimator is used and that cannot be chosen by the criterion that fits the parameters, because that criterion would push it to an extreme — usually the most complex model available.</div>
+
+<p>Formally, choosing a hyperparameter is a <strong>bilevel problem</strong>: at the inner level the parameters are fitted to the training data; at the outer level the hyperparameter is chosen to minimise an error the training data do not see,</p>
+
+<div class="eq">\[ \hat{\boldsymbol\beta}_\lambda = \arg\min_{\boldsymbol\beta} L_{\text{train}}(\boldsymbol\beta;\lambda), \qquad \lambda^\star = \arg\min_{\lambda}\; R(\lambda) = \arg\min_{\lambda}\; \mathbb E\big[\ell\big(Y_{\text{new}}, \hat f_\lambda(\mathbf x_{\text{new}})\big)\big]. \]<span class="tag-n">(2)</span></div>
+
+<p>\(R(\lambda)\) is the <strong>prediction risk</strong>, and it is unknown. All of §3 is about estimating it; all of §4 is about minimising a function that is only known with noise and is expensive to evaluate.</p>
+
+<p>The word comes from Bayesian statistics. In a hierarchical model, such as those of Lindley and Smith (1972), the data depend on parameters and the parameters have a prior, whose own parameters — prior means and variances — came to be called hyperparameters. The link is more than a name: §3.3 shows that the ridge \(\lambda\) <em>is</em> the hyperparameter of a normal prior, and that this gives a way to estimate it.</p>
+
+<p>The distinction is not about the nature of the number but about how it enters the criterion. The Box–Cox \(\lambda\), for instance, is estimated by maximum likelihood together with the coefficients — the profile likelihood has an interior maximum, so it is an ordinary parameter. The order \(p\) of an AR model, the number of components in principal-components regression and the number of knots of a regression spline, on the other hand, are hyperparameters: increasing them always improves the training fit.</p>
+
+<p>Statisticians already have a long list of them; machine learning has another:</p>
+
+<div class="tbl-wrap"><table><thead><tr><th scope=col>method</th><th scope=col>hyperparameter</th><th scope=col>what it controls</th><th scope=col>classical choice</th></tr></thead><tbody>
+<tr><td>ridge, lasso, elastic net</td><td>\(\lambda\), \(\alpha\)</td><td>how much the coefficients shrink</td><td>GCV, CV, one-standard-error rule</td></tr>
+<tr><td>kernel density</td><td>bandwidth \(h\)</td><td>smoothness of the curve</td><td>Silverman's rule, Sheather–Jones plug-in</td></tr>
+<tr><td>loess, smoothing spline</td><td>span, \(\lambda\)</td><td>effective degrees of freedom</td><td>GCV, REML</td></tr>
+<tr><td>additive models (GAM)</td><td>one \(\lambda\) per smooth term</td><td>shape of each function</td><td>REML (the <code>mgcv</code> default)</td></tr>
+<tr><td>k nearest neighbours</td><td>\(k\)</td><td>neighbourhood size</td><td>CV</td></tr>
+<tr><td>gradient boosting</td><td>learning rate, number of trees, depth, subsampling</td><td>complexity and pace of the fit</td><td>CV with early stopping</td></tr>
+<tr><td>random forest</td><td>variables per split, minimum leaf size</td><td>correlation between trees, variance</td><td>out-of-bag error</td></tr>
+<tr><td>neural networks</td><td>learning rate, architecture, dropout, weight decay, batch size</td><td>capacity and optimisation</td><td>validation, Bayesian optimisation</td></tr>
+</tbody></table></div>
+
+<p>Two practical differences separate the two halves of the table. Classical statistical hyperparameters tend to be <strong>few, continuous and cheap</strong>: one or two numbers, and the fit for each value is a closed-form formula. Machine-learning hyperparameters tend to be <strong>many, of mixed types and expensive</strong>: continuous (learning rate), integer (depth), categorical (loss function), sometimes conditional (the dropout rate exists only if there is dropout), and every evaluation means training the model again. That is what makes hyperparameter <em>optimisation</em> a subject of its own.</p>
+
+<h2><span class="n">§2</span>Why it cannot be estimated jointly</h2>
+
+<p>The clearest way to see the problem is through the singular value decomposition \(\mathbf X = \mathbf U\mathbf D\mathbf V^\top\), with singular values \(d_1 \ge \dots \ge d_p\). The fitted values are</p>
+
+<div class="eq">\[ \hat{\mathbf y}_\lambda = \mathbf H_\lambda\mathbf y = \sum_{k=1}^{p} \mathbf u_k\,\frac{d_k^2}{d_k^2+\lambda}\,\mathbf u_k^\top\mathbf y, \qquad \operatorname{df}(\lambda) = \operatorname{tr}\mathbf H_\lambda = \sum_{k=1}^{p}\frac{d_k^2}{d_k^2+\lambda}. \]<span class="tag-n">(3)</span></div>
+
+<p>Each principal direction of the data is shrunk by the factor \(d_k^2/(d_k^2+\lambda)\): low-variance directions (small \(d_k\)) shrink the most. The <strong>effective degrees of freedom</strong> \(\operatorname{df}(\lambda)\) run from \(p\) (least squares, \(\lambda = 0\)) to 0 (\(\lambda \to \infty\)) and are the common currency for comparing models of continuous complexity. Training error is monotone in \(\lambda\), because \(\hat{\boldsymbol\beta}_0\) minimises the unconstrained sum of squares. The prediction risk has the familiar U shape:</p>
+
+<div class="eq">\[ R(\lambda) = \sigma^2 + \underbrace{\big\|\mathbb E[\hat{\boldsymbol\beta}_\lambda] - \boldsymbol\beta\big\|^2_{\boldsymbol\Sigma}}_{\text{bias}^2,\ \text{grows with }\lambda} + \underbrace{\operatorname{tr}\!\big(\boldsymbol\Sigma\operatorname{Var}(\hat{\boldsymbol\beta}_\lambda)\big)}_{\text{variance, falls with }\lambda}, \]<span class="tag-n">(4)</span></div>
+
+<p>where \(\boldsymbol\Sigma\) is the covariance of the predictors and \(\|\mathbf a\|^2_{\boldsymbol\Sigma} = \mathbf a^\top\boldsymbol\Sigma\mathbf a\). The figure shows both curves for a simulated dataset with \(n = 50\) observations and \(p = 40\) correlated predictors — a setting in which least squares is very unstable.</p>
+
+<!--hp-ridge-fig-->
+
+<p>Three things in the figure hold for any hyperparameter. First, training error (grey) is useless for choosing \(\lambda\): it recommends \(\lambda = 0\), the worst point of the true curve. Second, choosing well pays: least squares has more than twice the minimum error, and even “predict zero” beats it. Third, the estimated curves (cross-validation and GCV) follow the shape of the true one, but their minimum does not fall in the same place — the bottom of the U is flat, and estimation noise decides where the minimum lands. §3.4 measures how large that noise is.</p>
+
+<h2><span class="n">§3</span>What to optimise: estimating the prediction risk</h2>
+
+<p>There are three families of criteria for estimating \(R(\lambda)\) or a substitute for it. All are old friends of statistics.</p>
+
+<h3>3.1 Cross-validation, LOOCV and GCV</h3>
+
+<p><strong>\(K\)-fold cross-validation</strong> (Stone, 1974) splits the data into \(K\) blocks, fits the model on \(K-1\) of them, measures the error on the block left out and averages. It is the most general criterion: it works for any model and any loss. The cost is \(K\) fits per value of \(\lambda\).</p>
+
+<p>For <strong>linear smoothers</strong> — any method with \(\hat{\mathbf y} = \mathbf H_\lambda\mathbf y\), such as ridge, splines, loess and kernels — the case \(K = n\) (leave-one-out, LOOCV) has a closed form. Nothing needs refitting:</p>
+
+<div class="eq">\[ \operatorname{CV}(\lambda) = \frac1n\sum_{i=1}^{n}\left(\frac{y_i - \hat y_{i}}{1 - h_{ii}(\lambda)}\right)^2, \]<span class="tag-n">(5)</span></div>
+
+<p>where \(h_{ii}\) is the leverage of observation \(i\). (It is the PRESS statistic divided by \(n\).) Craven and Wahba (1979) and Golub, Heath and Wahba (1979) replaced each \(h_{ii}\) by the average \(\operatorname{tr}(\mathbf H_\lambda)/n\), which gives <strong>generalised cross-validation</strong>:</p>
+
+<div class="eq">\[ \operatorname{GCV}(\lambda) = \frac{\tfrac1n\|\mathbf y - \hat{\mathbf y}_\lambda\|^2}{\big(1 - \operatorname{df}(\lambda)/n\big)^2}. \]<span class="tag-n">(6)</span></div>
+
+<p>GCV is invariant to rotations of the data (LOOCV is not) and reads simply: the residual sum of squares inflated by a factor that charges for the degrees of freedom spent.</p>
+
+<h3>3.2 Information criteria with effective degrees of freedom</h3>
+
+<p>The usual AIC counts parameters. For a smoother, the parameter count is replaced by \(\operatorname{df}(\lambda)\):</p>
+
+<div class="eq">\[ \operatorname{AIC}(\lambda) = n\log\frac{\operatorname{RSS}_\lambda}{n} + 2\operatorname{df}(\lambda), \qquad \operatorname{AIC_c}(\lambda) = n\log\frac{\operatorname{RSS}_\lambda}{n} + n\,\frac{n + \operatorname{df}(\lambda)}{n - \operatorname{df}(\lambda) - 2}. \]<span class="tag-n">(7)</span></div>
+
+<p>AIC is an asymptotic approximation that assumes \(\operatorname{df}\) is small relative to \(n\). When it is not — and with \(p = 40\) and \(n = 50\) it is not — AIC under-penalises complexity and chooses \(\lambda\) too small. The corrected version of Hurvich, Simonoff and Tsai (1998), \(\operatorname{AIC_c}\), was proposed precisely for choosing smoothing parameters and penalises much more as \(\operatorname{df}\) approaches \(n\). Mallows' \(C_p\), \(\operatorname{RSS}_\lambda + 2\hat\sigma^2\operatorname{df}(\lambda)\), belongs to the same family but needs an outside estimate of \(\sigma^2\).</p>
+
+<h3>3.3 Marginal likelihood: the hyperparameter as a variance component</h3>
+
+<p>This is the most “statistical” route and the least known outside statistics. Put a normal prior on the coefficients:</p>
+
+<div class="eq">\[ \mathbf y \mid \boldsymbol\beta \sim N(\mathbf X\boldsymbol\beta, \sigma^2\mathbf I), \qquad \boldsymbol\beta \sim N\!\left(\mathbf 0, \frac{\sigma^2}{\lambda}\mathbf I\right). \]<span class="tag-n">(8)</span></div>
+
+<p>The posterior mean of \(\boldsymbol\beta\) is exactly \(\hat{\boldsymbol\beta}_\lambda\) from (1). But now \(\lambda = \sigma^2/\sigma^2_\beta\) is a <strong>variance ratio</strong> in a mixed model, and it can be estimated from the likelihood of the data with \(\boldsymbol\beta\) integrated out:</p>
+
+<div class="eq">\[ \mathbf y \sim N\!\left(\mathbf 0,\; \sigma^2\Big(\mathbf I + \tfrac1\lambda\mathbf X\mathbf X^\top\Big)\right) \;\Rightarrow\; -2\log L(\lambda) = n\log\hat\sigma^2_\lambda + \sum_{k=1}^{p}\log\!\Big(1 + \frac{d_k^2}{\lambda}\Big) + \text{const}, \]<span class="tag-n">(9)</span></div>
+
+<p>with \(\sigma^2\) profiled out at \(\hat\sigma^2_\lambda = \mathbf y^\top(\mathbf I + \mathbf X\mathbf X^\top/\lambda)^{-1}\mathbf y/n\). This is <strong>empirical Bayes</strong> (or “type II maximum likelihood”). When there are unpenalised fixed effects, such as the intercept and the linear parts of a spline, the right version is <strong>REML</strong>, which integrates those out too. It is what <code>mgcv</code> does by default since Wood (2011), and the same criterion fits the hyperparameters of a Gaussian process (§4.3). It needs no validation data, is smooth in \(\lambda\) and extends to many hyperparameters (one per model term) without the cost blowing up.</p>
+
+<p>The price is one more assumption: (9) is optimal if the prior (8) is right. The simulation below tests what happens when it is and when it is not.</p>
+
+<h3>3.4 Comparing the criteria in a simulation</h3>
+
+<p>A thousand datasets with the design of the figure (n = 50, p = 40, AR(1) predictors with correlation 0.6) in two scenarios. In the first, the coefficients are fixed and decay geometrically with alternating signs — a vector “with structure”, nothing like a normal with common variance. In the second, the coefficients are drawn afresh for each dataset from \(N(0,\tau^2)\), exactly the prior (8), with \(\tau\) chosen to give the same signal variance. Because the data are simulated, the true risk \(R(\lambda)\) is known, and we can measure how much each criterion loses relative to the optimal \(\lambda\).</p>
+
+<!--hp-ridge-table-->
+
+<p>Five lessons, all backed by the literature:</p>
+
+<ol>
+<li><strong>No criterion dominates.</strong> With fixed coefficients, GCV, LOOCV and 10-fold tie at the top; the marginal likelihood overestimates \(\lambda\) (median \(10^{1.7}\) against the optimum \(10^{0.85}\)) and loses more. When the prior is true the order reverses: the marginal likelihood is within 10% of the optimum in 65% of the datasets. This is Wahba's (1985) result comparing GCV and generalised maximum likelihood for splines: the likelihood is better when the Bayesian model is right; GCV is more robust when it is not.</li>
+<li><strong>Uncorrected AIC fails</strong> with so many degrees of freedom relative to \(n\): it picks \(\lambda\) more than an order of magnitude below the optimum and has double (or more) the excess error. AICc corrects in the right direction but here over-corrects.</li>
+<li><strong>The chosen \(\lambda\) is a random variable — a very variable one.</strong> With fixed coefficients the standard deviation of the 10-fold \(\log_{10}\hat\lambda\) is about 1.1 decades, against 0.4 decades for the optimal \(\lambda\). Worse, the correlation between the chosen and the optimal \(\lambda\) across datasets is slightly <em>negative</em> (about −0.1). Härdle, Hall and Marron (1988) documented the same for bandwidths: automatic selectors are right on average but do not track the sample-to-sample fluctuations of the optimum.</li>
+<li><strong>Even so, the cost of missing is small.</strong> The median ratio is about 1.1 for the best criteria: the bottom of the U is flat, so missing \(\lambda\) by half a decade costs little. That is why hyperparameter choice rarely needs to be perfect — it needs to avoid the extremes.</li>
+<li><strong>Closed forms are gold.</strong> GCV and LOOCV cost a single fit (one SVD) for the whole \(\lambda\) grid and tie with 10-fold, which costs ten. Whenever the model is a linear smoother, use them.</li>
+</ol>
+
+<h2><span class="n">§4</span>How to optimise: the problem as experimental design</h2>
+
+<p>Once a criterion is chosen, what is left is to minimise a function \(f(\boldsymbol\lambda)\) — validation error as a function of a vector of hyperparameters. For a statistician the best way to see this problem is as an <strong>experiment</strong>: each evaluation of \(f\) is an expensive run (training the model), the response is noisy (the validation set is finite), there are no derivatives, and the goal is to find the optimal region in few runs. It is, almost word for word, the problem of Box and Wilson's (1951) <strong>response surface methodology</strong> and of the <strong>computer experiments</strong> of Sacks, Welch, Mitchell and Wynn (1989). The methods below are experimental designs, from the simplest to the most adaptive.</p>
+
+<p>Before any method, one rule matters more than the choice of method: <strong>parametrise on the right scale</strong>. Hyperparameters such as \(\lambda\), the learning rate and the bandwidth act multiplicatively — going from 0.001 to 0.01 changes as much as going from 0.1 to 1 — so they should be searched in \(\log\lambda\). A uniform search over \([0.0001, 1]\) spends 90% of its evaluations between 0.1 and 1.</p>
+
+<h3>4.1 Grid search</h3>
+
+<p>Pick \(L\) values for each of the \(d\) hyperparameters and evaluate all \(L^d\) combinations. It is a <strong>full factorial</strong>. It works very well with one or two hyperparameters and is easy to parallelise and to visualise. But the cost grows exponentially in \(d\): with 3 levels, 6 hyperparameters already need 729 fits, and a budget of 64 allows only 2 levels per axis.</p>
+
+<h3>4.2 Random search</h3>
+
+<p>Draw \(N\) independent configurations from the search region (on the log scale). Bergstra and Bengio (2012) showed this usually beats a grid with the same budget, through a <strong>low effective dimension</strong> argument: typically only a few hyperparameters matter much. A \(3\times3\times3\) grid tests 27 combinations but only 3 distinct values on each axis; if one of the three axes does not matter, it wastes two thirds of the budget repeating the same 9 combinations of the other two. Random search tests 27 distinct values on <em>every</em> axis.</p>
+
+<p>There is also a simple guarantee. If the optimum has a “good enough” neighbourhood occupying a fraction \(q\) of the search space, the probability that at least one of \(N\) random configurations lands in it is</p>
+
+<div class="eq">\[ P(\text{at least one hit}) = 1 - (1-q)^N, \qquad q = 0.05,\ N = 60 \;\Rightarrow\; 1 - 0.95^{60} \approx 0.954. \]<span class="tag-n">(10)</span></div>
+
+<p>Sixty random evaluations find, with 95% probability, a configuration in the best 5% — <em>whatever the dimension</em>. Designs that fill space more evenly, such as the <strong>Latin hypercube</strong> (McKay, Beckman and Conover, 1979) or Sobol sequences, keep this advantage and avoid clumps.</p>
+
+<h3>4.3 Bayesian optimisation</h3>
+
+<p>Grid and random search are <em>non-adaptive</em> designs: they fix every point before seeing any result. <strong>Bayesian optimisation</strong> is sequential: after each evaluation it fits a statistical model for \(f\) — the <strong>surrogate</strong> — and uses it to choose the next point. The most common surrogate is a <strong>Gaussian process</strong>, which a geostatistician will recognise as <strong>kriging</strong>:</p>
+
+<div class="eq">\[ f(\cdot) \sim \operatorname{GP}\big(m, k(\cdot,\cdot)\big) \;\Rightarrow\; f(\boldsymbol\lambda)\mid\text{data} \sim N\big(\mu_t(\boldsymbol\lambda), s_t^2(\boldsymbol\lambda)\big), \]<span class="tag-n">(11)</span></div>
+
+<p>where \(\mu_t\) is the kriging prediction after \(t\) evaluations and \(s_t\) its standard error — small near points already evaluated, large far from them. The next point maximises an <strong>acquisition criterion</strong>. The most used is the <strong>expected improvement</strong> of Jones, Schonlau and Welch (1998). With \(f^\ast\) the smallest value observed so far and \(z = (f^\ast - \mu_t)/s_t\),</p>
+
+<div class="eq">\[ \operatorname{EI}(\boldsymbol\lambda) = \mathbb E\big[\max(f^\ast - f(\boldsymbol\lambda), 0)\big] = (f^\ast - \mu_t)\,\Phi(z) + s_t\,\varphi(z). \]<span class="tag-n">(12)</span></div>
+
+<p>The two terms are the balance between <strong>exploitation</strong> and <strong>exploration</strong>: the first is large where the prediction is good (low \(\mu_t\)); the second where uncertainty is large (high \(s_t\)). Expected improvement is exactly zero at points already evaluated and positive everywhere else, so the method never stops exploring.</p>
+
+<p>Two details interest the statistician. First, the Gaussian process has hyperparameters of its own — the kernel's correlation lengths, one per dimension — and they are estimated by the marginal likelihood of §3.3. They are hyperparameters chosen by a Bayesian criterion in order to choose other hyperparameters. Second, there are alternatives to the Gaussian process: the <strong>TPE</strong> of Bergstra, Bardenet, Bengio and Kégl (2011), the default in Optuna, models the density of the hyperparameters among good configurations and among bad ones and picks the next point by the ratio of the two densities; it handles categorical and conditional variables better. Snoek, Larochelle and Adams (2012) popularised the Gaussian process for tuning neural networks.</p>
+
+<h3>4.4 Cheap evaluations: successive halving and Hyperband</h3>
+
+<p>For many models you can get an <em>approximate</em> evaluation for a fraction of the cost: train on part of the data, for fewer iterations or fewer epochs. <strong>Successive halving</strong> (Jamieson and Talwalkar, 2016) turns this into a tournament. With factor \(\eta = 3\):</p>
+
+<ol>
+<li>Draw 81 configurations and evaluate each on a small budget (here, 36 of the 324 training points).</li>
+<li>Keep the best third (27) and evaluate again with three times the budget (108 points).</li>
+<li>Keep the best 9 and evaluate on the full data. Pick the winner.</li>
+</ol>
+
+<p>Each round spends the same number of training points (\(81\times36 = 27\times108 = 9\times324\)), so the whole tournament costs the same as 27 full fits — but it examines 81 configurations instead of 27. The risk is eliminating early a configuration that only shines with a large budget (a small learning rate, for instance, starts slowly). <strong>Hyperband</strong> (Li, Jamieson, DeSalvo, Rostamizadeh and Talwalkar, 2018) guards against this by running several tournaments with different starting points. For a statistician the closest analogy is <strong>sequential designs with stopping</strong> and screening experiments: many treatments in a cheap first phase, only the promising ones in the expensive phase.</p>
+
+<h3>4.5 Other families</h3>
+
+<p>When the hyperparameters are continuous and the model is differentiable, the gradient of the validation error with respect to them can be computed by implicit differentiation of the optimality condition of the inner level of (2), and used for gradient descent. Evolutionary algorithms and population-based training keep a population of configurations that recombine and mutate. They are useful in niches (very large networks, many continuous hyperparameters) but beyond the scope of this note.</p>
+
+<h3>4.6 The methods side by side</h3>
+
+<p>To compare the methods on a problem with more than one hyperparameter, the script uses <strong>kernel ridge regression</strong>: \(n = 324\) training observations with 5 inputs, a non-linear true function \(f(\mathbf x) = \sin(1.5x_1) + 0.5x_2x_3 + 0.6x_4\) (the fifth input is noise) and error variance 0.25. The kernel mixes an RBF and a linear kernel,</p>
+
+<div class="eq">\[ k(\mathbf x, \mathbf x') = (1-a)\exp\!\big(-\gamma\|\mathbf x - \mathbf x'\|^2\big) + a\,\frac{\mathbf x^\top\mathbf x'}{5}, \]<span class="tag-n">(13)</span></div>
+
+<p>and there are three hyperparameters: \(\lambda\) (penalty, \(10^{-5}\) to \(10\)), \(\gamma\) (inverse kernel width, \(10^{-3}\) to \(10\)) and \(a\) (linear-kernel weight, 0 to 1). Each method has a budget of 27 full fits, picks the configuration with the lowest error on 200 validation points, and that configuration is scored on a test set of 5,000 points. Everything is repeated on 100 datasets.</p>
+
+<!--hp-surface-->
+
+<p>The figure shows the first replication and two things the table below confirms. The surface has a <strong>diagonal valley</strong>: \(\lambda\) and \(\gamma\) interact, and tuning one at a time (fix \(\gamma\), find the best \(\lambda\), then fix that \(\lambda\) and find the best \(\gamma\)) can stop far from the optimum. And the third hyperparameter barely matters: in a main-effects fit over 4,860 random configurations, \(\lambda\) explains 10% of the variation in log validation error, \(\gamma\) 13% and \(a\) 0.3% (the rest is the \(\lambda\)–\(\gamma\) interaction). That is why the 27-point grid collapses to 9 spots on the plane that matters.</p>
+
+<p>To see Bergstra and Bengio's argument properly at work, the second block of the experiment uses an RBF kernel with <strong>one width per input</strong>, \(\exp\{-\sum_j\gamma_j(x_j - x'_j)^2\}\): 6 hyperparameters (\(\lambda\) and five \(\gamma_j\)), a budget of 64 fits and 40 replications. Now the grid can only have 2 levels per axis.</p>
+
+<!--hp-opt-table-->
+
+<!--hp-curves-->
+
+<p>The results tell a story worth reading carefully:</p>
+
+<ul>
+<li><strong>With 3 hyperparameters and 27 evaluations, the methods nearly tie.</strong> Median test errors range from 0.350 to 0.359, a difference of about 2%, against a gap of more than 40% to the irreducible error (0.249). Bayesian optimisation is best but beats random search in only 62% of the replications. The grid did as well as random search here — because the optimum fell near one of its points, something you cannot know in advance. Successive halving examined three times as many configurations and landed in the middle.</li>
+<li><strong>With 6 hyperparameters and 64 evaluations, the order is clear.</strong> The grid (2 levels per axis) is worst and loses to random search in 72% of the replications. Bayesian optimisation beats random search in <em>all</em> 40 replications, and its median error (0.292) is well below random search's (0.341). In a 6-dimensional space, learning from earlier evaluations makes a difference.</li>
+<li><strong>Bayesian optimisation rediscovered the structure of the problem.</strong> The chosen widths (median \(\log_{10}\gamma_j\)) were −0.9 for \(x_1\) (the sine input, which wants a narrow kernel), about −1.9 for \(x_2\) and \(x_3\), −2.6 for \(x_4\) (which enters linearly, so it wants a wide kernel) and −3.0 for \(x_5\) — the lower limit of the search, which in practice <em>switches off</em> the pure-noise input. That is “automatic relevance determination”, obtained as a by-product of the optimisation.</li>
+</ul>
+
+<h2><span class="n">§5</span>The winner's curse</h2>
+
+<p>There is a hidden bias in this whole process, and a statistician will spot it from afar. The validation error of each configuration is a noisy estimate. Taking the <em>minimum</em> of many noisy estimates gives an estimate biased downwards: the winner tends to be a configuration that is good <em>and</em> lucky on the validation set. If \(\hat f_1,\dots,\hat f_k\) are unbiased estimates of \(f_1,\dots,f_k\),</p>
+
+<div class="eq">\[ \mathbb E\Big[\min_j \hat f_j\Big] \;\le\; \min_j f_j, \]<span class="tag-n">(14)</span></div>
+
+<p>and the gap grows with \(k\) and with the variance of each \(\hat f_j\). It is the same phenomenon as post-selection inference and regression to the mean. In the experiment:</p>
+
+<!--hp-curse-->
+
+<p>The optimism is small here — about 6% of the error with 243 configurations — because the validation set has 200 points and the configurations are highly correlated with each other. With smaller validation sets, thousands of configurations or optimisers that search the surface more aggressively, it can be much larger. Cawley and Talbot (2010) showed cases where the selection bias is of the same order as the difference between the algorithms being compared, and Varma and Simon (2006) showed that reporting the cross-validation error of the selected model can make a classifier with no signal at all look useful.</p>
+
+<p>The remedy is the usual one: <strong>the error you report must come from data that played no part in the choice</strong>. In practice, either a separate test set, touched once at the end, or <strong>nested cross-validation</strong>: an outer \(K\)-fold loop to estimate the error and, inside each outer fold, a complete inner loop that chooses the hyperparameters using only that fold's training data. The cost is multiplicative (\(K_{\text{outer}}\times K_{\text{inner}}\times\) number of configurations), but it is the only way to estimate the error of the <em>whole procedure</em>, tuning included.</p>
+
+<h2><span class="n">§6</span>A practical guide</h2>
+
+<ol>
+<li><strong>Start from the defaults.</strong> The defaults of mature libraries were chosen to work reasonably on many problems. Tune first what the literature or documentation names as most important (in boosting: learning rate and number of trees; in random forests: almost nothing).</li>
+<li><strong>Use the log scale</strong> for anything positive that acts multiplicatively, and choose wide limits. If the optimum lands on the edge of the region, widen the region.</li>
+<li><strong>If there is a closed-form criterion, use it.</strong> GCV, LOOCV via (5) and REML cost one fit. That covers ridge, splines, GAMs and mixed models.</li>
+<li><strong>Choose the optimiser by budget and dimension.</strong> One or two cheap hyperparameters: a fine grid. Several hyperparameters, moderate evaluations: random search or a Latin hypercube with a few dozen points. Expensive evaluations and up to about 20 continuous dimensions: Bayesian optimisation. The ability to evaluate on part of the data or part of the iterations: successive halving or Hyperband.</li>
+<li><strong>Prefer the simplest model within the noise.</strong> The <strong>one-standard-error rule</strong> (Breiman, Friedman, Olshen and Stone, 1984) picks the most regularised model whose cross-validation error is within one standard error of the minimum. It acknowledges that the minimum is noisy (§3.4) and trades a small loss in fit for stability. It is <code>lambda.1se</code> in <code>glmnet</code>.</li>
+<li><strong>Report the error on data that did not see the choice</strong> (§5) and document the search region, budget, criterion and seeds. Tuning is part of the model; a result without this information is not reproducible.</li>
+</ol>
+
+<p>In code, with the most common tools:</p>
+
+<pre class="code"># R: ridge/lasso with CV and the one-standard-error rule; GAM with REML
+library(glmnet)
+cv &lt;- cv.glmnet(X, y, alpha = 0, nfolds = 10)     # alpha = 0: ridge
+coef(cv, s = "lambda.1se")
+
+library(mgcv)
+m &lt;- gam(y ~ s(x1) + s(x2) + s(x3), method = "REML")   # one lambda per term, by REML</pre>
+
+<pre class="code"># Python: random search, successive halving and Bayesian optimisation (TPE)
+from scipy.stats import loguniform
+from sklearn.experimental import enable_halving_search_cv  # noqa: F401
+from sklearn.model_selection import RandomizedSearchCV, HalvingRandomSearchCV, cross_val_score
+from sklearn.kernel_ridge import KernelRidge
+
+space = {"alpha": loguniform(1e-5, 10), "gamma": loguniform(1e-3, 10)}   # log scale
+search = RandomizedSearchCV(KernelRidge(kernel="rbf"), space, n_iter=60, cv=5,
+                            scoring="neg_mean_squared_error", random_state=0).fit(X, y)
+tourney = HalvingRandomSearchCV(KernelRidge(kernel="rbf"), space, factor=3,
+                                resource="n_samples", cv=5, random_state=0).fit(X, y)
+
+import optuna
+def objective(trial):
+    m = KernelRidge(kernel="rbf", alpha=trial.suggest_float("alpha", 1e-5, 10, log=True),
+                    gamma=trial.suggest_float("gamma", 1e-3, 10, log=True))
+    return -cross_val_score(m, X, y, cv=5, scoring="neg_mean_squared_error").mean()
+study = optuna.create_study(sampler=optuna.samplers.TPESampler(seed=0))
+study.optimize(objective, n_trials=60)</pre>
+
+<p>The script behind this note implements everything from scratch in <code>numpy</code> — ridge via the SVD, the six criteria of §3, kernel ridge regression, the Gaussian process with expected improvement and successive halving — so every formula can be checked against the code.</p>
+
+<h2><span class="n">§7</span>Summary</h2>
+
+<ol>
+<li>A hyperparameter defines which estimator is used and cannot be chosen by the fitting criterion, which would push it to the most complex extreme. Choosing it is a bilevel problem: fit on training data, evaluate outside it.</li>
+<li>Statistics already has many: the \(\lambda\) of ridge and lasso, bandwidths, spans, smoothing parameters, \(k\). The word comes from Bayesian hierarchical models — and the ridge \(\lambda\) literally is the hyperparameter of a normal prior.</li>
+<li>To estimate prediction risk there is cross-validation (general, expensive), LOOCV and GCV (closed form for linear smoothers), information criteria with effective degrees of freedom (AIC fails when \(\operatorname{df}\) is large relative to \(n\)) and marginal likelihood / REML (optimal when the prior is right).</li>
+<li>In the simulation no criterion dominated: GCV and CV were best with fixed coefficients; the marginal likelihood with coefficients drawn from the prior. The chosen \(\lambda\) varied much more than the optimum and barely correlated with it — but because the bottom of the curve is flat, the typical loss was about 10% of the excess error.</li>
+<li>Hyperparameter optimisation is experimental design: grid (factorial), random search (better when few hyperparameters matter), Bayesian optimisation (kriging with expected improvement) and successive halving (sequential screening). With 3 hyperparameters the methods tied; with 6, Bayesian optimisation beat random search in 100% of the replications and the grid came last.</li>
+<li>The winner's validation error is optimistic (winner's curse). Report the error on an untouched test set or with nested cross-validation.</li>
+</ol>
+
+<h2><span class="n">§8</span>Further reading</h2>
+
+<ul>
+<li>A. E. Hoerl and R. W. Kennard (1970). <em>Ridge regression: biased estimation for nonorthogonal problems</em>. Technometrics, 12(1), 55–67.</li>
+<li>D. V. Lindley and A. F. M. Smith (1972). <em>Bayes estimates for the linear model</em>. Journal of the Royal Statistical Society B, 34(1), 1–41.</li>
+<li>M. Stone (1974). <em>Cross-validatory choice and assessment of statistical predictions</em>. Journal of the Royal Statistical Society B, 36(2), 111–147.</li>
+<li>P. Craven and G. Wahba (1979). <em>Smoothing noisy data with spline functions</em>. Numerische Mathematik, 31, 377–403.</li>
+<li>G. H. Golub, M. Heath and G. Wahba (1979). <em>Generalized cross-validation as a method for choosing a good ridge parameter</em>. Technometrics, 21(2), 215–223.</li>
+<li>G. Wahba (1985). <em>A comparison of GCV and GML for choosing the smoothing parameter in the generalized spline smoothing problem</em>. Annals of Statistics, 13(4), 1378–1402.</li>
+<li>W. Härdle, P. Hall and J. S. Marron (1988). <em>How far are automatically chosen regression smoothing parameters from their optimum?</em> Journal of the American Statistical Association, 83(401).</li>
+<li>C. M. Hurvich, J. S. Simonoff and C.-L. Tsai (1998). <em>Smoothing parameter selection in nonparametric regression using an improved Akaike information criterion</em>. Journal of the Royal Statistical Society B, 60(2), 271–293.</li>
+<li>S. N. Wood (2011). <em>Fast stable restricted maximum likelihood and marginal likelihood estimation of semiparametric generalized linear models</em>. Journal of the Royal Statistical Society B, 73(1), 3–36.</li>
+<li>G. E. P. Box and K. B. Wilson (1951). <em>On the experimental attainment of optimum conditions</em>. Journal of the Royal Statistical Society B, 13(1), 1–45.</li>
+<li>M. D. McKay, R. J. Beckman and W. J. Conover (1979). <em>A comparison of three methods for selecting values of input variables in the analysis of output from a computer code</em>. Technometrics, 21(2), 239–245.</li>
+<li>J. Sacks, W. J. Welch, T. J. Mitchell and H. P. Wynn (1989). <em>Design and analysis of computer experiments</em>. Statistical Science, 4(4), 409–423.</li>
+<li>D. R. Jones, M. Schonlau and W. J. Welch (1998). <em>Efficient global optimization of expensive black-box functions</em>. Journal of Global Optimization, 13, 455–492.</li>
+<li>J. Bergstra and Y. Bengio (2012). <em>Random search for hyper-parameter optimization</em>. Journal of Machine Learning Research, 13, 281–305.</li>
+<li>J. Bergstra, R. Bardenet, Y. Bengio and B. Kégl (2011). <em>Algorithms for hyper-parameter optimization</em>. NeurIPS 24.</li>
+<li>J. Snoek, H. Larochelle and R. P. Adams (2012). <em>Practical Bayesian optimization of machine learning algorithms</em>. NeurIPS 25.</li>
+<li>K. Jamieson and A. Talwalkar (2016). <em>Non-stochastic best arm identification and hyperparameter optimization</em>. AISTATS.</li>
+<li>L. Li, K. Jamieson, G. DeSalvo, A. Rostamizadeh and A. Talwalkar (2018). <em>Hyperband: a novel bandit-based approach to hyperparameter optimization</em>. Journal of Machine Learning Research, 18(185), 1–52.</li>
+<li>S. Varma and R. Simon (2006). <em>Bias in error estimation when using cross-validation for model selection</em>. BMC Bioinformatics, 7, 91.</li>
+<li>G. C. Cawley and N. L. C. Talbot (2010). <em>On over-fitting in model selection and subsequent selection bias in performance evaluation</em>. Journal of Machine Learning Research, 11, 2079–2107.</li>
+<li>C. E. Rasmussen and C. K. I. Williams (2006). <em>Gaussian Processes for Machine Learning</em>, ch. 5. MIT Press. Marginal likelihood for hyperparameters.</li>
+<li>T. Hastie, R. Tibshirani and J. Friedman (2009). <em>The Elements of Statistical Learning</em>, 2nd ed., ch. 7. Springer.</li>
+<li>M. Feurer and F. Hutter (2019). <em>Hyperparameter optimization</em>. In F. Hutter, L. Kotthoff and J. Vanschoren (eds), <em>Automated Machine Learning</em>, ch. 1. Springer. A complete, free review.</li>
+</ul>
