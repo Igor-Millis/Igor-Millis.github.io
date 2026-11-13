@@ -756,3 +756,13 @@ tags = ["Machine Learning", "Estatística", "Modelagem", "Otimização"]
 date = "2026-11-13"
 minutes = 30
 abstract = "O λ da ridge, a largura de banda e o span do loess são hiperparâmetros, e a estatística os escolhe há 50 anos. O que eles são, por que não dá para estimá-los junto com os parâmetros, como CV, GCV, AIC e REML se comparam numa simulação, e como grade, busca aleatória, otimização bayesiana e successive halving otimizam muitos de uma vez — com o viés de escolher o melhor de muitos."
+
+[research.notes.p-value]
+title = "P-valor sem mistério"
+seo_title = "P-valor sem mistério: o que é, para que serve e como se compara a intervalos de confiança, métodos bayesianos e AIC"
+description = "Uma explicação em linguagem simples do p-valor: a definição com o exemplo de uma moeda, onde ele é usado (testes t, A/B, regressão, qui-quadrado, controle de qualidade), o que ele não diz, testes múltiplos e a comparação com intervalos de confiança, tamanho de efeito, abordagem bayesiana, fator de Bayes, AIC/BIC e validação cruzada."
+kind = "estatística"
+tags = ["Estatística", "Inferência"]
+date = "2026-11-13"
+minutes = 12
+abstract = "O número mais usado e mais mal interpretado da estatística, explicado com uma moeda e dois testes A/B: o que o p-valor mede, onde é usado, o que ele não diz, o problema dos testes múltiplos, e como se compara a intervalos de confiança, métodos bayesianos e critérios de informação."

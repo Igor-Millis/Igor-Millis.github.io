@@ -756,3 +756,13 @@ tags = ["Machine Learning", "Statistics", "Modeling", "Optimization"]
 date = "2026-11-13"
 minutes = 30
 abstract = "The ridge λ, the bandwidth and the loess span are hyperparameters, and statistics has been choosing them for 50 years. What they are, why they cannot be estimated with the parameters, how CV, GCV, AIC and REML compare in a simulation, and how grid, random search, Bayesian optimisation and successive halving tune many at once — with the bias of picking the best of many."
+
+[research.notes.p-value]
+title = "The p-value, demystified"
+seo_title = "The p-value, demystified: what it is, what it is for, and how it compares with confidence intervals, Bayesian methods and AIC"
+description = "A plain-language explanation of the p-value: the definition through a coin example, where it is used (t-tests, A/B tests, regression, chi-square, quality control), what it does not say, multiple testing, and how it compares with confidence intervals, effect sizes, the Bayesian approach, Bayes factors, AIC/BIC and cross-validation."
+kind = "statistics"
+tags = ["Statistics", "Inference"]
+date = "2026-11-13"
+minutes = 12
+abstract = "The most used and most misread number in statistics, explained with a coin and two A/B tests: what the p-value measures, where it is used, what it does not say, the multiple-testing problem, and how it compares with confidence intervals, Bayesian methods and information criteria."

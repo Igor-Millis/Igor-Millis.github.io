@@ -1,0 +1,150 @@
+<p>The p-value is probably the most used — and most misread — number in all of statistics. It shows up in scientific papers, A/B tests, quality reports and the output of every regression. This article explains, in plain language, <strong>what it measures</strong>, <strong>what it is used for in practice</strong>, <strong>what it does not tell you</strong>, and how it compares with other tools: confidence intervals, effect sizes, Bayesian methods and information criteria.</p>
+
+<div class="note"><strong>In one sentence.</strong> The p-value answers: “<em>if there were no effect at all, how surprising would data like mine be?</em>”. The smaller it is, the more surprising — and the harder it becomes to hold on to the idea that there is no effect.</div>
+
+<h2><span class="n">§1</span>The idea with a coin</h2>
+
+<p>You suspect a coin is biased. You flip it 100 times and get <strong>60 heads</strong>. Is that proof of bias, or could a fair coin do this by chance?</p>
+
+<p>The logic of a test has three steps:</p>
+
+<ol>
+<li><strong>Assume the opposite of what you want to show.</strong> This is the <strong>null hypothesis</strong> \(H_0\): the coin is fair, \(p = 0.5\).</li>
+<li><strong>Pick a measure of “how far” the data are from what you expected.</strong> With 100 flips we expect 50 heads; we saw 60, a distance of 10.</li>
+<li><strong>Compute the probability of a distance that large or larger, assuming \(H_0\) is true.</strong> That is the p-value.</li>
+</ol>
+
+<p>For a fair coin, the chance of 60 or more heads <em>or</em> 40 or fewer (a deviation of 10 in either direction) is</p>
+
+<div class="eq">\[ \text{p-value} = \Pr\big(|X - 50| \ge 10 \;\big|\; p = 0.5\big) \approx 0.057. \]<span class="tag-n">(1)</span></div>
+
+<p>In other words: a perfectly fair coin would produce a result this lopsided in about <strong>6 out of every 100</strong> runs of 100 flips. Rare, but not very rare. Under the most common convention (a 0.05 cutoff) we would not “reject” the coin's fairness — but only just.</p>
+
+<h2><span class="n">§2</span>The definition, plainly</h2>
+
+<p>In general we choose a <strong>test statistic</strong> \(T\) (a number that grows as the data move away from \(H_0\)), compute its observed value \(t_{\text{obs}}\) and define</p>
+
+<div class="eq">\[ p = \Pr\big(T \ge t_{\text{obs}} \;\big|\; H_0 \text{ true}\big). \]<span class="tag-n">(2)</span></div>
+
+<p>Three details matter:</p>
+
+<ul>
+<li><strong>It is a probability about the data, not about the hypothesis.</strong> “\(H_0\) true” sits on the right of the bar. The p-value does not tell you the chance that \(H_0\) is true.</li>
+<li><strong>It includes “or more extreme”.</strong> It is not the chance of seeing exactly 60 heads (which is small for any number), but of something at least that extreme.</li>
+<li><strong>Under \(H_0\), the p-value is uniform between 0 and 1.</strong> If there is no effect, \(p &lt; 0.05\) happens 5% of the time, \(p &lt; 0.01\) 1% of the time, and so on. This is where the control of “false positives” comes from.</li>
+</ul>
+
+<p>The <strong>significance level</strong> \(\alpha\) (typically 0.05) is a cutoff agreed on <em>before</em> looking at the data: if \(p \le \alpha\), we call the result “statistically significant”. This keeps the long-run false-positive rate at or below \(\alpha\).</p>
+
+<h2><span class="n">§3</span>Where the p-value is used</h2>
+
+<p>The same logic runs through almost all of applied statistics. The most common uses:</p>
+
+<div class="tbl-wrap"><table class="txt"><thead><tr><th scope=col>Situation</th><th scope=col>Typical null hypothesis</th><th scope=col>Common test</th></tr></thead><tbody>
+<tr><td>Compare the mean of two groups (treatment vs control)</td><td>The means are equal</td><td>t-test</td></tr>
+<tr><td>Compare proportions (conversion A/B test)</td><td>The conversion rates are equal</td><td>z-test for proportions, chi-square</td></tr>
+<tr><td>Compare three or more groups</td><td>All groups share the same mean</td><td>ANOVA, Kruskal–Wallis</td></tr>
+<tr><td>A regression coefficient</td><td>The variable has no effect (\(\beta = 0\))</td><td>t / Wald test</td></tr>
+<tr><td>Association between two categorical variables</td><td>The variables are independent</td><td>Chi-square, Fisher</td></tr>
+<tr><td>Correlation</td><td>The correlation is zero</td><td>Pearson / Spearman test</td></tr>
+<tr><td>Fit of a model or distribution</td><td>The data follow the assumed distribution</td><td>Shapiro–Wilk, Kolmogorov–Smirnov, deviance test</td></tr>
+<tr><td>Compare nested models</td><td>The smaller model is enough</td><td>Likelihood-ratio test, F-test</td></tr>
+<tr><td>Clinical trials</td><td>The drug is no better than placebo</td><td>Depends on the outcome; the protocol fixes everything in advance</td></tr>
+<tr><td>Quality control</td><td>The process is in control</td><td>Control charts (each point is an implicit test)</td></tr>
+</tbody></table></div>
+
+<p>In every case the p-value plays the same role: it is an <strong>alarm against chance</strong>. It tells you whether the pattern you see is too large to blame on the natural variation of the data alone.</p>
+
+<h2><span class="n">§4</span>What the p-value does <em>not</em> say</h2>
+
+<p>Nearly every mistake with p-values comes from asking it a question it does not answer.</p>
+
+<ul>
+<li><strong>It is not the probability that \(H_0\) is true.</strong> \(p = 0.03\) does not mean “a 3% chance there is no effect”. That probability can only be computed with a Bayesian approach (§7), and it depends on how plausible the effect was before the study.</li>
+<li><strong>It does not measure the size of the effect.</strong> A tiny effect gives a tiny p-value if the sample is huge; a large effect can give a high p-value if the sample is small. (Examples in §5.)</li>
+<li><strong>\(p &gt; 0.05\) does not prove there is no effect.</strong> “Absence of evidence is not evidence of absence.” It may just be a lack of data.</li>
+<li><strong>It does not say whether the result matters.</strong> Statistical significance is not practical significance. A drug that lowers blood pressure by 0.5 mmHg can be “significant” and clinically irrelevant.</li>
+<li><strong>0.05 is not a magic border.</strong> \(p = 0.049\) and \(p = 0.051\) carry practically the same evidence. Treating one as a “discovery” and the other as “nothing” is arbitrary.</li>
+<li><strong>It is only valid if the assumptions hold.</strong> The calculation assumes a model (independence, a distribution, unbiased data collection). Badly collected data produce precise, meaningless p-values.</li>
+</ul>
+
+<h2><span class="n">§5</span>Two A/B tests that show the problem</h2>
+
+<p>Consider two conversion experiments on a website.</p>
+
+<p><strong>Test A — huge sample, tiny effect.</strong> One million visitors on each version. The old version converts 10.0%; the new one, 10.1%. The p-value is <strong>0.019</strong>: “significant”. But the difference is one tenth of a percentage point, and the 95% interval for it runs from 0.02 to 0.18 points. It may not even cover the cost of changing the site.</p>
+
+<p><strong>Test B — small sample, large effect.</strong> Two hundred visitors on each version. The old one converts 10%; the new one, 13%. The p-value is <strong>0.35</strong>: “not significant”. But the observed difference is 30 times larger than in test A, and the 95% interval runs from −3.2 to +9.2 points. The test simply <strong>did not have enough data</strong> to conclude anything — neither that it works nor that it doesn't.</p>
+
+<p>Looking only at the p-value would lead to the wrong decision in both cases. That is why it must always come with an estimate of the effect.</p>
+
+<h2><span class="n">§6</span>Comparison 1: confidence intervals and effect sizes</h2>
+
+<p>A <strong>confidence interval</strong> answers a more useful question: “<em>which values of the effect are compatible with the data?</em>”. For the coin in §1, the 95% interval for the probability of heads runs from <strong>0.497 to 0.697</strong>.</p>
+
+<p>The interval contains the p-value and more:</p>
+
+<ul>
+<li>It includes 0.5, so the 5% test does not reject fairness — the same conclusion as the p-value. (Intervals and tests are two sides of the same calculation: \(H_0\) is rejected at 5% exactly when its value falls outside the 95% interval.)</li>
+<li>But it also shows the coin could be considerably biased, up to 70% heads. The honest conclusion is not “the coin is fair” but “<em>we don't know yet</em>”.</li>
+</ul>
+
+<p>Alongside the interval you report an <strong>effect size</strong>: the difference in means, the odds ratio, Cohen's \(d\), the relative risk. That is what tells you whether the result matters. A good rule: <strong>effect + interval first, p-value second</strong> (if at all). For statistics without a ready-made interval formula, the <a href="{note:bootstrap}">bootstrap</a> does the job.</p>
+
+<h2><span class="n">§7</span>Comparison 2: the Bayesian approach</h2>
+
+<p>The p-value comes from <strong>frequentist</strong> statistics, which treats the parameter as fixed and the data as random. <strong>Bayesian</strong> statistics flips this: the data are fixed (they have been observed) and the uncertainty about the parameter is described by a probability distribution. That lets it answer directly the questions people usually (wrongly) put to the p-value.</p>
+
+<p>For the same coin, starting from a neutral initial belief (<em>prior</em>) — any probability of heads between 0 and 1 equally plausible — the data lead to:</p>
+
+<ul>
+<li><strong>Probability that the coin favours heads</strong>, \(\Pr(p &gt; 0.5 \mid \text{data}) \approx 0.98\).</li>
+<li><strong>95% credible interval</strong> from 0.50 to 0.69 — almost the same as the confidence interval, but now with the direct reading “there is a 95% probability that \(p\) lies here”.</li>
+<li><strong>Bayes factor</strong> \(\approx 0.9\) comparing “biased coin (any bias)” with “exactly fair coin”. A factor near 1 means the data <strong>barely distinguish</strong> the two hypotheses.</li>
+</ul>
+
+<p>Notice the tension: the p-value of 0.057 looks “almost significant”, the 98% probability looks strong, and the Bayes factor says the evidence against fairness is practically nil. There is no contradiction — <strong>each number answers a different question</strong>. The Bayes factor pits “exactly 0.5” against a diffuse alternative that spreads its bet over every value, including 0.1 or 0.9, which the data rule out. It illustrates a well-known point: p-values near 0.05 often represent weaker evidence than they seem to.</p>
+
+<p><strong>Bayesian strengths:</strong> answers in the language people want (“what is the chance it works?”), uses prior knowledge, and does not depend on how many times you “peeked” at the data. <strong>Weaknesses:</strong> you must choose a prior (and the result can depend on it, as with the Bayes factor), and the computations are usually heavier.</p>
+
+<h2><span class="n">§8</span>Comparison 3: information criteria and validation</h2>
+
+<p>When the goal is <strong>choosing between models</strong> — rather than testing one specific hypothesis — there are better options than a chain of p-values:</p>
+
+<ul>
+<li><strong>AIC and BIC</strong> score each model by its fit, with a penalty for the number of parameters. You pick the lowest. They work for non-nested models (which the likelihood-ratio test cannot compare) and do not require casting one model as the “null”.</li>
+<li><strong>Cross-validation</strong> measures directly what matters for prediction: the error on data the model has not seen. It is the standard tool in machine learning, where hardly anyone looks at p-values.</li>
+</ul>
+
+<p>Variable selection by “drop the one with the largest p-value and refit” (<em>stepwise</em>) is a classic and problematic use: after many data-driven choices, the final p-values are far too optimistic and lose their original meaning.</p>
+
+<h2><span class="n">§9</span>Many tests at once</h2>
+
+<p>If each test has a 5% chance of a false positive, running 20 independent tests on things with no effect at all gives a <strong>64% chance</strong> of at least one “significant” result:</p>
+
+<div class="eq">\[ 1 - 0.95^{20} \approx 0.64. \]<span class="tag-n">(3)</span></div>
+
+<p>This is how findings that fail to replicate are born: test many things (subgroups, outcomes, periods, variables) and publish whatever crossed 0.05 — so-called <strong><em>p-hacking</em></strong>. The most common corrections:</p>
+
+<ul>
+<li><strong>Bonferroni:</strong> with \(m\) tests, use the cutoff \(\alpha/m\). Simple and conservative; controls the chance of <em>any</em> false positive.</li>
+<li><strong>Holm:</strong> a step-down version of Bonferroni, always at least as powerful.</li>
+<li><strong>Benjamini–Hochberg (FDR):</strong> controls the <em>proportion</em> of false positives among the discoveries. Standard in genomics and in any field with hundreds or thousands of tests.</li>
+</ul>
+
+<p>The best defence, though, is not a formula: it is <strong>fixing the hypotheses and the analysis before seeing the data</strong> (pre-registration), as clinical trials do.</p>
+
+<h2><span class="n">§10</span>Summary: which tool for which question</h2>
+
+<div class="tbl-wrap"><table class="txt"><thead><tr><th scope=col>Question</th><th scope=col>Tool</th></tr></thead><tbody>
+<tr><td>Could this pattern be just chance?</td><td>p-value</td></tr>
+<tr><td>How large is the effect, and how uncertain?</td><td>Estimate + confidence interval</td></tr>
+<tr><td>What is the probability the effect is positive (or larger than X)?</td><td>Bayesian posterior</td></tr>
+<tr><td>How much do the data favour one hypothesis over another?</td><td>Bayes factor, likelihood ratio</td></tr>
+<tr><td>Which model describes or predicts better?</td><td>AIC/BIC, cross-validation</td></tr>
+<tr><td>How much data do I need to detect an effect of size X?</td><td>Power calculation (done before the study)</td></tr>
+</tbody></table></div>
+
+<p>The p-value is neither villain nor hero. It is a narrow tool that answers one question well: <strong>“is this compatible with pure chance?”</strong>. Used in that role — together with the effect size, an interval, a well-designed study and care with multiple tests — it remains useful. The trouble starts when it becomes the only number anyone looks at, and the 0.05 cutoff alone decides what is true.</p>
+
+<div class="note"><strong>Quick checklist when reading a p-value.</strong> (1) What was the null hypothesis? (2) How large is the effect, and in what units? (3) What is the confidence interval? (4) How large is the sample? (5) How many tests were run before this one? (6) Was the analysis fixed before or after seeing the data?</div>

@@ -1,0 +1,150 @@
+<p>O p-valor é provavelmente o número mais usado — e mais mal interpretado — de toda a estatística. Ele aparece em artigos científicos, testes A/B, relatórios de qualidade e na saída de qualquer regressão. Este artigo explica, em linguagem simples, <strong>o que ele mede</strong>, <strong>para que serve na prática</strong>, <strong>o que ele não diz</strong> e como se compara a outras ferramentas: intervalos de confiança, tamanho de efeito, métodos bayesianos e critérios de informação.</p>
+
+<div class="note"><strong>Em uma frase.</strong> O p-valor responde: “<em>se não houvesse efeito nenhum, quão surpreendentes seriam dados como os meus?</em>”. Quanto menor, mais surpreendentes — e mais difícil fica sustentar a hipótese de que não há efeito.</div>
+
+<h2><span class="n">§1</span>A ideia com uma moeda</h2>
+
+<p>Você desconfia que uma moeda está viciada. Joga 100 vezes e saem <strong>60 caras</strong>. É prova de vício, ou uma moeda honesta poderia fazer isso por acaso?</p>
+
+<p>O raciocínio do teste tem três passos:</p>
+
+<ol>
+<li><strong>Suponha o contrário do que você quer mostrar.</strong> É a <strong>hipótese nula</strong> \(H_0\): a moeda é honesta, \(p = 0{,}5\).</li>
+<li><strong>Escolha uma medida de “quão longe” os dados estão do esperado.</strong> Com 100 jogadas, esperamos 50 caras; observamos 60, uma distância de 10.</li>
+<li><strong>Calcule a probabilidade de uma distância igual ou maior, supondo \(H_0\) verdadeira.</strong> Esse é o p-valor.</li>
+</ol>
+
+<p>Para uma moeda honesta, a chance de sair 60 ou mais caras <em>ou</em> 40 ou menos (o desvio de 10 para qualquer lado) é</p>
+
+<div class="eq">\[ \text{p-valor} = \Pr\big(|X - 50| \ge 10 \;\big|\; p = 0{,}5\big) \approx 0{,}057. \]<span class="tag-n">(1)</span></div>
+
+<p>Ou seja: uma moeda perfeitamente honesta produziria um resultado tão desequilibrado quanto esse em cerca de <strong>6 de cada 100</strong> sequências de 100 jogadas. É raro, mas não muito. Pela convenção mais comum (corte em 0,05), não “rejeitaríamos” a honestidade da moeda — por pouco.</p>
+
+<h2><span class="n">§2</span>A definição, sem rodeios</h2>
+
+<p>De forma geral, escolhemos uma <strong>estatística de teste</strong> \(T\) (um número que cresce quando os dados se afastam de \(H_0\)), calculamos seu valor observado \(t_{\text{obs}}\) e definimos</p>
+
+<div class="eq">\[ p = \Pr\big(T \ge t_{\text{obs}} \;\big|\; H_0 \text{ verdadeira}\big). \]<span class="tag-n">(2)</span></div>
+
+<p>Três detalhes importam:</p>
+
+<ul>
+<li><strong>É uma probabilidade sobre os dados, não sobre a hipótese.</strong> A condição “\(H_0\) verdadeira” está do lado direito da barra. O p-valor não diz qual é a chance de \(H_0\) ser verdadeira.</li>
+<li><strong>Inclui “ou mais extremo”.</strong> Não é a chance de observar exatamente 60 caras (que é pequena para qualquer número), e sim de algo pelo menos tão extremo quanto.</li>
+<li><strong>Sob \(H_0\), o p-valor é uniforme entre 0 e 1.</strong> Se não há efeito nenhum, \(p &lt; 0{,}05\) acontece em 5% das vezes, \(p &lt; 0{,}01\) em 1%, e assim por diante. É daí que vem o controle de “falsos positivos”.</li>
+</ul>
+
+<p>O <strong>nível de significância</strong> \(\alpha\) (tipicamente 0,05) é um corte combinado <em>antes</em> de olhar os dados: se \(p \le \alpha\), declaramos o resultado “estatisticamente significativo”. Com isso, a taxa de falsos positivos fica limitada a \(\alpha\) no longo prazo.</p>
+
+<h2><span class="n">§3</span>Onde o p-valor é usado</h2>
+
+<p>A mesma lógica aparece em quase toda a estatística aplicada. Os usos mais comuns:</p>
+
+<div class="tbl-wrap"><table class="txt"><thead><tr><th scope=col>Situação</th><th scope=col>Hipótese nula típica</th><th scope=col>Teste comum</th></tr></thead><tbody>
+<tr><td>Comparar a média de dois grupos (tratamento × controle)</td><td>As médias são iguais</td><td>Teste t</td></tr>
+<tr><td>Comparar proporções (teste A/B de conversão)</td><td>As taxas de conversão são iguais</td><td>Teste z de proporções, qui-quadrado</td></tr>
+<tr><td>Comparar três ou mais grupos</td><td>Todos os grupos têm a mesma média</td><td>ANOVA, Kruskal–Wallis</td></tr>
+<tr><td>Coeficiente de uma regressão</td><td>A variável não tem efeito (\(\beta = 0\))</td><td>Teste t / Wald</td></tr>
+<tr><td>Associação entre duas variáveis categóricas</td><td>As variáveis são independentes</td><td>Qui-quadrado, Fisher</td></tr>
+<tr><td>Correlação</td><td>A correlação é zero</td><td>Teste de Pearson / Spearman</td></tr>
+<tr><td>Ajuste de um modelo ou distribuição</td><td>Os dados seguem a distribuição suposta</td><td>Shapiro–Wilk, Kolmogorov–Smirnov, teste da deviance</td></tr>
+<tr><td>Comparar modelos encaixados</td><td>O modelo menor basta</td><td>Razão de verossimilhanças, teste F</td></tr>
+<tr><td>Ensaios clínicos</td><td>O remédio não é melhor que o placebo</td><td>Depende do desfecho; o protocolo fixa tudo antes</td></tr>
+<tr><td>Controle de qualidade</td><td>O processo está sob controle</td><td>Gráficos de controle (cada ponto é um teste implícito)</td></tr>
+</tbody></table></div>
+
+<p>Em todos os casos, o p-valor faz o mesmo papel: é um <strong>alarme contra o acaso</strong>. Ele indica se o padrão observado é grande demais para ser atribuído só à variação natural dos dados.</p>
+
+<h2><span class="n">§4</span>O que o p-valor <em>não</em> diz</h2>
+
+<p>Quase todos os erros com p-valor vêm de pedir a ele uma resposta que ele não dá.</p>
+
+<ul>
+<li><strong>Não é a probabilidade de \(H_0\) ser verdadeira.</strong> \(p = 0{,}03\) não significa “3% de chance de não haver efeito”. Essa probabilidade só pode ser calculada com uma abordagem bayesiana (§7), e depende de quão plausível o efeito era antes do estudo.</li>
+<li><strong>Não mede o tamanho do efeito.</strong> Um efeito minúsculo dá p-valor pequeníssimo se a amostra for enorme; um efeito grande pode dar p-valor alto se a amostra for pequena. (Exemplos em §5.)</li>
+<li><strong>\(p &gt; 0{,}05\) não prova que não há efeito.</strong> “Ausência de evidência não é evidência de ausência.” Pode ser só falta de dados.</li>
+<li><strong>Não diz se o resultado é importante.</strong> Significância estatística não é significância prática. Um remédio que baixa a pressão em 0,5 mmHg pode ser “significativo” e clinicamente irrelevante.</li>
+<li><strong>0,05 não é uma fronteira mágica.</strong> \(p = 0{,}049\) e \(p = 0{,}051\) trazem praticamente a mesma evidência. Tratar um como “descoberta” e outro como “nada” é arbitrário.</li>
+<li><strong>Só vale se as suposições valem.</strong> O cálculo supõe um modelo (independência, distribuição, ausência de viés na coleta). Dados mal coletados produzem p-valores precisos e sem sentido.</li>
+</ul>
+
+<h2><span class="n">§5</span>Dois testes A/B que mostram o problema</h2>
+
+<p>Considere dois experimentos de conversão num site.</p>
+
+<p><strong>Teste A — amostra gigante, efeito minúsculo.</strong> Um milhão de visitantes em cada versão. A versão antiga converte 10,0%; a nova, 10,1%. O p-valor é <strong>0,019</strong>: “significativo”. Mas a diferença é de um décimo de ponto percentual, e o intervalo de 95% para ela vai de 0,02 a 0,18 ponto. Talvez não pague nem o custo de mudar o site.</p>
+
+<p><strong>Teste B — amostra pequena, efeito grande.</strong> Duzentos visitantes em cada versão. A antiga converte 10%; a nova, 13%. O p-valor é <strong>0,35</strong>: “não significativo”. Mas a diferença observada é 30 vezes maior que no teste A, e o intervalo de 95% vai de −3,2 a +9,2 pontos. O teste simplesmente <strong>não tinha dados suficientes</strong> para concluir nada — nem que funciona, nem que não funciona.</p>
+
+<p>Olhar só o p-valor levaria à decisão errada nos dois casos. É por isso que ele precisa sempre andar acompanhado de uma estimativa do efeito.</p>
+
+<h2><span class="n">§6</span>Comparação 1: intervalos de confiança e tamanho de efeito</h2>
+
+<p>O <strong>intervalo de confiança</strong> responde a uma pergunta mais útil: “<em>quais valores do efeito são compatíveis com os dados?</em>”. Na moeda de §1, o intervalo de 95% para a probabilidade de cara vai de <strong>0,497 a 0,697</strong>.</p>
+
+<p>Esse intervalo contém o p-valor e mais um pouco:</p>
+
+<ul>
+<li>Ele inclui 0,5, então o teste a 5% não rejeita a honestidade — a mesma conclusão do p-valor. (Intervalo e teste são duas faces da mesma conta: \(H_0\) é rejeitada a 5% exatamente quando o valor de \(H_0\) fica fora do intervalo de 95%.)</li>
+<li>Mas ele também mostra que a moeda pode ter um vício considerável, de até 70% de caras. A conclusão honesta não é “a moeda é justa”, e sim “<em>ainda não sabemos</em>”.</li>
+</ul>
+
+<p>Junto com o intervalo, reporta-se o <strong>tamanho de efeito</strong>: a diferença de médias, a razão de chances, o \(d\) de Cohen, o risco relativo. É ele que diz se o resultado importa. Uma boa regra é: <strong>efeito + intervalo primeiro, p-valor depois</strong> (ou nem isso). Para estatísticas sem fórmula pronta de intervalo, o <a href="{note:bootstrap}">bootstrap</a> resolve.</p>
+
+<h2><span class="n">§7</span>Comparação 2: a abordagem bayesiana</h2>
+
+<p>O p-valor vem da estatística <strong>frequentista</strong>, que trata o parâmetro como fixo e os dados como aleatórios. A estatística <strong>bayesiana</strong> inverte: os dados são fixos (já foram observados) e a incerteza sobre o parâmetro é descrita por uma distribuição de probabilidade. Isso permite responder diretamente às perguntas que as pessoas costumam (erradamente) fazer ao p-valor.</p>
+
+<p>Na mesma moeda, partindo de uma crença inicial (<em>priori</em>) neutra — qualquer probabilidade de cara entre 0 e 1 igualmente plausível —, os dados levam a:</p>
+
+<ul>
+<li><strong>Probabilidade de a moeda favorecer cara</strong>, \(\Pr(p &gt; 0{,}5 \mid \text{dados}) \approx 0{,}98\).</li>
+<li><strong>Intervalo de credibilidade de 95%</strong> de 0,50 a 0,69 — quase igual ao intervalo de confiança, mas agora com a leitura direta “há 95% de probabilidade de \(p\) estar aqui”.</li>
+<li><strong>Fator de Bayes</strong> \(\approx 0{,}9\) comparando “moeda viciada (qualquer vício)” com “moeda exatamente honesta”. Um fator perto de 1 significa que os dados <strong>quase não distinguem</strong> as duas hipóteses.</li>
+</ul>
+
+<p>Repare na tensão: o p-valor de 0,057 parece “quase significativo”, a probabilidade de 98% parece forte, e o fator de Bayes diz que a evidência contra a honestidade é praticamente nula. Não há contradição — <strong>cada número responde a uma pergunta diferente</strong>. O fator de Bayes compara a hipótese “exatamente 0,5” com uma alternativa difusa que espalha a aposta por todos os valores, inclusive 0,1 ou 0,9, que os dados descartam. Isso ilustra um ponto conhecido: p-valores perto de 0,05 costumam representar evidência mais fraca do que parecem.</p>
+
+<p><strong>Vantagens do bayesiano:</strong> respostas na linguagem que as pessoas querem (“qual a chance de funcionar?”), incorpora conhecimento prévio, não depende de quantas vezes você “espiou” os dados. <strong>Desvantagens:</strong> exige escolher a priori (e o resultado pode depender dela, como no fator de Bayes), e as contas costumam ser mais pesadas.</p>
+
+<h2><span class="n">§8</span>Comparação 3: critérios de informação e validação</h2>
+
+<p>Quando o objetivo é <strong>escolher entre modelos</strong> — e não testar uma hipótese específica —, há alternativas melhores que uma sequência de p-valores:</p>
+
+<ul>
+<li><strong>AIC e BIC</strong> pontuam cada modelo pelo ajuste, com uma penalidade pelo número de parâmetros. Escolhe-se o de menor valor. Funcionam para modelos não encaixados (que o teste de razão de verossimilhanças não compara) e não exigem escolher um modelo como “nulo”.</li>
+<li><strong>Validação cruzada</strong> mede diretamente o que importa em previsão: o erro em dados que o modelo não viu. É a ferramenta padrão em aprendizado de máquina, onde quase ninguém olha p-valores.</li>
+</ul>
+
+<p>A seleção de variáveis “tira a que tiver maior p-valor e reajusta” (<em>stepwise</em>) é um uso clássico e problemático: depois de muitas escolhas guiadas pelos dados, os p-valores finais ficam otimistas demais e perdem o significado original.</p>
+
+<h2><span class="n">§9</span>Muitos testes ao mesmo tempo</h2>
+
+<p>Se cada teste tem 5% de chance de um falso positivo, fazer 20 testes independentes sobre coisas sem efeito nenhum dá <strong>64% de chance</strong> de pelo menos um “significativo”:</p>
+
+<div class="eq">\[ 1 - 0{,}95^{20} \approx 0{,}64. \]<span class="tag-n">(3)</span></div>
+
+<p>É assim que surgem descobertas que não se replicam: testa-se muita coisa (subgrupos, desfechos, períodos, variáveis) e publica-se o que passou de 0,05 — o chamado <strong><em>p-hacking</em></strong>. As correções mais usadas:</p>
+
+<ul>
+<li><strong>Bonferroni:</strong> com \(m\) testes, use o corte \(\alpha/m\). Simples e conservador; controla a chance de <em>qualquer</em> falso positivo.</li>
+<li><strong>Holm:</strong> uma versão em etapas de Bonferroni, sempre pelo menos tão poderosa.</li>
+<li><strong>Benjamini–Hochberg (FDR):</strong> controla a <em>proporção</em> de falsos positivos entre as descobertas. Padrão em genômica e em qualquer área com centenas ou milhares de testes.</li>
+</ul>
+
+<p>A melhor defesa, porém, não é uma fórmula: é <strong>definir as hipóteses e a análise antes de ver os dados</strong> (pré-registro), como fazem os ensaios clínicos.</p>
+
+<h2><span class="n">§10</span>Resumo: qual ferramenta para qual pergunta</h2>
+
+<div class="tbl-wrap"><table class="txt"><thead><tr><th scope=col>Pergunta</th><th scope=col>Ferramenta</th></tr></thead><tbody>
+<tr><td>Esse padrão pode ser só acaso?</td><td>p-valor</td></tr>
+<tr><td>Qual o tamanho do efeito e quão incerto ele é?</td><td>Estimativa + intervalo de confiança</td></tr>
+<tr><td>Qual a probabilidade de o efeito ser positivo (ou maior que X)?</td><td>Posteriori bayesiana</td></tr>
+<tr><td>Quanto os dados favorecem uma hipótese sobre outra?</td><td>Fator de Bayes, razão de verossimilhanças</td></tr>
+<tr><td>Qual modelo descreve ou prevê melhor?</td><td>AIC/BIC, validação cruzada</td></tr>
+<tr><td>Quantos dados preciso para detectar um efeito de tamanho X?</td><td>Cálculo de poder (feito antes do estudo)</td></tr>
+</tbody></table></div>
+
+<p>O p-valor não é vilão nem herói. É uma ferramenta estreita, que responde bem a uma única pergunta: <strong>“isso é compatível com puro acaso?”</strong>. Usado nesse papel — combinado com o tamanho do efeito, um intervalo, um desenho de estudo bem feito e cuidado com testes múltiplos — continua útil. O problema começa quando ele vira o único número que se olha, e o corte de 0,05 passa a decidir sozinho o que é verdade.</p>
+
+<div class="note"><strong>Checklist rápido ao ler um p-valor.</strong> (1) Qual era a hipótese nula? (2) Qual o tamanho do efeito, e em que unidade? (3) Qual o intervalo de confiança? (4) Qual o tamanho da amostra? (5) Quantos testes foram feitos até chegar neste? (6) A análise foi definida antes ou depois de ver os dados?</div>
