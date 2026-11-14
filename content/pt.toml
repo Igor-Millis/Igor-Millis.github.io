@@ -766,3 +766,13 @@ tags = ["Estatística", "Inferência"]
 date = "2026-11-13"
 minutes = 12
 abstract = "O número mais usado e mais mal interpretado da estatística, explicado com uma moeda e dois testes A/B: o que o p-valor mede, onde é usado, o que ele não diz, o problema dos testes múltiplos, e como se compara a intervalos de confiança, métodos bayesianos e critérios de informação."
+
+[research.notes.fittrack-ai]
+title = "FitTrack AI: um diário nutricional com IA que não inventa números"
+seo_title = "FitTrack AI: diário de alimentação, treinos e peso com IA local que só interpreta texto — TACO, METs, SQLite e Ollama"
+description = "Como construí um assistente local em Python para registrar refeições, treinos e peso conversando em português: a IA (Ollama) só interpreta o texto, os números vêm da TACO e de código determinístico, o gasto energético evita dupla contagem e dias sem registro não viram déficit."
+kind = "engenharia · ia local"
+tags = ["Python", "LLMs locais", "Nutrição", "SQLite"]
+date = "2026-11-14"
+minutes = 9
+abstract = "Um diário de alimentação, treinos e peso em que você conversa em português e tudo roda no seu computador. As decisões que o tornam confiável: a IA só traduz texto em JSON aterrado na mensagem, a TACO extraída do PDF oficial, conversão de unidades que pergunta em vez de chutar, gasto energético sem contar o treino duas vezes e dias sem registro fora das médias."

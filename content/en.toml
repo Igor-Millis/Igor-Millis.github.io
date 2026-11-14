@@ -766,3 +766,13 @@ tags = ["Statistics", "Inference"]
 date = "2026-11-13"
 minutes = 12
 abstract = "The most used and most misread number in statistics, explained with a coin and two A/B tests: what the p-value measures, where it is used, what it does not say, the multiple-testing problem, and how it compares with confidence intervals, Bayesian methods and information criteria."
+
+[research.notes.fittrack-ai]
+title = "FitTrack AI: a nutrition diary with AI that does not invent numbers"
+seo_title = "FitTrack AI: a food, training and weight diary with local AI that only parses text — TACO, METs, SQLite and Ollama"
+description = "How I built a local Python assistant to log meals, workouts and body weight by chatting in Portuguese: the AI (Ollama) only parses the text, numbers come from the TACO table and deterministic code, energy expenditure avoids double counting, and days without logs never become deficits."
+kind = "engineering · local ai"
+tags = ["Python", "Local LLMs", "Nutrition", "SQLite"]
+date = "2026-11-14"
+minutes = 9
+abstract = "A food, training and weight diary you chat with in Portuguese, running entirely on your computer. The decisions that make it trustworthy: the AI only turns text into JSON grounded in the message, TACO extracted from the official PDF, unit conversion that asks instead of guessing, energy expenditure that does not count the workout twice, and unlogged days kept out of the averages."

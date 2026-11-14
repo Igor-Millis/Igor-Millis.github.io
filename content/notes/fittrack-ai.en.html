@@ -1,0 +1,86 @@
+<p>FitTrack AI is a food, training and body-weight diary where you <strong>chat in Portuguese</strong> — “I ate 150 g of rice, 100 g of beans and 180 g of chicken breast”, “I ran 5 km in 30 minutes”, “am I in a deficit today?” — and get back numbers computed from an official food-composition table. Everything runs <strong>on your own computer</strong>: Python, Streamlit and a local SQLite database, with optional local AI through Ollama. The code is on <a href="https://github.com/Igor-Millis/fittrack-ai">GitHub</a>.</p>
+
+<p>This is not an installation guide (the README covers that). It is about the decisions that make an assistant like this <em>trustworthy</em>: where the AI comes in, where it must not, and the calculation details that usually go unnoticed.</p>
+
+<div class="note"><strong>Disclaimer.</strong> Table calories and equation-based energy expenditure are population estimates. The app does not diagnose anything and does not replace a dietitian or physician.</div>
+
+<h2><span class="n">§1</span>The problem: LLMs are great at understanding text and terrible at inventing numbers</h2>
+
+<p>Asking a chatbot “how many calories are in my lunch?” works surprisingly well — until it doesn't. The model may put 180 g of chicken at 250 kcal one day and 330 the next, “remember” a value that is in no table, or say it logged something it did not. For a diary that will add up months of data, that is unacceptable.</p>
+
+<p>The project's rule: <strong>the AI only turns text into structure; every number comes from deterministic code and sourced data</strong>.</p>
+
+<pre class="code">message ─► parsing (PT-BR rules  or  optional Ollama)
+        ─► validated JSON (Pydantic)  ─► "grounding" in the original text
+        ─► TACO lookup + unit conversion + METs  (Python)
+        ─► editable DRAFT  ─► explicit confirmation  ─► SQLite
+question ─► analytics engine (pandas over the database) ─► templated answer</pre>
+
+<h2><span class="n">§2</span>Two parsers, one contract</h2>
+
+<p>There is a <strong>rule-based parser</strong> for Portuguese (regular expressions, spelled-out numbers, “half a bread roll”, “1h20”, “pace 5:30/km”, dates such as “yesterday” and “12/11”) that works offline with no model at all. When Ollama is on, it gets the same message and must return JSON in the <em>same</em> schema — using structured output at temperature 0.</p>
+
+<p>Then comes the step that matters most, <strong>grounding</strong>: every quantity, duration or weight the LLM returned must appear in the user's message (directly or through an obvious conversion such as 1 h → 60 min). If it does not, the value is dropped. Foods that are not in the text are removed. Whatever is missing is filled in by the rules or <strong>asked</strong>.</p>
+
+<div class="tbl-wrap"><table class="txt"><thead><tr><th scope=col>Message</th><th scope=col>LLM returned</th><th scope=col>After grounding</th></tr></thead><tbody>
+<tr><td>“comi arroz e 2 ovos e corri 5 km” (rice, 2 eggs, ran 5 km)</td><td>rice 150 g · eggs 2 · banana 1 · run 30 min, 5 km</td><td>rice <em>(how much?)</em> · eggs 2 · run <em>(how long?)</em>, 5 km</td></tr>
+</tbody></table></div>
+
+<p>Nothing is saved without going through a <strong>draft</strong> that shows each chosen food, the grams, the conversion rule used and the nutrients — and it only reaches the database after “yes” or the confirm button.</p>
+
+<h2><span class="n">§3</span>The food database: TACO extracted from the official PDF</h2>
+
+<p>The source is <strong>TACO, 4th edition</strong> (the Brazilian food-composition table, NEPA/UNICAMP, 2011), whose publication allows reproduction with attribution. Because it ships as a PDF, I wrote an extractor that reads words <em>with their positions</em> and assigns each number to the nearest column — necessary because empty cells simply do not appear in the text, and a line-by-line read misaligns everything. Result: 597 foods with IDs 1–597 in sequence, checked for Atwater consistency (4/4/9 kcal per gram). Six items that TACO itself marks as not analysed — including, curiously, whole cow's milk — were <strong>not</strong> imported: the app asks you to enter them from the label instead of making them up.</p>
+
+<p>Turning “2 bread rolls” or “200 ml of milk” into grams is where many apps guess. Here:</p>
+
+<div class="tbl-wrap"><table class="txt"><thead><tr><th scope=col>Unit</th><th scope=col>Rule</th></tr></thead><tbody>
+<tr><td>g, kg, mg</td><td>direct</td></tr>
+<tr><td>ml, l</td><td>only with a known density for that food</td></tr>
+<tr><td>unit, slice, ladle, pot…</td><td>only with a household measure registered for that food (shown in the draft)</td></tr>
+<tr><td>anything else</td><td>the assistant asks for grams</td></tr>
+</tbody></table></div>
+
+<p>When a name is ambiguous (“leite” matches coconut milk, goat's milk, condensed milk…), the app does not pick for you: it shows the options.</p>
+
+<h2><span class="n">§4</span>Energy expenditure without counting the workout twice</h2>
+
+<p>Basal metabolic rate comes from Mifflin-St Jeor. The classic mistake in diet apps is adding a workout's <em>gross</em> energy to a daily expenditure that already includes rest. One hour of weight training at 5 METs for 80 kg “burns” 400 gross kcal — but 80 of them you would have burned anyway, sitting still.</p>
+
+<pre class="code">daily expenditure = BMR × 1.2  +  Σ (MET − 1) × weight × hours
+                      baseline       only the workout's NET energy</pre>
+
+<p>There is an alternative method (BMR × activity-level factor, without adding workouts) for people who do not log everything. METs come from the Compendium of Physical Activities; for running, walking and cycling with distance and time, the MET is interpolated by speed.</p>
+
+<h2><span class="n">§5</span>A day without logs is not a deficit day</h2>
+
+<p>If you forgot to log Tuesday's food, a naive calculation sees 0 intake and a 2,000 kcal “deficit” — which contaminates the weekly average and the running balance. In FitTrack, days without food logs simply <strong>have no balance</strong>: they show as “not logged” and stay out of the averages.</p>
+
+<p>The same care applies to weight. Daily swings are water, salt and glycogen; the app shows a 7-day moving average and a regression trend, and compares the <em>observed</em> change with the one <em>expected</em> from the computed balance. With enough data (≥ 8 weigh-ins over ≥ 14 days and ≥ 10 logged days), it estimates the expenditure implied by the real trend and warns when the app's estimate looks too high or too low — without turning an accumulated deficit into a promise of fat loss.</p>
+
+<h2><span class="n">§6</span>Questions answered from the database</h2>
+
+<p>“How much can I still eat today?”, “compare this week with last week”, “which days was I over my target?”, “am I eating enough protein?”. Each question maps to a query in the analytics engine (pandas over SQLite) and the answer is built from a template. The LLM never writes numbers — so the number in the sentence is, by construction, the number in the database.</p>
+
+<h2><span class="n">§7</span>Your data stays yours</h2>
+
+<ul>
+<li>Local SQLite with versioned migrations, foreign keys and range constraints (a 5 kg body weight is rejected by the database itself).</li>
+<li>Every meal item stores a snapshot of its nutrients at logging time.</li>
+<li>A per-day fingerprint against accidental duplicates (confirming twice does not log twice).</li>
+<li>Change history, automatic backup, restore with a safety copy, and CSV export.</li>
+<li>Technical logs without message contents.</li>
+</ul>
+
+<h2><span class="n">§8</span>Tests</h2>
+
+<p>There are 137 tests: units, calculations, no double counting, moving averages, persistence after closing and reopening the database, duplicates, ambiguity, history queries checked against known values, grounding of LLM output, rendering of every page with Streamlit's <code>AppTest</code>, and two tests against a real Ollama (skipped when it is not running). They found real bugs — “almocei arroz” (I had rice for lunch) turning into “rroz”, “bike ergométrica” classified as outdoor cycling, a future date silently moved to the previous year — all documented in the repository.</p>
+
+<h2><span class="n">§9</span>Running it</h2>
+
+<pre class="code">git clone https://github.com/Igor-Millis/fittrack-ai
+cd fittrack-ai
+iniciar.bat                       # Windows; or: pip install -r requirements.txt &amp;&amp; streamlit run app/main.py
+ollama pull qwen2.5:3b            # optional: local AI</pre>
+
+<p>Next steps: logging by photo with a local vision model (always as an estimate to confirm), label reading, and more household measures with a documented source.</p>
