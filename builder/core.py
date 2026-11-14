@@ -22,13 +22,17 @@ ROUTES: dict[str, str] = {
     "credit": "/work/credit-default-api/",
     "recommender": "/work/adaptive-recommender/",
     "readmission": "/work/diabetes-readmission/",
+    "fittrack": "/work/fittrack-ai/",
     "research": "/research/",
 }
 
 # Research notes, newest first. Each slug needs [research.notes.<slug>] in every content/<lang>.toml
 # and a body in content/notes/<slug>.<lang>.html.
-NOTES = ["fittrack-ai", "p-value", "hyperparameters", "quasi-likelihood", "docker-from-scratch", "claude-skills", "negative-binomial", "bootstrap", "local-llms", "why-the-house-wins", "calibration-check", "threshold-is-a-decision"]
+NOTES = ["p-value", "hyperparameters", "quasi-likelihood", "docker-from-scratch", "claude-skills", "negative-binomial", "bootstrap", "local-llms", "why-the-house-wins", "calibration-check", "threshold-is-a-decision"]
 ROUTES.update({f"note:{s}": f"/research/{s}/" for s in NOTES})
+
+# Old URLs that moved: (path without language prefix) -> route key. Each gets a redirect page.
+MOVED = {"/research/fittrack-ai/": "fittrack"}
 
 
 def _toml(rel: str) -> dict:

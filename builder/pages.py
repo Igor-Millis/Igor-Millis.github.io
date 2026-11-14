@@ -38,7 +38,7 @@ def project_rows(site: Site, lang: str) -> str:
     c = site.content[lang]["work"]
     rows = []
     for n, key, k in (("01", "readmission", "readmission"), ("02", "edudata", "edudata"), ("03", "credit", "credit"),
-                      ("04", "recommender", "recommender")):
+                      ("04", "recommender", "recommender"), ("05", "fittrack", "fittrack")):
         p = c[k]
         rows.append(f"""<a class="row rv" href="{site.url(lang, key)}">
   <span class="n">{n}</span>
@@ -556,6 +556,34 @@ def note(site: Site, lang: str, slug: str) -> str:
         ld["keywords"] = ", ".join(n["tags"])
     return page(site, lang, key, title=n["seo_title"], description=n["description"], body=body,
                 scripts=tuple(n.get("scripts", ())), head_extra=katex, jsonld=ld, og_type="article")
+
+
+def fittrack(site: Site, lang: str) -> str:
+    p = site.content[lang]["work"]["fittrack"]
+    repo = p["repo"]
+    figs = '<div class="fig-grid">' + "".join(
+        f'<figure><img src="{site.asset("img/" + src)}" width="1440" height="1000" loading="lazy" decoding="async" '
+        f'alt="{attr(cap)}"><figcaption>fig. {i + 1} — {esc(cap)}</figcaption></figure>'
+        for i, (src, cap) in enumerate(p["figs"])
+    ) + "</div>"
+    body = _project_head(site, lang, p, repo)
+    for i in range(1, 9):
+        content = f'<div class="prose">{p[f"s{i}_body"]}</div>'
+        if p.get(f"s{i}_figs"):
+            content += figs
+        body += section(esc(p[f"s{i}_label"]), esc(p[f"s{i}_title"]), content)
+    return page(site, lang, "fittrack", title=p["title"], description=p["description"], body=body,
+                jsonld=_software_ld(site, lang, "fittrack", p, repo, ["Python", "SQL"]))
+
+
+def moved(site: Site, lang: str, key: str) -> str:
+    """Tiny redirect page for a URL that moved to the route `key`."""
+    to = site.url(lang, key)
+    return (f'<!doctype html><html lang="{site.lang(lang)["html"]}"><head><meta charset="utf-8">'
+            f'<title>{esc(site.content[lang]["work"][key]["name"])}</title>'
+            f'<link rel="canonical" href="{site.abs_url(lang, key)}"><meta name="robots" content="noindex">'
+            f'<meta http-equiv="refresh" content="0; url={to}"></head>'
+            f'<body><p><a href="{to}">{esc(to)}</a></p></body></html>')
 
 
 def readmission(site: Site, lang: str) -> str:

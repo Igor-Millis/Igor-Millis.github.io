@@ -14,7 +14,7 @@ import shutil
 import sys
 
 from builder import pages
-from builder.core import DIST, NOTES, ROOT, ROUTES, Site
+from builder.core import DIST, MOVED, NOTES, ROOT, ROUTES, Site
 
 
 def write(path, text: str) -> None:
@@ -52,6 +52,7 @@ def build() -> int:
             "credit": pages.credit(site, lang),
             "recommender": pages.recommender(site, lang),
             "readmission": pages.readmission(site, lang),
+            "fittrack": pages.fittrack(site, lang),
             "research": pages.research(site, lang),
         }
         for slug in NOTES:
@@ -62,6 +63,8 @@ def build() -> int:
         for key, html in rendered.items():
             write(site.out_file(lang, key), html)
             count += 1
+        for old, key in MOVED.items():
+            write(DIST / (site.lang(lang)["prefix"] + old).strip("/") / "index.html", pages.moved(site, lang, key))
 
     write(DIST / "404.html", pages.not_found(site))
     write(DIST / "sitemap.xml", sitemap(site))

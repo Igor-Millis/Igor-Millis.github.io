@@ -652,6 +652,100 @@ s9_plain = '''<p><strong>De onde veio.</strong> Um projeto só tem valor se outr
 <p><strong>Resultado.</strong> Tudo está público no GitHub e no Hugging Face, e qualquer pessoa pode refazer cada número desta página. O projeto tem fins de estudo e demonstração; não é para uso clínico.</p>'''
 
 
+[work.fittrack]
+title = "FitTrack AI — diário de alimentação, treinos e peso com IA local que não inventa números"
+description = "Assistente local em Python para registrar refeições, treinos e peso conversando em português: a IA (Ollama, opcional) só interpreta o texto, os números vêm da TACO e de código determinístico, tudo com confirmação antes de salvar, SQLite local e 137 testes."
+name = "FitTrack AI"
+kicker = "ia local · nutrição e saúde"
+summary = "Um diário de alimentação, treinos e peso em que você conversa em português e recebe números calculados a partir de uma tabela nutricional oficial — tudo no seu computador, com a IA restrita a entender o texto."
+tags = ["Python", "Streamlit", "SQLite", "Pydantic", "Ollama", "pandas", "Plotly", "pytest"]
+meta = ["137 testes", "591 alimentos da TACO"]
+repo = "https://github.com/Igor-Millis/fittrack-ai"
+spec = [
+  ["entrada", "chat em português · regras offline + Ollama opcional"],
+  ["dados", "TACO 4ª ed. (NEPA/UNICAMP) · extraída do PDF oficial"],
+  ["cálculo", "Mifflin-St Jeor · METs do Compêndio · Python determinístico"],
+  ["armazenamento", "SQLite local · migrations · auditoria · backup · CSV"],
+  ["interface", "Streamlit · 7 páginas · 8 gráficos com filtros de período"],
+  ["status", "roda localmente (Windows: iniciar.bat) · sem versão online"],
+]
+stats = [
+  ["591", "alimentos da TACO importados"],
+  ["0", "números escritos pela IA"],
+  ["137", "testes automatizados passando"],
+  ["100%", "local · funciona offline"],
+]
+
+s1_label = "01 · problema"
+s1_title = "LLMs entendem texto — e inventam números"
+s1_body = '''<p>Pedir a um chatbot “quantas calorias tem meu almoço?” funciona surpreendentemente bem — até não funcionar. O modelo pode estimar 180 g de frango como 250 kcal num dia e 330 no outro, “lembrar” um valor que não está em tabela nenhuma, ou dizer que registrou algo que não registrou. Para um diário que vai somar meses de dados, isso é inaceitável.</p>
+<p>A regra do projeto: <strong>a IA só traduz texto em estrutura; todo número vem de código determinístico e de dados com fonte</strong>. E nada é gravado sem a sua confirmação.</p>
+<div class="note"><strong>Aviso.</strong> Calorias de tabela e gasto energético por equação são estimativas populacionais. O app não faz diagnóstico e não substitui nutricionista ou médico.</div>'''
+
+s2_label = "02 · arquitetura"
+s2_title = "Do texto ao banco, com um rascunho no meio"
+s2_body = '''<pre class="code">mensagem ─► interpretação (regras PT-BR  ou  Ollama opcional)
+          ─► JSON validado (Pydantic)  ─► "aterramento" no texto original
+          ─► busca na TACO + conversão de unidades + METs  (Python)
+          ─► RASCUNHO editável  ─► confirmação explícita  ─► SQLite
+perguntas ─► motor analítico (pandas sobre o banco) ─► resposta por template</pre>
+<p>Perguntas como “quanto ainda posso comer hoje?”, “compare esta semana com a anterior” ou “quais dias fiquei acima da meta?” são mapeadas para consultas do motor analítico e respondidas por template. O LLM não redige números — então o número na frase é, por construção, o número do banco.</p>'''
+
+s3_label = "03 · interpretação"
+s3_title = "Dois interpretadores, um contrato"
+s3_body = '''<p>Um <strong>interpretador por regras</strong> em português (números por extenso, “meio pão”, “1h20”, “ritmo 5:30/km”, datas como “ontem” e “12/11”) funciona offline e sem modelo nenhum. O Ollama, quando ligado, recebe a mesma mensagem e precisa devolver JSON no <em>mesmo</em> esquema, com saída estruturada e temperatura 0.</p>
+<p>Depois vem o <strong>aterramento</strong>: cada quantidade, duração ou peso que o LLM devolveu precisa aparecer na mensagem (diretamente ou por conversão óbvia, como 1 h → 60 min). Se não aparecer, é apagado; alimentos que não estão no texto são removidos; o que faltar é completado pelas regras ou <strong>perguntado</strong>.</p>
+<div class="tbl-wrap"><table class="txt"><thead><tr><th scope=col>Mensagem</th><th scope=col>LLM devolveu</th><th scope=col>Depois do aterramento</th></tr></thead><tbody>
+<tr><td>“comi arroz e 2 ovos e corri 5 km”</td><td>arroz 150 g · ovos 2 · banana 1 · corrida 30 min, 5 km</td><td>arroz <em>(quantidade?)</em> · ovos 2 · corrida <em>(duração?)</em>, 5 km</td></tr>
+</tbody></table></div>'''
+
+s4_label = "04 · base nutricional"
+s4_title = "TACO extraída do PDF oficial, unidades sem chute"
+s4_body = '''<p>A fonte é a <strong>TACO 4ª edição</strong> (NEPA/UNICAMP, 2011), cuja publicação permite reprodução citando a fonte. O extrator lê as palavras do PDF <em>com suas posições</em> e atribui cada número à coluna mais próxima — necessário porque células vazias não aparecem no texto. Resultado: 597 linhas conferidas pela coerência de Atwater (4/4/9 kcal/g); 6 itens que a própria TACO marca como não analisados (incluindo o leite de vaca integral) não são importados — o app pede o rótulo em vez de inventar.</p>
+<div class="tbl-wrap"><table class="txt"><thead><tr><th scope=col>Unidade</th><th scope=col>Regra</th></tr></thead><tbody>
+<tr><td>g, kg, mg</td><td>direta</td></tr>
+<tr><td>ml, l</td><td>só com densidade conhecida do alimento</td></tr>
+<tr><td>unidade, fatia, concha, pote…</td><td>só com medida caseira cadastrada para aquele alimento (exibida no rascunho)</td></tr>
+<tr><td>qualquer outro caso</td><td>o assistente pergunta os gramas</td></tr>
+</tbody></table></div>
+<p>Quando o nome é ambíguo (“leite” casa com leite de coco, de cabra, condensado…), o app mostra as opções em vez de escolher por você.</p>'''
+
+s5_label = "05 · gasto energético"
+s5_title = "Sem contar o treino duas vezes"
+s5_body = '''<p>A taxa metabólica basal vem de Mifflin-St Jeor. O erro clássico é somar o gasto <em>bruto</em> do treino a um gasto diário que já inclui o repouso: uma hora a 5 METs para 80 kg “gasta” 400 kcal brutas, mas 80 delas você gastaria parado.</p>
+<pre class="code">gasto do dia = TMB × fator sedentário  +  Σ (MET − 1) × peso × horas
+                 linha de base              só o gasto LÍQUIDO do treino</pre>
+<p>Há um método alternativo (TMB × fator do nível de atividade, sem somar treinos). Em corrida, caminhada e ciclismo com distância e tempo, o MET é interpolado pela velocidade.</p>'''
+
+s6_label = "06 · análise"
+s6_title = "Dia sem registro não é dia de déficit"
+s6_body = '''<p>Se você esqueceu de anotar a comida de terça, um cálculo ingênuo vê consumo 0 e um “déficit” de 2.000 kcal que contamina médias e saldo acumulado. Aqui, dias sem alimentação registrada <strong>não têm saldo</strong> e ficam fora das médias.</p>
+<p>No peso, o app mostra média móvel de 7 dias e tendência por regressão, e compara o <em>observado</em> com o <em>esperado</em> pelo saldo. Com dados suficientes (≥ 8 pesagens em ≥ 14 dias e ≥ 10 dias registrados), estima o gasto implícito pela tendência real e avisa se a estimativa do app parece alta ou baixa.</p>'''
+
+s7_label = "07 · o app"
+s7_title = "Sete páginas, tudo local"
+s7_body = '''<p>Dashboard com 8 gráficos e filtros de período, assistente de chat, páginas de alimentação (com cadastro manual e importação de CSV), exercícios, peso, relatórios e configurações. As capturas abaixo usam <strong>30 dias de dados simulados</strong>, gerados pelo próprio chat.</p>'''
+s7_figs = true
+figs = [
+  ["fittrack-dashboard.webp", "Dashboard: consumo do dia, gasto estimado, saldo, macros e tendências do período."],
+  ["fittrack-chat.webp", "Assistente: a mensagem vira um rascunho editável, com o alimento da TACO, os gramas e os nutrientes; nada é salvo sem confirmar."],
+  ["fittrack-peso.webp", "Peso: pesagens, média móvel de 7 dias e a comparação entre a tendência observada e a esperada pelo saldo."],
+  ["fittrack-relatorios.webp", "Relatórios: indicadores do período, comparativo semanal e macronutrientes por dia."],
+]
+
+s8_label = "08 · confiabilidade"
+s8_title = "Dados, testes e limites"
+s8_body = '''<ul>
+<li><strong>Os dados são seus:</strong> SQLite local com migrations versionadas, chaves estrangeiras e restrições de faixa; retrato dos nutrientes em cada item; proteção contra duplicação; histórico de alterações; backup automático, restauração e exportação CSV; logs sem o conteúdo das mensagens.</li>
+<li><strong>137 testes:</strong> unidades, cálculos, ausência de dupla contagem, médias móveis, persistência, duplicação, ambiguidade, perguntas históricas conferidas contra valores conhecidos, aterramento da saída do LLM, renderização de todas as páginas e dois testes com Ollama real. Eles acharam bugs de verdade — “almocei arroz” virando “rroz”, “bike ergométrica” classificada como ciclismo, uma data futura movida em silêncio para o ano anterior.</li>
+<li><strong>Limites:</strong> tudo é estimativa (TACO, METs, equação de TMB); a TACO não tem whey nem leite integral líquido; as medidas caseiras padrão são aproximadas; ainda não há registro por foto nem leitura de rótulos.</li>
+</ul>
+<pre class="code">git clone https://github.com/Igor-Millis/fittrack-ai
+cd fittrack-ai
+iniciar.bat                       # Windows; ou: pip install -r requirements.txt &amp;&amp; streamlit run app/main.py
+ollama pull qwen2.5:3b            # opcional: IA local</pre>'''
+
+
 [research]
 title = "Artigos — Igor Millis"
 description = "Artigos e experimentos de Igor Millis: decisões estatísticas, modelagem, machine learning e implementações computacionais."
@@ -766,13 +860,3 @@ tags = ["Estatística", "Inferência"]
 date = "2026-11-13"
 minutes = 12
 abstract = "O número mais usado e mais mal interpretado da estatística, explicado com uma moeda e dois testes A/B: o que o p-valor mede, onde é usado, o que ele não diz, o problema dos testes múltiplos, e como se compara a intervalos de confiança, métodos bayesianos e critérios de informação."
-
-[research.notes.fittrack-ai]
-title = "FitTrack AI: um diário nutricional com IA que não inventa números"
-seo_title = "FitTrack AI: diário de alimentação, treinos e peso com IA local que só interpreta texto — TACO, METs, SQLite e Ollama"
-description = "Como construí um assistente local em Python para registrar refeições, treinos e peso conversando em português: a IA (Ollama) só interpreta o texto, os números vêm da TACO e de código determinístico, o gasto energético evita dupla contagem e dias sem registro não viram déficit."
-kind = "engenharia · ia local"
-tags = ["Python", "LLMs locais", "Nutrição", "SQLite"]
-date = "2026-11-14"
-minutes = 9
-abstract = "Um diário de alimentação, treinos e peso em que você conversa em português e tudo roda no seu computador. As decisões que o tornam confiável: a IA só traduz texto em JSON aterrado na mensagem, a TACO extraída do PDF oficial, conversão de unidades que pergunta em vez de chutar, gasto energético sem contar o treino duas vezes e dias sem registro fora das médias."
