@@ -853,7 +853,8 @@ s7_body = '''<ul>
 <li><strong>Verificações de baixo poder.</strong> Diagnóstico de resíduos e teste de ligação detectam pouco com desfecho binário e 196 observações.</li>
 <li><strong>Dados.</strong> O arquivo bruto vem de um curso e não é redistribuído aqui; esta página mostra apenas resultados agregados.</li>
 <li><strong>Model card.</strong> <a href="https://huggingface.co/igorlimamillis/dengue-logistic-regression" rel="noopener">Hugging Face ↗</a> — coeficientes dos dois modelos, o relatório completo em R e o código da análise (sem dados brutos).</li>
-</ul>'''
+</ul>
+<div class="note"><strong>Próximos passos.</strong> Com mais dados, vale verificar se o setor 1 e o setor 2 devem ser modelados separadamente. Aqui nenhuma interação idade × setor foi detectada, mas com 196 indivíduos esses testes têm pouco poder; uma amostra maior pode mostrar que a curva de idade ou os demais efeitos diferem entre os setores.</div>'''
 
 
 [research]

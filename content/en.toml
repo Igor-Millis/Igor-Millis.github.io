@@ -853,7 +853,8 @@ s7_body = '''<ul>
 <li><strong>Low-power checks.</strong> Residual diagnostics and the link test detect little with a binary outcome and 196 observations.</li>
 <li><strong>Data.</strong> The raw file comes from a course and is not redistributed here; this page shows only aggregated results.</li>
 <li><strong>Model card.</strong> <a href="https://huggingface.co/igorlimamillis/dengue-logistic-regression" rel="noopener">Hugging Face ↗</a> — coefficients of both models, the full R report and the analysis code (no raw data).</li>
-</ul>'''
+</ul>
+<div class="note"><strong>Next steps.</strong> With more data, check whether sector 1 and sector 2 should be modeled separately. No age × sector interaction was detected here, but with 196 individuals those tests have little power; a larger sample could show that the age curve or the other effects differ between sectors.</div>'''
 
 
 [research]
