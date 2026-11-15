@@ -759,6 +759,7 @@ spec = [
   ["model", "binomial GLM · logit link · profile-likelihood intervals"],
   ["tools", "R 4.1 · DHARMa · pROC · car · ggplot2 · R Markdown"],
   ["checks", "likelihood-ratio tests · link comparison · simulated residuals · Cook · AUC"],
+  ["model card", "huggingface.co/igorlimamillis/dengue-logistic-regression"],
   ["status", "course project · final model choice left open on purpose"],
 ]
 stats = [
@@ -851,6 +852,7 @@ s7_body = '''<ul>
 <li><strong>Few older people.</strong> Only {n40} individuals are 40 or older, so the right end of the age curve is poorly estimated and the quadratic shape extrapolates there.</li>
 <li><strong>Low-power checks.</strong> Residual diagnostics and the link test detect little with a binary outcome and 196 observations.</li>
 <li><strong>Data.</strong> The raw file comes from a course and is not redistributed here; this page shows only aggregated results.</li>
+<li><strong>Model card.</strong> <a href="https://huggingface.co/igorlimamillis/dengue-logistic-regression" rel="noopener">Hugging Face ↗</a> — coefficients of both models, the full R report and the analysis code (no raw data).</li>
 </ul>'''
 
 

@@ -759,6 +759,7 @@ spec = [
   ["modelo", "MLG binomial · ligação logit · intervalos por verossimilhança perfilada"],
   ["ferramentas", "R 4.1 · DHARMa · pROC · car · ggplot2 · R Markdown"],
   ["verificações", "testes da razão de verossimilhança · ligações · resíduos simulados · Cook · AUC"],
+  ["model card", "huggingface.co/igorlimamillis/dengue-logistic-regression"],
   ["status", "trabalho de curso · escolha final do modelo deixada em aberto de propósito"],
 ]
 stats = [
@@ -851,6 +852,7 @@ s7_body = '''<ul>
 <li><strong>Poucos idosos.</strong> Só {n40} indivíduos têm 40 anos ou mais, então a ponta direita da curva de idade é mal estimada e o formato quadrático extrapola ali.</li>
 <li><strong>Verificações de baixo poder.</strong> Diagnóstico de resíduos e teste de ligação detectam pouco com desfecho binário e 196 observações.</li>
 <li><strong>Dados.</strong> O arquivo bruto vem de um curso e não é redistribuído aqui; esta página mostra apenas resultados agregados.</li>
+<li><strong>Model card.</strong> <a href="https://huggingface.co/igorlimamillis/dengue-logistic-regression" rel="noopener">Hugging Face ↗</a> — coeficientes dos dois modelos, o relatório completo em R e o código da análise (sem dados brutos).</li>
 </ul>'''
 
 
