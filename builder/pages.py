@@ -11,6 +11,7 @@ from .negbin import COMPONENTS as NB_COMPONENTS
 from .quasi import COMPONENTS as QL_COMPONENTS
 from .hyper import COMPONENTS as HP_COMPONENTS
 from .readmission import render as _readmission
+from .dengue import render as _dengue
 from .core import NOTES, ROOT, Site, attr, esc, integer, num
 from .layout import page, section
 
@@ -38,7 +39,8 @@ def project_rows(site: Site, lang: str) -> str:
     c = site.content[lang]["work"]
     rows = []
     for n, key, k in (("01", "readmission", "readmission"), ("02", "edudata", "edudata"), ("03", "credit", "credit"),
-                      ("04", "recommender", "recommender"), ("05", "fittrack", "fittrack")):
+                      ("04", "recommender", "recommender"), ("05", "fittrack", "fittrack"),
+                      ("06", "dengue", "dengue")):
         p = c[k]
         rows.append(f"""<a class="row rv" href="{site.url(lang, key)}">
   <span class="n">{n}</span>
@@ -59,8 +61,9 @@ def spec(items: list[list[str]], repo: str, ui: dict, demo: str | None = None) -
     rows = "".join(f"<div><dt>{esc(k)}</dt><dd>{esc(v)}</dd></div>" for k, v in items)
     if demo:
         rows += f'<div><dt>{esc(ui["demo"])}</dt><dd><a href="{demo}" rel="noopener">{esc(demo.replace("https://", ""))} ↗</a></dd></div>'
-    short = repo.replace("https://", "")
-    rows += f'<div><dt>{esc(ui["repo"])}</dt><dd><a href="{repo}" rel="noopener">{esc(short)} ↗</a></dd></div>'
+    if repo:
+        short = repo.replace("https://", "")
+        rows += f'<div><dt>{esc(ui["repo"])}</dt><dd><a href="{repo}" rel="noopener">{esc(short)} ↗</a></dd></div>'
     return f'<dl class="spec">{rows}</dl>'
 
 
@@ -588,6 +591,10 @@ def moved(site: Site, lang: str, key: str) -> str:
 
 def readmission(site: Site, lang: str) -> str:
     return _readmission(site, lang)
+
+
+def dengue(site: Site, lang: str) -> str:
+    return _dengue(site, lang)
 
 
 def not_found(site: Site) -> str:

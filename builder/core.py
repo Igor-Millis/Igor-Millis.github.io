@@ -23,6 +23,7 @@ ROUTES: dict[str, str] = {
     "recommender": "/work/adaptive-recommender/",
     "readmission": "/work/diabetes-readmission/",
     "fittrack": "/work/fittrack-ai/",
+    "dengue": "/work/dengue-logistic-regression/",
     "research": "/research/",
 }
 
@@ -56,7 +57,7 @@ class Site:
                      "calibration": _json("data/calibration.json"),
                      "bets": _json("data/bets.json"), "bootstrap": _json("data/bootstrap.json"), "negbin": _json("data/negbin.json"),
                      "quasi": _json("data/quasi.json"), "hyper": _json("data/hyper.json"), "readmission": _json("data/readmission.json"),
-                     "recommender": _json("data/recommender.json")}
+                     "recommender": _json("data/recommender.json"), "dengue": _json("data/dengue.json")}
 
     # ---- languages -------------------------------------------------------
     @property

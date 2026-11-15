@@ -53,6 +53,7 @@ def build() -> int:
             "recommender": pages.recommender(site, lang),
             "readmission": pages.readmission(site, lang),
             "fittrack": pages.fittrack(site, lang),
+            "dengue": pages.dengue(site, lang),
             "research": pages.research(site, lang),
         }
         for slug in NOTES:

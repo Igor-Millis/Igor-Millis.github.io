@@ -746,6 +746,114 @@ iniciar.bat                       # Windows; ou: pip install -r requirements.txt
 ollama pull qwen2.5:3b            # opcional: IA local</pre>'''
 
 
+[work.dengue]
+title = "Modelo de risco de dengue — regressão logística, curvatura da idade e função de ligação"
+description = "Regressão logística para casos de dengue em 196 indivíduos: seleção de variáveis com testes da razão de verossimilhança, evidência de que a idade não age de forma linear (p = 0,0045), comparação de funções de ligação, diagnóstico com resíduos simulados e dois modelos candidatos com o trade-off explicitado."
+name = "Modelo de Risco de Dengue"
+kicker = "estatística · modelos lineares generalizados"
+summary = "Quem se torna caso de dengue? Uma regressão logística construída passo a passo: quais variáveis merecem entrar, se a idade age como uma reta, qual ligação usar — terminando com dois modelos defensáveis e o trade-off entre eles."
+tags = ["R", "MLG", "regressão logística", "DHARMa", "pROC", "R Markdown"]
+meta = ["196 indivíduos", "57 casos · 2 modelos candidatos"]
+spec = [
+  ["dados", "base de um curso · 196 indivíduos · idade, nível, setor, caso (sim/não)"],
+  ["modelo", "MLG binomial · ligação logit · intervalos por verossimilhança perfilada"],
+  ["ferramentas", "R 4.1 · DHARMa · pROC · car · ggplot2 · R Markdown"],
+  ["verificações", "testes da razão de verossimilhança · ligações · resíduos simulados · Cook · AUC"],
+  ["status", "trabalho de curso · escolha final do modelo deixada em aberto de propósito"],
+]
+stats = [
+  ["196", "indivíduos · 57 casos (29,1%)"],
+  ["0,0045", "p-valor do teste de curvatura da idade"],
+  ["6,06", "queda do AIC ao dar um termo quadrático à idade"],
+  ["2", "modelos candidatos, escolha em aberto"],
+]
+plain_label = "em linguagem simples"
+term_names = { idade = "idade (por ano)", setor2 = "setor 2 vs 1", nivel2 = "nível 2 vs 1", nivel3 = "nível 3 vs 1" }
+name_A = "A · idade linear"
+name_B = "B · idade quadrática"
+
+s1_label = "01 · dados"
+s1_title = "196 pessoas, um desfecho sim/não"
+s1_body = '''<p>Cada linha é um indivíduo: <strong>idade</strong>, <strong>nível</strong> socioeconômico (1 alto, 2 médio, 3 baixo), <strong>setor</strong> da cidade (1 ou 2) e se tornou um <strong>caso</strong>. Dos {n} indivíduos, {cases} ({pct}%) são casos. Os gráficos mostram proporções brutas, antes de qualquer modelo.</p>
+<p>Duas coisas chamam atenção. A proporção de casos é bem maior no setor 2 que no setor 1, enquanto os três níveis se parecem. Por idade, a proporção salta depois da primeira década e depois oscila — mas só {n40} pessoas têm 40 anos ou mais, então os intervalos ali são largos.</p>'''
+lbl_setor = "setor {}"
+lbl_nivel = "nível {}"
+share_head = "proporção observada de casos"
+share_cap = "Intervalos de Wilson 95%. Dados brutos, sem modelo."
+age_head = "proporção observada de casos por idade"
+age_cap = "Faixas de idade em anos; n = pessoas na faixa."
+
+s2_label = "02 · seleção"
+s2_title = "Quais variáveis merecem entrar"
+s2_plain = '''<p>A <strong>razão de chances</strong> (OR) diz por qual fator mudam as <em>chances</em> de ser caso — não a probabilidade. Uma OR de 2 significa o dobro das chances, uma OR de 1 significa nenhuma diferença, e uma barra que cruza o 1 significa que os dados não distinguem o efeito de zero.</p>'''
+s2_body = '''<p>O ponto de partida é <code>caso ~ nivel + idade + setor</code> com ligação logit. Idade e setor estão claramente associados ao desfecho; os dois coeficientes de nível não se distinguem de zero. Os coeficientes aparecem como razões de chances, mantidas as demais variáveis fixas.</p>'''
+or_head = "modelo inicial · razões de chances"
+or_cap = "Eixo logarítmico; intervalos por verossimilhança perfilada."
+s2_after = '''<p>Esses p-valores comparam cada nível com o nível 1. Se o fator <em>inteiro</em> ajuda — e se alguma interação ajuda — é pergunta para testes da razão de verossimilhança entre modelos aninhados:</p>'''
+lrt_cols = ["termo acrescentado", "Δ deviance", "g.l.", "p-valor"]
+lrt_rows = [
+  ["nível, com idade linear", "nivel_lin"],
+  ["nível, com idade quadrática", "nivel_quad"],
+  ["idade × setor, com idade linear", "int_lin"],
+  ["idade × setor, com idade quadrática", "int_quad"],
+  ["idade e idade² × setor", "int_full"],
+]
+lrt_cap = "Nenhum melhora o ajuste, então os modelos candidatos descartam o nível e mantêm os efeitos aditivos."
+
+s3_label = "03 · idade"
+s3_title = "A idade não é uma reta"
+s3_body = '''<p>Uma única OR por ano supõe que cada ano a mais soma a mesma quantidade ao log das chances. Acrescentar um termo idade² testa essa suposição: a deviance cai {dev} com um grau de liberdade (<strong>p = {p_quad}</strong>) e o AIC vai de {aic_a} para {aic_b}. A curva ajustada tem pico perto de <strong>{vx} anos</strong> (IC 95% de {vlo} a {vhi}) — largo o bastante para que a posição exata do pico seja incerta.</p>
+<p>O termo quadrático nunca entra sem o linear: tirá-lo forçaria o vértice na idade zero. A figura compara os dois modelos de idade por setor.</p>'''
+curve_head = "probabilidade ajustada · setor {}"
+curve_cap = "As bandas são intervalos de confiança de 95%; os círculos são as proporções observadas nas faixas 0–20, 20–40, 40–60 e 60+. Os modelos concordam até cerca de 40 anos; depois disso os dados são escassos e as bandas do modelo quadrático se alargam muito."
+s3_after = '''<p>Não se encontrou interação idade × setor, então o efeito do setor é o mesmo em todas as idades: os dois painéis diferem apenas por um deslocamento vertical na escala logit.</p>'''
+
+s4_label = "04 · interpretação"
+s4_title = "Uma razão de chances por intervalo, não por ano"
+s4_plain = '''<p>Com uma curva, “o efeito de mais um ano” depende de onde você está nela. O resumo honesto é a OR entre duas idades específicas — digamos 30 contra 40 anos — que é o que a tabela abaixo traz.</p>'''
+s4_body = '''<p>Para as idades a₁ e a₂, a diferença de log-chances é <code>b₁(a₂−a₁) + b₂(a₂²−a₁²)</code>; o intercepto e o termo do setor se cancelam. O modelo A dá a mesma OR para qualquer intervalo de 10 anos; o B não. Só {n40} indivíduos têm 40 anos ou mais ({n60} têm 60 ou mais), então os intervalos nessa região são largos e dependem do formato quadrático assumido.</p>'''
+oi_cols = ["intervalo de 10 anos", "modelo A · OR (IC 95%)", "modelo B · OR (IC 95%)"]
+oi_head = "modelo B · OR a cada 10 anos"
+oi_cap = "Intervalos de Wald; a covariância entre os dois coeficientes da idade é considerada."
+s4_after = '''<p>No modelo B a OR é claramente maior que 1 em 20–30 e 30–40 anos. A partir dos 40, todos os intervalos incluem o 1, então os dados não mostram se o risco se estabiliza ou cai.</p>'''
+
+s5_label = "05 · ligação e verificações"
+s5_title = "Função de ligação e diagnóstico"
+s5_body = '''<p>A ligação logit foi comparada com probit e complemento log-log nos dois modelos. Elas têm o mesmo número de parâmetros, então o AIC compara diretamente; as diferenças ficam abaixo de 2, ou seja, os dados não as distinguem. O logit permanece porque seus coeficientes são razões de chances. Um teste de ligação (acrescentar o quadrado do preditor linear) dá p = {lt_a} no modelo A e p = {lt_b} no modelo B: nenhum sinal de ligação mal especificada.</p>'''
+link_cols = ["função de ligação (AIC)", "modelo A", "modelo B"]
+link_cap = "Menor é melhor; diferenças abaixo de 2 não são relevantes."
+diag_cols = ["verificação (p-valor, salvo indicação)", "modelo A", "modelo B"]
+diag_rows = [
+  ["uniformidade dos resíduos simulados (KS)", "ks"],
+  ["dispersão", "dispersion"],
+  ["outliers", "outliers"],
+]
+cook_label = "maior distância de Cook"
+diag_cap = "Resíduos simulados (DHARMa, 500 simulações). Os limiares usuais da distância de Cook são 0,5 e 1. O AUC é calculado nos mesmos dados do ajuste."
+s5_after = '''<p>Nenhuma verificação aponta problema, o que é evidência mais fraca do que parece: com desfecho binário e n = 196, testes baseados em resíduos têm pouco poder para detectar curvatura. O modelo A passa neles, e ainda assim o teste da razão de verossimilhança da seção 03 encontrou a curvatura — um lembrete de testar a estrutura específica que interessa.</p>'''
+
+s6_label = "06 · candidatos"
+s6_title = "Dois modelos defensáveis, uma decisão em aberto"
+s6_body = '''<p>A análise termina com dois candidatos que diferem apenas em como a idade entra.</p>'''
+cmp_cols = ["", "A · idade linear", "B · idade quadrática"]
+cmp_formula = "fórmula"
+cmp_or_sector = "OR, setor 2 vs 1 (IC 95%)"
+cmp_age = "efeito da idade"
+cmp_age_a = "uma OR por ano ({or_year})"
+cmp_age_b = "uma curva: uma OR por intervalo"
+s6_note = '''<strong>Escolha deixada em aberto de propósito.</strong> O B ajusta melhor por AIC, BIC e pelo teste da razão de verossimilhança; o A tem uma única OR de idade, de interpretação direta, e a OR do setor é quase a mesma nos dois. Se a idade é só variável de ajuste, a OR do setor é o resultado principal e a escolha importa pouco; se a própria idade é a exposição de interesse, a curvatura não deve ser ignorada. Se o A for escolhido, o texto deve registrar que o teste de curvatura foi significativo e que a escolha foi por parcimônia.'''
+
+s7_label = "07 · limites"
+s7_title = "O que isto não resolve"
+s7_body = '''<ul>
+<li><strong>Associação, não causa.</strong> Dados observacionais: razões de chances descrevem associações.</li>
+<li><strong>Mesmos dados para escolher e para avaliar.</strong> O modelo foi selecionado e avaliado na mesma amostra; os p-valores ignoram a seleção e o AUC é aparente, sem validação externa.</li>
+<li><strong>Poucos idosos.</strong> Só {n40} indivíduos têm 40 anos ou mais, então a ponta direita da curva de idade é mal estimada e o formato quadrático extrapola ali.</li>
+<li><strong>Verificações de baixo poder.</strong> Diagnóstico de resíduos e teste de ligação detectam pouco com desfecho binário e 196 observações.</li>
+<li><strong>Dados.</strong> O arquivo bruto vem de um curso e não é redistribuído aqui; esta página mostra apenas resultados agregados.</li>
+</ul>'''
+
+
 [research]
 title = "Artigos — Igor Millis"
 description = "Artigos e experimentos de Igor Millis: decisões estatísticas, modelagem, machine learning e implementações computacionais."

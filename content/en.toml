@@ -746,6 +746,114 @@ iniciar.bat                       # Windows; or: pip install -r requirements.txt
 ollama pull qwen2.5:3b            # optional: local AI</pre>'''
 
 
+[work.dengue]
+title = "Dengue risk model — logistic regression, age curvature and link function"
+description = "A logistic regression for dengue cases in 196 individuals: variable selection with likelihood-ratio tests, evidence that age does not act linearly (p = 0.0045), link-function comparison, simulated-residual diagnostics and two candidate models with the trade-off laid out."
+name = "Dengue Risk Model"
+kicker = "statistics · generalized linear models"
+summary = "Who becomes a dengue case? A logistic regression built step by step: which variables earn a place, whether age acts as a straight line, which link to use — ending with two defensible models and the trade-off between them."
+tags = ["R", "GLM", "logistic regression", "DHARMa", "pROC", "R Markdown"]
+meta = ["196 individuals", "57 cases · 2 candidate models"]
+spec = [
+  ["data", "course dataset · 196 individuals · age, level, sector, case (yes/no)"],
+  ["model", "binomial GLM · logit link · profile-likelihood intervals"],
+  ["tools", "R 4.1 · DHARMa · pROC · car · ggplot2 · R Markdown"],
+  ["checks", "likelihood-ratio tests · link comparison · simulated residuals · Cook · AUC"],
+  ["status", "course project · final model choice left open on purpose"],
+]
+stats = [
+  ["196", "individuals · 57 cases (29.1%)"],
+  ["0.0045", "p-value of the age-curvature test"],
+  ["6.06", "AIC drop when age gets a quadratic term"],
+  ["2", "candidate models, choice left open"],
+]
+plain_label = "in plain words"
+term_names = { idade = "age (per year)", setor2 = "sector 2 vs 1", nivel2 = "level 2 vs 1", nivel3 = "level 3 vs 1" }
+name_A = "A · linear age"
+name_B = "B · quadratic age"
+
+s1_label = "01 · data"
+s1_title = "196 people, one yes/no outcome"
+s1_body = '''<p>Each row is one individual: <strong>age</strong>, socioeconomic <strong>level</strong> (1 high, 2 medium, 3 low), city <strong>sector</strong> (1 or 2) and whether they became a <strong>case</strong>. Of the {n} individuals, {cases} ({pct}%) are cases. The charts show raw shares, before any model.</p>
+<p>Two things stand out. The share of cases is much higher in sector 2 than in sector 1, while the three levels look alike. By age, the share jumps after the first decade and then wanders — but only {n40} people are 40 or older, so the intervals there are wide.</p>'''
+lbl_setor = "sector {}"
+lbl_nivel = "level {}"
+share_head = "observed share of cases"
+share_cap = "Wilson 95% intervals. Raw data, no model."
+age_head = "observed share of cases by age"
+age_cap = "Age bands in years; n = people in the band."
+
+s2_label = "02 · selecting"
+s2_title = "Which variables earn a place"
+s2_plain = '''<p>An <strong>odds ratio</strong> (OR) says by what factor the <em>odds</em> of being a case change — not the probability. An OR of 2 means twice the odds, an OR of 1 means no difference, and a bar that crosses 1 means the data cannot tell the effect from zero.</p>'''
+s2_body = '''<p>The starting point is <code>caso ~ nivel + idade + setor</code> (case, level, age, sector — the variable names of the dataset) with a logit link. Age and sector are clearly associated with the outcome; the two level coefficients cannot be told apart from zero. Coefficients are shown as odds ratios, holding the other variables fixed.</p>'''
+or_head = "initial model · odds ratios"
+or_cap = "Log axis; intervals by profile likelihood."
+s2_after = '''<p>Those p-values compare each level with level 1. Whether the <em>whole</em> factor helps — and whether any interaction does — is a question for likelihood-ratio tests between nested models:</p>'''
+lrt_cols = ["added term", "Δ deviance", "d.f.", "p-value"]
+lrt_rows = [
+  ["level, with linear age", "nivel_lin"],
+  ["level, with quadratic age", "nivel_quad"],
+  ["age × sector, with linear age", "int_lin"],
+  ["age × sector, with quadratic age", "int_quad"],
+  ["age and age² × sector", "int_full"],
+]
+lrt_cap = "None improves the fit, so the candidate models drop level and keep the effects additive."
+
+s3_label = "03 · age"
+s3_title = "Age is not a straight line"
+s3_body = '''<p>A single OR per year assumes every extra year adds the same amount to the log-odds. Adding an age² term tests that assumption: the deviance drops by {dev} with one degree of freedom (<strong>p = {p_quad}</strong>) and the AIC goes from {aic_a} to {aic_b}. The fitted curve peaks near <strong>{vx} years</strong> (95% CI {vlo} to {vhi}) — wide enough that the exact position of the peak is uncertain.</p>
+<p>The quadratic term never enters without the linear one: dropping it would force the vertex to age zero. The figure compares the two age models by sector.</p>'''
+curve_head = "fitted probability · sector {}"
+curve_cap = "Bands are 95% confidence intervals; circles are the observed shares in the bands 0–20, 20–40, 40–60 and 60+. The models agree up to about 40 years; beyond that the data are scarce and the bands of the quadratic model widen a lot."
+s3_after = '''<p>No age × sector interaction was found, so the sector effect is the same at every age: the two panels differ only by a vertical shift on the logit scale.</p>'''
+
+s4_label = "04 · reading it"
+s4_title = "One odds ratio per interval, not per year"
+s4_plain = '''<p>With a curve, “the effect of one more year” depends on where you are on it. The honest summary is the OR between two specific ages — say 30 versus 40 years — which is what the table below gives.</p>'''
+s4_body = '''<p>For ages a₁ and a₂ the log-odds difference is <code>b₁(a₂−a₁) + b₂(a₂²−a₁²)</code>; the intercept and the sector term cancel. Model A gives the same OR for any 10-year interval, model B does not. Only {n40} individuals are 40 or older ({n60} are 60 or older), so the intervals in that region are wide and lean on the assumed quadratic shape.</p>'''
+oi_cols = ["10-year interval", "model A · OR (95% CI)", "model B · OR (95% CI)"]
+oi_head = "model B · OR per 10 years"
+oi_cap = "Wald intervals; the covariance between the two age coefficients is taken into account."
+s4_after = '''<p>In model B the OR is clearly above 1 for 20–30 and 30–40 years. From 40 on every interval includes 1, so the data do not show whether risk plateaus or falls.</p>'''
+
+s5_label = "05 · link & checks"
+s5_title = "Link function and diagnostics"
+s5_body = '''<p>The logit link was compared with probit and complementary log-log in both models. They have the same number of parameters, so AIC compares them directly; the differences are below 2, meaning the data do not tell them apart. The logit stays because its coefficients are odds ratios. A link test (adding the squared linear predictor) gives p = {lt_a} for model A and p = {lt_b} for model B: no sign of a misspecified link.</p>'''
+link_cols = ["link function (AIC)", "model A", "model B"]
+link_cap = "Lower is better; differences under 2 are not meaningful."
+diag_cols = ["check (p-value unless noted)", "model A", "model B"]
+diag_rows = [
+  ["uniformity of simulated residuals (KS)", "ks"],
+  ["dispersion", "dispersion"],
+  ["outliers", "outliers"],
+]
+cook_label = "largest Cook's distance"
+diag_cap = "Simulated residuals (DHARMa, 500 simulations). Usual Cook's distance cut-offs are 0.5 and 1. The AUC is computed on the same data used to fit."
+s5_after = '''<p>No check flags a problem, which is weaker evidence than it sounds: with a binary outcome and n = 196, residual-based tests have little power to detect curvature. Model A passes them, yet the likelihood-ratio test of section 03 found the curvature — a reminder to test the specific structure you care about.</p>'''
+
+s6_label = "06 · candidates"
+s6_title = "Two defensible models, one open decision"
+s6_body = '''<p>The analysis ends with two candidates that differ only in how age enters.</p>'''
+cmp_cols = ["", "A · linear age", "B · quadratic age"]
+cmp_formula = "formula"
+cmp_or_sector = "OR, sector 2 vs 1 (95% CI)"
+cmp_age = "effect of age"
+cmp_age_a = "one OR per year ({or_year})"
+cmp_age_b = "a curve: one OR per interval"
+s6_note = '''<strong>Choice left open on purpose.</strong> B fits better by AIC, BIC and the likelihood-ratio test; A has a single, directly interpretable OR for age, and the sector OR is almost the same in both. If age is only an adjustment variable, the sector OR is the main result and the choice matters little; if age itself is the exposure of interest, the curvature should not be ignored. If A is chosen, the write-up should say that the curvature test was significant and that the choice was made for parsimony.'''
+
+s7_label = "07 · limits"
+s7_title = "What this does not settle"
+s7_body = '''<ul>
+<li><strong>Association, not cause.</strong> Observational data: odds ratios describe associations.</li>
+<li><strong>Same data to choose and to judge.</strong> The model was selected and assessed on the same sample; p-values ignore the selection and the AUC is apparent, with no external validation.</li>
+<li><strong>Few older people.</strong> Only {n40} individuals are 40 or older, so the right end of the age curve is poorly estimated and the quadratic shape extrapolates there.</li>
+<li><strong>Low-power checks.</strong> Residual diagnostics and the link test detect little with a binary outcome and 196 observations.</li>
+<li><strong>Data.</strong> The raw file comes from a course and is not redistributed here; this page shows only aggregated results.</li>
+</ul>'''
+
+
 [research]
 title = "Articles — Igor Millis"
 description = "Articles and experiments by Igor Millis: statistical decisions, modeling, machine learning and computational implementations."
