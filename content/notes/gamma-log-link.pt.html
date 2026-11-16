@@ -1,0 +1,196 @@
+<p>Dados positivos e assimétricos, como tempo até um evento, custo de internação, renda ou consumo de energia, quase nunca têm variância constante: quanto maior a média, maior a dispersão. A distribuição <strong>Gama</strong> modela exatamente isso. Este artigo demonstra dois fatos que explicam por que ela é tão conveniente. Primeiro, quando o parâmetro de precisão \(\phi\) cresce, a Gama converge para uma normal, mas <em>uma normal que mantém a relação média–variância</em> dos dados. Segundo, com a ligação <strong>logarítmica</strong> (que não é a canônica), o algoritmo de estimação vira uma sequência de <strong>mínimos quadrados ordinários, sem pesos</strong>, e várias propriedades da regressão linear passam a valer quase literalmente. No fim, uma conferência numérica e um veredito sobre a frase que costuma resumir o segundo fato.</p>
+
+<div class="note"><strong>O que você precisa saber antes.</strong> A estrutura de um MLG (componente aleatório, preditor linear \(\eta_i = \mathbf x_i^\top\boldsymbol\beta\), ligação \(g(\mu_i) = \eta_i\)), máxima verossimilhança e um pouco de álgebra matricial. O artigo <a href="{note:quasi-likelihood}">Quasi-verossimilhança em MLG</a> deriva o IRLS para qualquer função de variância; aqui ele aparece no caso particular da Gama.</div>
+
+<h2><span class="n">§1</span>A parametrização</h2>
+
+<p>Escrevemos \(Y \sim \text{Gama}(\mu, \phi)\) com densidade</p>
+
+<div class="eq">\[ f(y;\mu,\phi) = \frac{1}{\Gamma(\phi)}\left(\frac{\phi}{\mu}\right)^{\phi} y^{\phi-1}\exp\!\left(-\frac{\phi\,y}{\mu}\right),\qquad y&gt;0, \]<span class="tag-n">(1)</span></div>
+
+<p>isto é, forma \(\phi\) e taxa \(\phi/\mu\). Daí</p>
+
+<div class="eq">\[ \mathbb E[Y] = \mu,\qquad \operatorname{Var}(Y) = \frac{\mu^2}{\phi},\qquad \text{CV} = \frac{\sqrt{\operatorname{Var}(Y)}}{\mathbb E[Y]} = \phi^{-1/2}. \]<span class="tag-n">(2)</span></div>
+
+<p>O coeficiente de variação é <strong>constante</strong>: não depende de \(\mu\). É a hipótese natural para dados em que o “erro” é proporcional ao nível: um custo de 10 mil reais varia mais, em reais, do que um de 100 reais, mas varia o mesmo em porcentagem. Na linguagem de MLG, a função de variância é \(V(\mu) = \mu^2\) e a dispersão é \(\phi^{-1}\).</p>
+
+<div class="note"><strong>Cuidado com a variância.</strong> Se o CV é \(\phi^{-1/2}\), a variância é \((\mu\,\phi^{-1/2})^2 = \mu^2\phi^{-1}\), e não \(\mu\,\phi^{-1}\). Variância proporcional à média, \(\mu\,\phi^{-1}\), é a da quasi-Poisson, não a da Gama. A normal limite da §2 tem, portanto, média \(\mu\) e variância \(\mu^2/\phi\).</div>
+
+<h2><span class="n">§2</span>Quando \(\phi \to \infty\), \(Y\) se aproxima de \(N(\mu,\ \mu^2/\phi)\)</h2>
+
+<h3>2.1 Enunciado</h3>
+
+<p>Seja \(Y_\phi \sim \text{Gama}(\mu, \phi)\) e defina a versão padronizada</p>
+
+<div class="eq">\[ Z_\phi = \frac{Y_\phi - \mu}{\mu/\sqrt{\phi}} = \sqrt{\phi}\left(\frac{Y_\phi}{\mu} - 1\right). \]</div>
+
+<p>Então \(Z_\phi \xrightarrow{d} N(0,1)\) quando \(\phi\to\infty\). Na prática, para \(\phi\) grande, \(Y \approx N(\mu,\ \mu^2/\phi)\).</p>
+
+<h3>2.2 Demonstração pela função geradora de momentos</h3>
+
+<p>A FGM da Gama com forma \(\phi\) e taxa \(\phi/\mu\) é</p>
+
+<div class="eq">\[ M_Y(t) = \left(1 - \frac{\mu t}{\phi}\right)^{-\phi},\qquad t &lt; \frac{\phi}{\mu}. \]</div>
+
+<p>Como \(Z = \frac{\sqrt\phi}{\mu}Y - \sqrt\phi\), temos</p>
+
+<div class="eq">\[ M_Z(s) = e^{-s\sqrt\phi}\,M_Y\!\left(\frac{s\sqrt\phi}{\mu}\right) = e^{-s\sqrt\phi}\left(1 - \frac{s}{\sqrt\phi}\right)^{-\phi}. \]</div>
+
+<p>Note que \(\mu\) sumiu: a distribuição de \(Z\) depende só de \(\phi\). Tomando o log e usando \(-\log(1-x) = x + \tfrac{x^2}{2} + \tfrac{x^3}{3} + \cdots\) para \(|x|&lt;1\), com \(x = s/\sqrt\phi\):</p>
+
+<div class="eq">\[ \log M_Z(s) = -s\sqrt\phi + \phi\left(\frac{s}{\sqrt\phi} + \frac{s^2}{2\phi} + \frac{s^3}{3\phi^{3/2}} + \cdots\right) = \frac{s^2}{2} + \frac{s^3}{3\sqrt\phi} + \frac{s^4}{4\phi} + \cdots \]<span class="tag-n">(3)</span></div>
+
+<p>Para \(s\) fixo, todos os termos depois de \(s^2/2\) vão a zero quando \(\phi\to\infty\). Logo \(M_Z(s)\to e^{s^2/2}\), que é a FGM da \(N(0,1)\), e pelo teorema da continuidade de Lévy \(Z_\phi \xrightarrow{d} N(0,1)\). \(\blacksquare\)</p>
+
+<p><strong>Uma leitura alternativa.</strong> Se \(\phi = k\) é inteiro, \(Y\) tem a mesma distribuição de \(\frac{1}{k}\sum_{j=1}^{k} E_j\), com \(E_j\) exponenciais independentes de média \(\mu\). É uma média de \(k\) variáveis i.i.d. de variância \(\mu^2\), e o Teorema Central do Limite dá diretamente \(N(\mu, \mu^2/k)\). A precisão \(\phi\) funciona como um “tamanho de amostra” escondido dentro de cada observação.</p>
+
+<h3>2.3 A que velocidade a aproximação melhora</h3>
+
+<p>A expansão (3) mostra que o primeiro desvio da normalidade é o termo cúbico, de ordem \(\phi^{-1/2}\). Ele é a assimetria:</p>
+
+<div class="eq">\[ \gamma_1 = \frac{2}{\sqrt\phi},\qquad \gamma_2 = \frac{6}{\phi}\ \ (\text{curtose em excesso}). \]</div>
+
+<div class="tbl-wrap"><table><thead><tr><th scope=col>\(\phi\)</th><th scope=col>CV</th><th scope=col>assimetria \(2/\sqrt\phi\)</th><th scope=col>\(P(\text{normal aproximada} &lt; 0) = \Phi(-\sqrt\phi)\)</th></tr></thead><tbody>
+<tr><td>1</td><td>1,00</td><td>2,00</td><td>0,159</td></tr>
+<tr><td>5</td><td>0,45</td><td>0,89</td><td>0,013</td></tr>
+<tr><td>10</td><td>0,32</td><td>0,63</td><td>0,0008</td></tr>
+<tr><td>20</td><td>0,22</td><td>0,45</td><td>0,000004</td></tr>
+<tr><td>100</td><td>0,10</td><td>0,20</td><td>≈ 0</td></tr>
+</tbody></table></div>
+
+<p>Com \(\phi \gtrsim 10\), a normal aproximada praticamente não põe massa em valores negativos e a assimetria já é moderada. Para \(\phi\) pequeno (CV perto de 1), a aproximação é ruim e a Gama precisa ser usada como Gama. Uma aproximação bem melhor para \(\phi\) moderado é a de <strong>Wilson–Hilferty</strong>, \((Y/\mu)^{1/3} \approx N\!\left(1-\frac{1}{9\phi},\ \frac{1}{9\phi}\right)\): a raiz cúbica corta quase toda a assimetria.</p>
+
+<h3>2.4 E na escala logarítmica</h3>
+
+<p>Escreva \(Y = \mu\,G\), com \(G\sim\text{Gama}(1,\phi)\), de média 1. Então \(\log Y = \log\mu + \log G\), e</p>
+
+<div class="eq">\[ \mathbb E[\log G] = \psi(\phi) - \log\phi \approx -\frac{1}{2\phi},\qquad \operatorname{Var}(\log G) = \psi'(\phi) \approx \frac{1}{\phi}, \]<span class="tag-n">(4)</span></div>
+
+<p>em que \(\psi\) e \(\psi'\) são a digama e a trigama. Pelo método delta, \(\log Y \approx N(\log\mu,\ 1/\phi)\): <strong>na escala log a variância é constante</strong>. Esse fato é a ponte com a §3.</p>
+
+<h3>2.5 Vantagens dessa aproximação</h3>
+
+<ol>
+<li><strong>A heterocedasticidade continua no modelo.</strong> A normal limite não é a homocedástica \(N(\mu,\sigma^2)\); é \(N(\mu, \mu^2/\phi)\). Mesmo no regime “quase normal”, a Gama continua dizendo que o desvio-padrão cresce proporcionalmente à média. Uma regressão normal comum erra exatamente nesse ponto.</li>
+<li><strong>Inferência de Wald confiável.</strong> Intervalos do tipo \(\hat\mu\,(1 \pm z_{\alpha/2}/\sqrt{\hat\phi})\) e testes baseados em normalidade ficam precisos.</li>
+<li><strong>Assintótica de pequena dispersão.</strong> A deviance escalonada \(\phi\,D\) se aproxima de \(\chi^2_{n-p}\) quando \(\phi\) cresce, <em>mesmo com \(n\) fixo</em>. Testes de razão de verossimilhança e de qualidade de ajuste ganham precisão sem precisar de amostras enormes.</li>
+<li><strong>Diagnóstico simples.</strong> Os resíduos de Pearson \((y-\hat\mu)/\hat\mu\) e de deviance ficam aproximadamente normais, e gráficos QQ normais passam a ser informativos.</li>
+<li><strong>A escolha entre modelos parecidos importa pouco.</strong> Com \(\phi\) grande, Gama, log-normal e “normal com CV constante” ficam quase indistinguíveis, e as estimativas de \(\boldsymbol\beta\) quase não mudam. Com \(\phi\) pequeno a escolha pesa, e a Gama tem a vantagem de modelar \(\mathbb E[Y]\) diretamente.</li>
+<li><strong>Justifica atalhos conhecidos</strong>, como mínimos quadrados ponderados com pesos \(1/\hat\mu^2\) ou a regressão linear de \(\log y\) (§3.5).</li>
+</ol>
+
+<h2><span class="n">§3</span>O MLG Gama com ligação logarítmica</h2>
+
+<h3>3.1 O modelo</h3>
+
+<p>Para observações independentes \(Y_i \sim \text{Gama}(\mu_i,\phi)\):</p>
+
+<div class="eq">\[ \log\mu_i = \eta_i = \mathbf x_i^\top\boldsymbol\beta \quad\Longleftrightarrow\quad \mu_i = e^{\mathbf x_i^\top\boldsymbol\beta}. \]</div>
+
+<p>A ligação <strong>canônica</strong> da Gama é a recíproca, \(g(\mu) = 1/\mu\). Ela tem um problema prático sério: \(\mu\) precisa ser positivo, mas nada impede que \(\mathbf x^\top\boldsymbol\beta\) fique negativo ou zero durante o ajuste. A ligação log garante \(\mu_i &gt; 0\) para qualquer \(\boldsymbol\beta\) e dá coeficientes interpretáveis como <strong>efeitos multiplicativos</strong>: aumentar \(x_j\) em uma unidade multiplica a média por \(e^{\beta_j}\).</p>
+
+<h3>3.2 Escore e informação</h3>
+
+<p>A log-verossimilhança, a menos de termos sem \(\boldsymbol\beta\), é</p>
+
+<div class="eq">\[ \ell(\boldsymbol\beta) = \phi\sum_{i=1}^n\left(-\frac{y_i}{\mu_i} - \log\mu_i\right) = \phi\sum_{i=1}^n\left(-y_i e^{-\eta_i} - \eta_i\right). \]</div>
+
+<p>Derivando em relação a \(\eta_i\):</p>
+
+<div class="eq">\[ \frac{\partial\ell_i}{\partial\eta_i} = \phi\left(\frac{y_i}{\mu_i} - 1\right),\qquad \frac{\partial^2\ell_i}{\partial\eta_i^2} = -\phi\,\frac{y_i}{\mu_i}. \]</div>
+
+<p>Pela regra da cadeia, com \(\partial\eta_i/\partial\boldsymbol\beta = \mathbf x_i\):</p>
+
+<div class="eq">\[ \mathbf U(\boldsymbol\beta) = \phi\,\mathbf X^\top\mathbf r,\quad r_i = \frac{y_i - \mu_i}{\mu_i};\qquad \mathbf J(\boldsymbol\beta) = \phi\sum_i \frac{y_i}{\mu_i}\,\mathbf x_i\mathbf x_i^\top;\qquad \mathcal I(\boldsymbol\beta) = \mathbb E[\mathbf J] = \phi\,\mathbf X^\top\mathbf X. \]<span class="tag-n">(5)</span></div>
+
+<p>\(\mathbf J\) é a informação observada; \(\mathcal I\) é a esperada, porque \(\mathbb E[Y_i/\mu_i] = 1\). <strong>Este é o resultado central:</strong> a informação de Fisher é \(\phi\,\mathbf X^\top\mathbf X\). Ela não depende de \(\boldsymbol\beta\) e tem a mesma forma da regressão linear, em que \(\mathcal I = \sigma^{-2}\mathbf X^\top\mathbf X\).</p>
+
+<h3>3.3 O IRLS vira mínimos quadrados ordinários</h3>
+
+<p>Em qualquer MLG, o escore de Fisher pode ser escrito como mínimos quadrados ponderados iterados:</p>
+
+<div class="eq">\[ \boldsymbol\beta^{(m+1)} = (\mathbf X^\top\mathbf W\mathbf X)^{-1}\mathbf X^\top\mathbf W\mathbf z,\qquad w_i = \frac{1}{V(\mu_i)\,g'(\mu_i)^2},\qquad z_i = \eta_i + (y_i-\mu_i)\,g'(\mu_i). \]</div>
+
+<p>Na Gama com ligação log, \(V(\mu) = \mu^2\) e \(g'(\mu) = 1/\mu\), então</p>
+
+<div class="eq">\[ w_i = \frac{1}{\mu_i^2\cdot \mu_i^{-2}} = 1\ \text{ para todo } i,\qquad z_i = \eta_i + \frac{y_i-\mu_i}{\mu_i}. \]</div>
+
+<p>Os pesos somem, e cada iteração é</p>
+
+<div class="eq">\[ \boxed{\ \boldsymbol\beta^{(m+1)} = (\mathbf X^\top\mathbf X)^{-1}\mathbf X^\top\mathbf z^{(m)}\ } \]<span class="tag-n">(6)</span></div>
+
+<p>ou seja, <strong>uma regressão linear comum (MQO) da resposta de trabalho \(\mathbf z\) em \(\mathbf X\)</strong>. A matriz \((\mathbf X^\top\mathbf X)^{-1}\) é calculada uma vez só; só o vetor \(\mathbf z\) muda entre as iterações.</p>
+
+<p><strong>Por que isso acontece?</strong> Os pesos são constantes exatamente quando \(V(\mu)\,g'(\mu)^2\) é constante, isto é, quando \(g'(\mu)\propto V(\mu)^{-1/2}\). Integrando, \(g(\mu) \propto \int V(\mu)^{-1/2}\,d\mu\), que é a <strong>transformação estabilizadora da variância</strong>. Para \(V(\mu)=\mu^2\), \(\int \mu^{-1}d\mu = \log\mu\). A ligação log é, para a Gama, o análogo da raiz quadrada para a Poisson, que também dá pesos constantes (\(w_i = 4\)).</p>
+
+<h3>3.4 Propriedades herdadas da regressão linear</h3>
+
+<p>Todas saem direto de \(\mathbf W = \mathbf I\) e \(\mathcal I = \phi\,\mathbf X^\top\mathbf X\):</p>
+
+<div class="tbl-wrap"><table class="txt"><thead><tr><th scope=col>Propriedade</th><th scope=col>Regressão linear</th><th scope=col>Gama com ligação log</th></tr></thead><tbody>
+<tr><td>Equações normais</td><td>\(\mathbf X^\top\mathbf e = \mathbf 0\)</td><td>\(\mathbf X^\top\mathbf r = \mathbf 0\), com \(r_i = (y_i-\hat\mu_i)/\hat\mu_i\), o <strong>resíduo de Pearson</strong></td></tr>
+<tr><td>Com intercepto</td><td>\(\sum e_i = 0\)</td><td>\(\sum r_i = 0 \iff \frac1n\sum y_i/\hat\mu_i = 1\)</td></tr>
+<tr><td>Covariância de \(\hat{\boldsymbol\beta}\)</td><td>\(\sigma^2(\mathbf X^\top\mathbf X)^{-1}\), exata</td><td>\(\phi^{-1}(\mathbf X^\top\mathbf X)^{-1}\), assintótica</td></tr>
+<tr><td>Matriz chapéu</td><td>\(\mathbf H = \mathbf X(\mathbf X^\top\mathbf X)^{-1}\mathbf X^\top\)</td><td>A mesma, sem depender de \(\hat{\boldsymbol\beta}\)</td></tr>
+<tr><td>Estimador da dispersão</td><td>\(s^2 = \sum e_i^2/(n-p)\)</td><td>\(1/\hat\phi = \sum r_i^2/(n-p)\) (Pearson)</td></tr>
+<tr><td>\(\hat{\boldsymbol\beta}\) depende da escala do erro?</td><td>Não</td><td>Não depende de \(\phi\)</td></tr>
+</tbody></table></div>
+
+<p>Algumas consequências práticas:</p>
+
+<ul>
+<li><strong>Erros-padrão sem \(\hat\mu\).</strong> A covariância estimada depende dos dados só por \(\hat\phi\). O desenho de \(\mathbf X\) determina sozinho a precisão relativa dos coeficientes, como num experimento planejado de regressão linear.</li>
+<li><strong>Alavancas conhecidas antes do ajuste.</strong> Os \(h_{ii}\) são os mesmos da regressão linear com a mesma matriz \(\mathbf X\), o que simplifica distância de Cook, DFBETAs e planejamento de experimentos.</li>
+<li><strong>Invariância de escala.</strong> Trocar \(y\) por \(c\,y\) (de reais para milhares de reais, por exemplo) só soma \(\log c\) ao intercepto. Os outros coeficientes e todos os erros-padrão ficam iguais.</li>
+<li><strong>Ortogonalidade de \(\boldsymbol\beta\) e \(\phi\)</strong>, como em qualquer MLG: estimar \(\phi\) não perturba a inferência sobre \(\boldsymbol\beta\).</li>
+</ul>
+
+<h3>3.5 A ponte com a regressão linear de \(\log y\)</h3>
+
+<p>Pela §2.4, \(\log Y_i = \mathbf x_i^\top\boldsymbol\beta + \log G_i\), com \(G_i\) <strong>i.i.d.</strong>, porque a distribuição de \(G\) não depende de \(\mu_i\). Isso é um <strong>modelo linear exato</strong> com erros i.i.d. não normais:</p>
+
+<div class="eq">\[ \log Y_i = \underbrace{\big(\beta_0 + \psi(\phi)-\log\phi\big)}_{\text{intercepto deslocado}} + \beta_1x_{i1}+\cdots+\beta_px_{ip} + \varepsilon_i,\qquad \operatorname{Var}(\varepsilon_i) = \psi'(\phi). \]<span class="tag-n">(7)</span></div>
+
+<p>Então o MQO de \(\log y\) em \(\mathbf X\) estima <strong>sem viés</strong> as inclinações \(\beta_1,\dots,\beta_p\); estima o intercepto com viés \(\psi(\phi)-\log\phi\approx -1/(2\phi)\); e tem covariância \(\psi'(\phi)(\mathbf X^\top\mathbf X)^{-1}\), contra \(\phi^{-1}(\mathbf X^\top\mathbf X)^{-1}\) da máxima verossimilhança Gama. A eficiência relativa das inclinações é \(1/(\phi\,\psi'(\phi))\):</p>
+
+<div class="tbl-wrap"><table><thead><tr><th scope=col>\(\phi\)</th><th scope=col>1</th><th scope=col>2</th><th scope=col>5</th><th scope=col>10</th><th scope=col>20</th><th scope=col>100</th></tr></thead><tbody>
+<tr><td>eficiência do MQO em \(\log y\)</td><td>0,61</td><td>0,78</td><td>0,90</td><td>0,95</td><td>0,975</td><td>0,995</td></tr>
+</tbody></table></div>
+
+<p>Com \(\phi\) grande os dois métodos praticamente coincidem, que é a §2 vista de outro ângulo. Com \(\phi\) pequeno o MLG Gama é bem mais eficiente. Ele também estima \(\mathbb E[Y]\) diretamente, sem a correção de retransformação (<em>smearing</em>) que o MQO em \(\log y\) exige. O MQO em \(\log y\) é, aliás, um ótimo valor inicial para o IRLS.</p>
+
+<h3>3.6 Conferência numérica</h3>
+
+<p>Simulei \(n=500\) observações com \(\phi=5\), \(\beta_0 = 1\), \(\beta_1 = 0{,}5\) e \(x\sim N(0,1)\), e rodei o IRLS com pesos unitários, isto é, um MQO de \(\mathbf z\) em \(\mathbf X\) a cada passo:</p>
+
+<ul>
+<li>convergiu em 5 iterações para \(\hat{\boldsymbol\beta} = (0{,}9535;\ 0{,}4830)\), idêntico ao <code>statsmodels</code> (<code>GLM</code>, família Gama, ligação log);</li>
+<li>\(\mathbf X^\top\mathbf r \approx (4\times10^{-13};\ 2\times10^{-10})\) e \(\frac1n\sum y_i/\hat\mu_i = 1{,}0000\);</li>
+<li>os erros-padrão \(\sqrt{\operatorname{diag}\big((\mathbf X^\top\mathbf X)^{-1}/\hat\phi\big)}\) batem com os do <code>statsmodels</code> em todas as casas;</li>
+<li>o MQO em \(\log y\) deu inclinação \(0{,}4805\), praticamente igual, e intercepto \(0{,}842\), cerca de \(0{,}11\) abaixo, como prevê o viés \(\psi(5)-\log 5 = -0{,}103\).</li>
+</ul>
+
+<h2><span class="n">§4</span>Veredito: “parecido com uma regressão linear simples”</h2>
+
+<p>É comum ler que, no MLG Gama com ligação log, a estimação é “parecida com uma regressão linear simples e tem propriedades importantes”. <strong>No essencial, a frase é verdadeira, com três ressalvas.</strong></p>
+
+<p>O que é verdade: cada passo do IRLS é literalmente uma regressão linear <em>ordinária</em>, sem pesos, da resposta de trabalho \(\mathbf z\) em \(\mathbf X\); a informação de Fisher \(\phi\,\mathbf X^\top\mathbf X\), a covariância \(\phi^{-1}(\mathbf X^\top\mathbf X)^{-1}\) e a matriz chapéu têm exatamente a forma da regressão linear e não dependem de \(\boldsymbol\beta\); os resíduos de Pearson são ortogonais às colunas de \(\mathbf X\) e somam zero com intercepto, como os resíduos de MQO. A razão estrutural é que \(\log\) é a transformação estabilizadora de variância para \(V(\mu)=\mu^2\).</p>
+
+<p>As ressalvas:</p>
+
+<ol>
+<li><strong>“Simples” só no sentido de “ordinária, sem pesos”.</strong> O resultado vale para qualquer número de covariáveis. Não tem relação com a regressão linear <em>simples</em> no sentido técnico, a de uma covariável só.</li>
+<li><strong>Não é uma regressão só.</strong> É iterativa: \(\mathbf z\) depende de \(\hat{\boldsymbol\mu}\), não há fórmula fechada, e a covariância e a normalidade de \(\hat{\boldsymbol\beta}\) são assintóticas, não exatas como no modelo linear normal.</li>
+<li><strong>Escore de Fisher não é Newton–Raphson aqui.</strong> Como a ligação não é canônica, a informação observada \(\phi\sum (y_i/\mu_i)\,\mathbf x_i\mathbf x_i^\top\) é diferente da esperada. Os dois algoritmos convergem para o mesmo \(\hat{\boldsymbol\beta}\), mas por caminhos diferentes, e erros-padrão baseados na informação observada diferem um pouco dos de \(\phi^{-1}(\mathbf X^\top\mathbf X)^{-1}\). Também se perde a propriedade das ligações canônicas \(\sum y_i = \sum\hat\mu_i\); no lugar dela vale \(\sum y_i/\hat\mu_i = n\).</li>
+</ol>
+
+<p>Em resumo: a Gama com ligação log oferece a estrutura de cálculo e de diagnóstico de uma regressão linear, com variância proporcional a \(\mu^2\), médias sempre positivas e efeitos multiplicativos. Quando \(\phi\) é grande, ela chega a coincidir, na prática, com a regressão linear de \(\log y\).</p>
+
+<h2><span class="n">§5</span>Para ir além</h2>
+
+<ul>
+<li>P. McCullagh e J. A. Nelder (1989). <em>Generalized Linear Models</em>, 2ª ed., cap. 8. Chapman &amp; Hall. Dados com coeficiente de variação constante.</li>
+<li>B. Jørgensen (1997). <em>The Theory of Dispersion Models</em>. Chapman &amp; Hall. A assintótica de pequena dispersão.</li>
+<li>D. Firth (1988). <em>Multiplicative errors: log-normal or gamma?</em> Journal of the Royal Statistical Society B, 50(2), 266–268. Eficiência da Gama contra a log-normal.</li>
+<li>E. B. Wilson e M. M. Hilferty (1931). <em>The distribution of chi-square</em>. Proceedings of the National Academy of Sciences, 17(12), 684–688.</li>
+</ul>

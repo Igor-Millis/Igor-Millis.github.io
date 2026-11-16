@@ -973,6 +973,16 @@ date = "2026-11-13"
 minutes = 30
 abstract = "The ridge λ, the bandwidth and the loess span are hyperparameters, and statistics has been choosing them for 50 years. What they are, why they cannot be estimated with the parameters, how CV, GCV, AIC and REML compare in a simulation, and how grid, random search, Bayesian optimisation and successive halving tune many at once — with the bias of picking the best of many."
 
+[research.notes.gamma-log-link]
+title = "The gamma, the normal and the log link"
+seo_title = "The gamma distribution in GLMs: the normal approximation as precision grows, and why the log link turns IRLS into ordinary least squares"
+description = "Why the gamma with mean μ and coefficient of variation φ^(-1/2) approaches a normal N(μ, μ²/φ) as φ grows (proof via the MGF), what that approximation buys you, and why in the gamma GLM with a log link the IRLS weights equal 1: Fisher information φXᵀX, the linear-regression hat matrix, orthogonal Pearson residuals, the bridge to a regression of log y and a verdict on the phrase “like a simple linear regression”."
+kind = "statistics · glm"
+tags = ["GLM", "Statistics", "Modeling"]
+date = "2026-11-15"
+minutes = 15
+abstract = "As the precision φ grows, the gamma becomes a normal that still keeps the variance proportional to μ². And with the log link, which is not the canonical one, every IRLS step is an ordinary, unweighted linear regression. Both proofs, the properties that follow, a numerical check, and what the phrase “like a simple linear regression” gets right and wrong."
+
 [research.notes.p-value]
 title = "The p-value, demystified"
 seo_title = "The p-value, demystified: what it is, what it is for, and how it compares with confidence intervals, Bayesian methods and AIC"

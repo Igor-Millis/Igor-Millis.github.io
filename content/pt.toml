@@ -973,6 +973,16 @@ date = "2026-11-13"
 minutes = 30
 abstract = "O λ da ridge, a largura de banda e o span do loess são hiperparâmetros, e a estatística os escolhe há 50 anos. O que eles são, por que não dá para estimá-los junto com os parâmetros, como CV, GCV, AIC e REML se comparam numa simulação, e como grade, busca aleatória, otimização bayesiana e successive halving otimizam muitos de uma vez — com o viés de escolher o melhor de muitos."
 
+[research.notes.gamma-log-link]
+title = "A Gama, a normal e a ligação log"
+seo_title = "Distribuição Gama em MLG: aproximação normal quando a precisão cresce e por que a ligação log faz o IRLS virar mínimos quadrados ordinários"
+description = "Por que a Gama com média μ e coeficiente de variação φ^(-1/2) se aproxima de uma normal N(μ, μ²/φ) quando φ cresce (demonstração pela FGM), as vantagens dessa aproximação, e por que no MLG Gama com ligação log os pesos do IRLS valem 1: informação de Fisher φXᵀX, matriz chapéu da regressão linear, resíduos de Pearson ortogonais, a ponte com a regressão de log y e um veredito sobre a frase “parecido com uma regressão linear simples”."
+kind = "estatística · mlg"
+tags = ["MLG", "Estatística", "Modelagem"]
+date = "2026-11-15"
+minutes = 15
+abstract = "Quando a precisão φ cresce, a Gama vira uma normal que ainda guarda a variância proporcional a μ². E com a ligação log, que não é a canônica, cada passo do IRLS é uma regressão linear comum, sem pesos. As duas demonstrações, as propriedades que vêm daí, a conferência numérica e o que a frase “parecido com uma regressão linear simples” acerta e erra."
+
 [research.notes.p-value]
 title = "P-valor sem mistério"
 seo_title = "P-valor sem mistério: o que é, para que serve e como se compara a intervalos de confiança, métodos bayesianos e AIC"

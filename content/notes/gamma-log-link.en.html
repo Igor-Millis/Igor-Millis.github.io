@@ -1,0 +1,196 @@
+<p>Positive, right-skewed data, such as time to an event, hospital costs, income or energy use, almost never have constant variance: the larger the mean, the larger the spread. The <strong>gamma</strong> distribution models exactly that. This article proves two facts that explain why it is so convenient. First, as the precision parameter \(\phi\) grows, the gamma converges to a normal, but <em>a normal that keeps the mean–variance relationship</em> of the data. Second, with the <strong>log</strong> link (which is not the canonical one), the estimation algorithm becomes a sequence of <strong>ordinary, unweighted least squares</strong> fits, and several properties of linear regression carry over almost literally. It ends with a numerical check and a verdict on the phrase often used to sum up the second fact.</p>
+
+<div class="note"><strong>What you need beforehand.</strong> The structure of a GLM (random component, linear predictor \(\eta_i = \mathbf x_i^\top\boldsymbol\beta\), link \(g(\mu_i) = \eta_i\)), maximum likelihood and some matrix algebra. The article <a href="{note:quasi-likelihood}">Quasi-likelihood in GLMs</a> derives IRLS for any variance function; here it appears in the gamma special case.</div>
+
+<h2><span class="n">§1</span>The parametrization</h2>
+
+<p>We write \(Y \sim \text{Gamma}(\mu, \phi)\) with density</p>
+
+<div class="eq">\[ f(y;\mu,\phi) = \frac{1}{\Gamma(\phi)}\left(\frac{\phi}{\mu}\right)^{\phi} y^{\phi-1}\exp\!\left(-\frac{\phi\,y}{\mu}\right),\qquad y&gt;0, \]<span class="tag-n">(1)</span></div>
+
+<p>that is, shape \(\phi\) and rate \(\phi/\mu\). Hence</p>
+
+<div class="eq">\[ \mathbb E[Y] = \mu,\qquad \operatorname{Var}(Y) = \frac{\mu^2}{\phi},\qquad \text{CV} = \frac{\sqrt{\operatorname{Var}(Y)}}{\mathbb E[Y]} = \phi^{-1/2}. \]<span class="tag-n">(2)</span></div>
+
+<p>The coefficient of variation is <strong>constant</strong>: it does not depend on \(\mu\). That is the natural assumption for data whose “error” is proportional to the level: a $10,000 cost varies more, in dollars, than a $100 one, but the same in percentage terms. In GLM language, the variance function is \(V(\mu) = \mu^2\) and the dispersion is \(\phi^{-1}\).</p>
+
+<div class="note"><strong>Mind the variance.</strong> If the CV is \(\phi^{-1/2}\), the variance is \((\mu\,\phi^{-1/2})^2 = \mu^2\phi^{-1}\), not \(\mu\,\phi^{-1}\). Variance proportional to the mean, \(\mu\,\phi^{-1}\), belongs to quasi-Poisson, not to the gamma. The limiting normal in §2 therefore has mean \(\mu\) and variance \(\mu^2/\phi\).</div>
+
+<h2><span class="n">§2</span>As \(\phi \to \infty\), \(Y\) approaches \(N(\mu,\ \mu^2/\phi)\)</h2>
+
+<h3>2.1 Statement</h3>
+
+<p>Let \(Y_\phi \sim \text{Gamma}(\mu, \phi)\) and define the standardized version</p>
+
+<div class="eq">\[ Z_\phi = \frac{Y_\phi - \mu}{\mu/\sqrt{\phi}} = \sqrt{\phi}\left(\frac{Y_\phi}{\mu} - 1\right). \]</div>
+
+<p>Then \(Z_\phi \xrightarrow{d} N(0,1)\) as \(\phi\to\infty\). In practice, for large \(\phi\), \(Y \approx N(\mu,\ \mu^2/\phi)\).</p>
+
+<h3>2.2 Proof via the moment generating function</h3>
+
+<p>The MGF of the gamma with shape \(\phi\) and rate \(\phi/\mu\) is</p>
+
+<div class="eq">\[ M_Y(t) = \left(1 - \frac{\mu t}{\phi}\right)^{-\phi},\qquad t &lt; \frac{\phi}{\mu}. \]</div>
+
+<p>Since \(Z = \frac{\sqrt\phi}{\mu}Y - \sqrt\phi\),</p>
+
+<div class="eq">\[ M_Z(s) = e^{-s\sqrt\phi}\,M_Y\!\left(\frac{s\sqrt\phi}{\mu}\right) = e^{-s\sqrt\phi}\left(1 - \frac{s}{\sqrt\phi}\right)^{-\phi}. \]</div>
+
+<p>Note that \(\mu\) is gone: the distribution of \(Z\) depends on \(\phi\) only. Taking logs and using \(-\log(1-x) = x + \tfrac{x^2}{2} + \tfrac{x^3}{3} + \cdots\) for \(|x|&lt;1\), with \(x = s/\sqrt\phi\):</p>
+
+<div class="eq">\[ \log M_Z(s) = -s\sqrt\phi + \phi\left(\frac{s}{\sqrt\phi} + \frac{s^2}{2\phi} + \frac{s^3}{3\phi^{3/2}} + \cdots\right) = \frac{s^2}{2} + \frac{s^3}{3\sqrt\phi} + \frac{s^4}{4\phi} + \cdots \]<span class="tag-n">(3)</span></div>
+
+<p>For fixed \(s\), every term after \(s^2/2\) goes to zero as \(\phi\to\infty\). So \(M_Z(s)\to e^{s^2/2}\), the MGF of \(N(0,1)\), and by Lévy's continuity theorem \(Z_\phi \xrightarrow{d} N(0,1)\). \(\blacksquare\)</p>
+
+<p><strong>Another reading.</strong> If \(\phi = k\) is an integer, \(Y\) has the same distribution as \(\frac{1}{k}\sum_{j=1}^{k} E_j\), with \(E_j\) independent exponentials of mean \(\mu\). That is a mean of \(k\) i.i.d. variables with variance \(\mu^2\), and the Central Limit Theorem gives \(N(\mu, \mu^2/k)\) directly. The precision \(\phi\) acts like a “sample size” hidden inside each observation.</p>
+
+<h3>2.3 How fast the approximation improves</h3>
+
+<p>Expansion (3) shows that the first departure from normality is the cubic term, of order \(\phi^{-1/2}\). It is the skewness:</p>
+
+<div class="eq">\[ \gamma_1 = \frac{2}{\sqrt\phi},\qquad \gamma_2 = \frac{6}{\phi}\ \ (\text{excess kurtosis}). \]</div>
+
+<div class="tbl-wrap"><table><thead><tr><th scope=col>\(\phi\)</th><th scope=col>CV</th><th scope=col>skewness \(2/\sqrt\phi\)</th><th scope=col>\(P(\text{approximating normal} &lt; 0) = \Phi(-\sqrt\phi)\)</th></tr></thead><tbody>
+<tr><td>1</td><td>1.00</td><td>2.00</td><td>0.159</td></tr>
+<tr><td>5</td><td>0.45</td><td>0.89</td><td>0.013</td></tr>
+<tr><td>10</td><td>0.32</td><td>0.63</td><td>0.0008</td></tr>
+<tr><td>20</td><td>0.22</td><td>0.45</td><td>0.000004</td></tr>
+<tr><td>100</td><td>0.10</td><td>0.20</td><td>≈ 0</td></tr>
+</tbody></table></div>
+
+<p>With \(\phi \gtrsim 10\), the approximating normal puts practically no mass on negative values and the skewness is already moderate. For small \(\phi\) (CV near 1), the approximation is poor and the gamma has to be used as a gamma. A much better approximation for moderate \(\phi\) is <strong>Wilson–Hilferty</strong>, \((Y/\mu)^{1/3} \approx N\!\left(1-\frac{1}{9\phi},\ \frac{1}{9\phi}\right)\): the cube root removes almost all of the skewness.</p>
+
+<h3>2.4 And on the log scale</h3>
+
+<p>Write \(Y = \mu\,G\), with \(G\sim\text{Gamma}(1,\phi)\), of mean 1. Then \(\log Y = \log\mu + \log G\), and</p>
+
+<div class="eq">\[ \mathbb E[\log G] = \psi(\phi) - \log\phi \approx -\frac{1}{2\phi},\qquad \operatorname{Var}(\log G) = \psi'(\phi) \approx \frac{1}{\phi}, \]<span class="tag-n">(4)</span></div>
+
+<p>where \(\psi\) and \(\psi'\) are the digamma and trigamma functions. By the delta method, \(\log Y \approx N(\log\mu,\ 1/\phi)\): <strong>on the log scale the variance is constant</strong>. That fact is the bridge to §3.</p>
+
+<h3>2.5 What the approximation buys you</h3>
+
+<ol>
+<li><strong>Heteroscedasticity stays in the model.</strong> The limiting normal is not the homoscedastic \(N(\mu,\sigma^2)\); it is \(N(\mu, \mu^2/\phi)\). Even in the “nearly normal” regime, the gamma still says that the standard deviation grows in proportion to the mean. An ordinary normal regression gets exactly this wrong.</li>
+<li><strong>Reliable Wald inference.</strong> Intervals like \(\hat\mu\,(1 \pm z_{\alpha/2}/\sqrt{\hat\phi})\) and normal-based tests become accurate.</li>
+<li><strong>Small-dispersion asymptotics.</strong> The scaled deviance \(\phi\,D\) approaches \(\chi^2_{n-p}\) as \(\phi\) grows, <em>even with \(n\) fixed</em>. Likelihood-ratio and goodness-of-fit tests become accurate without huge samples.</li>
+<li><strong>Simple diagnostics.</strong> Pearson residuals \((y-\hat\mu)/\hat\mu\) and deviance residuals become approximately normal, and normal QQ plots become informative.</li>
+<li><strong>Choosing between similar models matters little.</strong> With large \(\phi\), the gamma, the log-normal and a “normal with constant CV” are nearly indistinguishable, and the estimates of \(\boldsymbol\beta\) barely move. With small \(\phi\) the choice matters, and the gamma has the advantage of modelling \(\mathbb E[Y]\) directly.</li>
+<li><strong>It justifies familiar shortcuts</strong>, such as weighted least squares with weights \(1/\hat\mu^2\) or a linear regression of \(\log y\) (§3.5).</li>
+</ol>
+
+<h2><span class="n">§3</span>The gamma GLM with a log link</h2>
+
+<h3>3.1 The model</h3>
+
+<p>For independent observations \(Y_i \sim \text{Gamma}(\mu_i,\phi)\):</p>
+
+<div class="eq">\[ \log\mu_i = \eta_i = \mathbf x_i^\top\boldsymbol\beta \quad\Longleftrightarrow\quad \mu_i = e^{\mathbf x_i^\top\boldsymbol\beta}. \]</div>
+
+<p>The <strong>canonical</strong> link of the gamma is the reciprocal, \(g(\mu) = 1/\mu\). It has a serious practical problem: \(\mu\) must be positive, but nothing stops \(\mathbf x^\top\boldsymbol\beta\) from becoming negative or zero during fitting. The log link guarantees \(\mu_i &gt; 0\) for any \(\boldsymbol\beta\) and gives coefficients that read as <strong>multiplicative effects</strong>: a one-unit increase in \(x_j\) multiplies the mean by \(e^{\beta_j}\).</p>
+
+<h3>3.2 Score and information</h3>
+
+<p>The log-likelihood, up to terms without \(\boldsymbol\beta\), is</p>
+
+<div class="eq">\[ \ell(\boldsymbol\beta) = \phi\sum_{i=1}^n\left(-\frac{y_i}{\mu_i} - \log\mu_i\right) = \phi\sum_{i=1}^n\left(-y_i e^{-\eta_i} - \eta_i\right). \]</div>
+
+<p>Differentiating with respect to \(\eta_i\):</p>
+
+<div class="eq">\[ \frac{\partial\ell_i}{\partial\eta_i} = \phi\left(\frac{y_i}{\mu_i} - 1\right),\qquad \frac{\partial^2\ell_i}{\partial\eta_i^2} = -\phi\,\frac{y_i}{\mu_i}. \]</div>
+
+<p>By the chain rule, with \(\partial\eta_i/\partial\boldsymbol\beta = \mathbf x_i\):</p>
+
+<div class="eq">\[ \mathbf U(\boldsymbol\beta) = \phi\,\mathbf X^\top\mathbf r,\quad r_i = \frac{y_i - \mu_i}{\mu_i};\qquad \mathbf J(\boldsymbol\beta) = \phi\sum_i \frac{y_i}{\mu_i}\,\mathbf x_i\mathbf x_i^\top;\qquad \mathcal I(\boldsymbol\beta) = \mathbb E[\mathbf J] = \phi\,\mathbf X^\top\mathbf X. \]<span class="tag-n">(5)</span></div>
+
+<p>\(\mathbf J\) is the observed information; \(\mathcal I\) is the expected one, because \(\mathbb E[Y_i/\mu_i] = 1\). <strong>This is the key result:</strong> the Fisher information is \(\phi\,\mathbf X^\top\mathbf X\). It does not depend on \(\boldsymbol\beta\) and has the same form as in linear regression, where \(\mathcal I = \sigma^{-2}\mathbf X^\top\mathbf X\).</p>
+
+<h3>3.3 IRLS becomes ordinary least squares</h3>
+
+<p>In any GLM, Fisher scoring can be written as iteratively reweighted least squares:</p>
+
+<div class="eq">\[ \boldsymbol\beta^{(m+1)} = (\mathbf X^\top\mathbf W\mathbf X)^{-1}\mathbf X^\top\mathbf W\mathbf z,\qquad w_i = \frac{1}{V(\mu_i)\,g'(\mu_i)^2},\qquad z_i = \eta_i + (y_i-\mu_i)\,g'(\mu_i). \]</div>
+
+<p>For the gamma with a log link, \(V(\mu) = \mu^2\) and \(g'(\mu) = 1/\mu\), so</p>
+
+<div class="eq">\[ w_i = \frac{1}{\mu_i^2\cdot \mu_i^{-2}} = 1\ \text{ for every } i,\qquad z_i = \eta_i + \frac{y_i-\mu_i}{\mu_i}. \]</div>
+
+<p>The weights vanish, and each iteration is</p>
+
+<div class="eq">\[ \boxed{\ \boldsymbol\beta^{(m+1)} = (\mathbf X^\top\mathbf X)^{-1}\mathbf X^\top\mathbf z^{(m)}\ } \]<span class="tag-n">(6)</span></div>
+
+<p>that is, <strong>an ordinary linear regression (OLS) of the working response \(\mathbf z\) on \(\mathbf X\)</strong>. The matrix \((\mathbf X^\top\mathbf X)^{-1}\) is computed once; only the vector \(\mathbf z\) changes between iterations.</p>
+
+<p><strong>Why does this happen?</strong> The weights are constant exactly when \(V(\mu)\,g'(\mu)^2\) is constant, that is, when \(g'(\mu)\propto V(\mu)^{-1/2}\). Integrating, \(g(\mu) \propto \int V(\mu)^{-1/2}\,d\mu\), which is the <strong>variance-stabilizing transformation</strong>. For \(V(\mu)=\mu^2\), \(\int \mu^{-1}d\mu = \log\mu\). The log link is to the gamma what the square root is to the Poisson, which also gives constant weights (\(w_i = 4\)).</p>
+
+<h3>3.4 Properties inherited from linear regression</h3>
+
+<p>All of them follow directly from \(\mathbf W = \mathbf I\) and \(\mathcal I = \phi\,\mathbf X^\top\mathbf X\):</p>
+
+<div class="tbl-wrap"><table class="txt"><thead><tr><th scope=col>Property</th><th scope=col>Linear regression</th><th scope=col>Gamma with log link</th></tr></thead><tbody>
+<tr><td>Normal equations</td><td>\(\mathbf X^\top\mathbf e = \mathbf 0\)</td><td>\(\mathbf X^\top\mathbf r = \mathbf 0\), with \(r_i = (y_i-\hat\mu_i)/\hat\mu_i\), the <strong>Pearson residual</strong></td></tr>
+<tr><td>With an intercept</td><td>\(\sum e_i = 0\)</td><td>\(\sum r_i = 0 \iff \frac1n\sum y_i/\hat\mu_i = 1\)</td></tr>
+<tr><td>Covariance of \(\hat{\boldsymbol\beta}\)</td><td>\(\sigma^2(\mathbf X^\top\mathbf X)^{-1}\), exact</td><td>\(\phi^{-1}(\mathbf X^\top\mathbf X)^{-1}\), asymptotic</td></tr>
+<tr><td>Hat matrix</td><td>\(\mathbf H = \mathbf X(\mathbf X^\top\mathbf X)^{-1}\mathbf X^\top\)</td><td>The same, not depending on \(\hat{\boldsymbol\beta}\)</td></tr>
+<tr><td>Dispersion estimator</td><td>\(s^2 = \sum e_i^2/(n-p)\)</td><td>\(1/\hat\phi = \sum r_i^2/(n-p)\) (Pearson)</td></tr>
+<tr><td>Does \(\hat{\boldsymbol\beta}\) depend on the error scale?</td><td>No</td><td>It does not depend on \(\phi\)</td></tr>
+</tbody></table></div>
+
+<p>Some practical consequences:</p>
+
+<ul>
+<li><strong>Standard errors without \(\hat\mu\).</strong> The estimated covariance depends on the data only through \(\hat\phi\). The design \(\mathbf X\) alone fixes the relative precision of the coefficients, as in a designed linear-regression experiment.</li>
+<li><strong>Leverages known before fitting.</strong> The \(h_{ii}\) are the same as in a linear regression with the same \(\mathbf X\), which simplifies Cook's distance, DFBETAs and experimental design.</li>
+<li><strong>Scale invariance.</strong> Replacing \(y\) with \(c\,y\) (dollars to thousands of dollars, say) only adds \(\log c\) to the intercept. The other coefficients and all standard errors are unchanged.</li>
+<li><strong>Orthogonality of \(\boldsymbol\beta\) and \(\phi\)</strong>, as in any GLM: estimating \(\phi\) does not disturb inference on \(\boldsymbol\beta\).</li>
+</ul>
+
+<h3>3.5 The bridge to a linear regression of \(\log y\)</h3>
+
+<p>From §2.4, \(\log Y_i = \mathbf x_i^\top\boldsymbol\beta + \log G_i\), with \(G_i\) <strong>i.i.d.</strong>, because the distribution of \(G\) does not depend on \(\mu_i\). This is an <strong>exact linear model</strong> with i.i.d., non-normal errors:</p>
+
+<div class="eq">\[ \log Y_i = \underbrace{\big(\beta_0 + \psi(\phi)-\log\phi\big)}_{\text{shifted intercept}} + \beta_1x_{i1}+\cdots+\beta_px_{ip} + \varepsilon_i,\qquad \operatorname{Var}(\varepsilon_i) = \psi'(\phi). \]<span class="tag-n">(7)</span></div>
+
+<p>So OLS of \(\log y\) on \(\mathbf X\) estimates the slopes \(\beta_1,\dots,\beta_p\) <strong>without bias</strong>; estimates the intercept with bias \(\psi(\phi)-\log\phi\approx -1/(2\phi)\); and has covariance \(\psi'(\phi)(\mathbf X^\top\mathbf X)^{-1}\), against \(\phi^{-1}(\mathbf X^\top\mathbf X)^{-1}\) for gamma maximum likelihood. The relative efficiency of the slopes is \(1/(\phi\,\psi'(\phi))\):</p>
+
+<div class="tbl-wrap"><table><thead><tr><th scope=col>\(\phi\)</th><th scope=col>1</th><th scope=col>2</th><th scope=col>5</th><th scope=col>10</th><th scope=col>20</th><th scope=col>100</th></tr></thead><tbody>
+<tr><td>efficiency of OLS on \(\log y\)</td><td>0.61</td><td>0.78</td><td>0.90</td><td>0.95</td><td>0.975</td><td>0.995</td></tr>
+</tbody></table></div>
+
+<p>With large \(\phi\) the two methods practically coincide, which is §2 seen from another angle. With small \(\phi\) the gamma GLM is much more efficient. It also estimates \(\mathbb E[Y]\) directly, without the retransformation (<em>smearing</em>) correction that OLS on \(\log y\) needs. OLS on \(\log y\) is, by the way, an excellent starting value for IRLS.</p>
+
+<h3>3.6 Numerical check</h3>
+
+<p>I simulated \(n=500\) observations with \(\phi=5\), \(\beta_0 = 1\), \(\beta_1 = 0.5\) and \(x\sim N(0,1)\), and ran IRLS with unit weights, that is, an OLS of \(\mathbf z\) on \(\mathbf X\) at each step:</p>
+
+<ul>
+<li>it converged in 5 iterations to \(\hat{\boldsymbol\beta} = (0.9535,\ 0.4830)\), identical to <code>statsmodels</code> (<code>GLM</code>, gamma family, log link);</li>
+<li>\(\mathbf X^\top\mathbf r \approx (4\times10^{-13},\ 2\times10^{-10})\) and \(\frac1n\sum y_i/\hat\mu_i = 1.0000\);</li>
+<li>the standard errors \(\sqrt{\operatorname{diag}\big((\mathbf X^\top\mathbf X)^{-1}/\hat\phi\big)}\) match <code>statsmodels</code> to every digit;</li>
+<li>OLS on \(\log y\) gave a slope of \(0.4805\), practically the same, and an intercept of \(0.842\), about \(0.11\) lower, as the bias \(\psi(5)-\log 5 = -0.103\) predicts.</li>
+</ul>
+
+<h2><span class="n">§4</span>Verdict: “like a simple linear regression”</h2>
+
+<p>You often read that, in the gamma GLM with a log link, estimation is “like a simple linear regression, with important properties”. <strong>In essence the phrase is true, with three caveats.</strong></p>
+
+<p>What is true: each IRLS step is literally an <em>ordinary</em>, unweighted linear regression of the working response \(\mathbf z\) on \(\mathbf X\); the Fisher information \(\phi\,\mathbf X^\top\mathbf X\), the covariance \(\phi^{-1}(\mathbf X^\top\mathbf X)^{-1}\) and the hat matrix have exactly the linear-regression form and do not depend on \(\boldsymbol\beta\); the Pearson residuals are orthogonal to the columns of \(\mathbf X\) and sum to zero with an intercept, like OLS residuals. The structural reason is that \(\log\) is the variance-stabilizing transformation for \(V(\mu)=\mu^2\).</p>
+
+<p>The caveats:</p>
+
+<ol>
+<li><strong>“Simple” only in the sense of “ordinary, unweighted”.</strong> The result holds for any number of covariates. It has nothing to do with <em>simple</em> linear regression in the technical sense, the one with a single covariate.</li>
+<li><strong>It is not a single regression.</strong> It is iterative: \(\mathbf z\) depends on \(\hat{\boldsymbol\mu}\), there is no closed form, and the covariance and normality of \(\hat{\boldsymbol\beta}\) are asymptotic, not exact as in the normal linear model.</li>
+<li><strong>Fisher scoring is not Newton–Raphson here.</strong> Because the link is not canonical, the observed information \(\phi\sum (y_i/\mu_i)\,\mathbf x_i\mathbf x_i^\top\) differs from the expected one. Both algorithms converge to the same \(\hat{\boldsymbol\beta}\), but along different paths, and standard errors based on the observed information differ slightly from \(\phi^{-1}(\mathbf X^\top\mathbf X)^{-1}\). The canonical-link property \(\sum y_i = \sum\hat\mu_i\) is also lost; in its place, \(\sum y_i/\hat\mu_i = n\).</li>
+</ol>
+
+<p>In short: the gamma with a log link offers the computational and diagnostic structure of a linear regression, with variance proportional to \(\mu^2\), means that are always positive and multiplicative effects. When \(\phi\) is large, it practically coincides with a linear regression of \(\log y\).</p>
+
+<h2><span class="n">§5</span>Further reading</h2>
+
+<ul>
+<li>P. McCullagh and J. A. Nelder (1989). <em>Generalized Linear Models</em>, 2nd ed., ch. 8. Chapman &amp; Hall. Data with a constant coefficient of variation.</li>
+<li>B. Jørgensen (1997). <em>The Theory of Dispersion Models</em>. Chapman &amp; Hall. Small-dispersion asymptotics.</li>
+<li>D. Firth (1988). <em>Multiplicative errors: log-normal or gamma?</em> Journal of the Royal Statistical Society B, 50(2), 266–268. Efficiency of the gamma against the log-normal.</li>
+<li>E. B. Wilson and M. M. Hilferty (1931). <em>The distribution of chi-square</em>. Proceedings of the National Academy of Sciences, 17(12), 684–688.</li>
+</ul>
