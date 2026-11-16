@@ -106,6 +106,35 @@
     }
   }));
 
+  /* ---------- tag filter (articles list) ---------- */
+  const tf = $(".tag-filter");
+  if (tf) {
+    const btns = $$(".tf-btn", tf);
+    const rows = $$(".note-row");
+    const empty = $(".tf-empty");
+    const apply = (tag, push) => {
+      if (tag && !btns.some((b) => b.dataset.tag === tag)) tag = "";
+      btns.forEach((b) => b.setAttribute("aria-pressed", b.dataset.tag === tag ? "true" : "false"));
+      let n = 0;
+      rows.forEach((r) => {
+        const show = !tag || (r.dataset.tags || "").split("|").includes(tag);
+        r.hidden = !show;
+        if (show) { n++; r.classList.add("in"); }
+      });
+      if (empty) empty.hidden = n > 0;
+      if (push) {
+        const url = new URL(location.href);
+        tag ? url.searchParams.set("tag", tag) : url.searchParams.delete("tag");
+        history.replaceState(null, "", url);
+      }
+    };
+    btns.forEach((b) => b.addEventListener("click", () => {
+      const on = b.getAttribute("aria-pressed") === "true";
+      apply(on ? "" : b.dataset.tag, true);
+    }));
+    apply(new URLSearchParams(location.search).get("tag") || "", false);
+  }
+
   /* ---------- reveal on scroll ---------- */
   const rv = $$(".rv");
   const revealAll = () => rv.forEach((el) => el.classList.add("in"));

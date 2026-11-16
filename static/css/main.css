@@ -184,6 +184,19 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 0; }
 .row:hover .arr { transform: translate(4px, -4px); color: var(--accent); }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
 .tag { font: 400 11px var(--f-mono); color: var(--text-2); border: 1px solid var(--line-strong); padding: 2px 7px; border-radius: 3px; }
+a.tag { text-decoration: none; }
+a.tag:hover { color: var(--accent); border-color: var(--accent); }
+
+/* tag filter (articles list) */
+.tag-filter { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+.tf-btn { font: 400 12px var(--f-mono); color: var(--text-2); background: transparent; border: 1px solid var(--line-strong); border-radius: 3px; padding: 5px 10px; cursor: pointer; transition: color .2s, border-color .2s, background .2s; }
+.tf-btn span { color: var(--text-3); margin-left: 4px; }
+.tf-btn:hover { color: var(--accent); border-color: var(--accent); }
+.tf-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tf-btn[aria-pressed="true"] { color: var(--bg); background: var(--accent); border-color: var(--accent); }
+.tf-btn[aria-pressed="true"] span { color: inherit; opacity: .75; }
+.note-row[hidden] { display: none; }
+.tf-empty { padding: 26px 0; margin: 0; }
 
 /* ---------- 8. Home: three doors ---------- */
 .doors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-bottom: 1px solid var(--line); }

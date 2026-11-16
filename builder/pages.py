@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from urllib.parse import quote
 
 from .charts import ci_bars, hbars, threshold_chart
 from .charts import reliability as reliability_svg
@@ -502,17 +503,30 @@ def research(site: Site, lang: str) -> str:
     r = c["research"]
     ui = c["ui"]
     rows = ""
+    counts: dict[str, int] = {}
     for slug in NOTES:
         n = r["notes"][slug]
-        rows += f"""<a class="note-row rv" href="{site.url(lang, f'note:{slug}')}">
+        note_tags = n.get("tags", [])
+        for t in note_tags:
+            counts[t] = counts.get(t, 0) + 1
+        rows += f"""<a class="note-row rv" href="{site.url(lang, f'note:{slug}')}" data-tags="{attr('|'.join(note_tags))}">
   <time datetime="{n['date']}">{n['date']}</time>
-  <span><h3>{esc(n['title'])}</h3><p>{esc(n['abstract'])}</p></span>
+  <span><h3>{esc(n['title'])}</h3><p>{esc(n['abstract'])}</p>{tags(note_tags) if note_tags else ''}</span>
   <span class="kind">{esc(n['kind'])}<br><span class="muted">{n['minutes']} {esc(ui['min_read'])}</span></span>
 </a>"""
+    # Most-used tags first, then alphabetical.
+    ordered = sorted(counts, key=lambda t: (-counts[t], t.casefold()))
+    buttons = f'<button type="button" class="tf-btn" data-tag="" aria-pressed="true">{esc(r["filter_all"])} <span>{len(NOTES)}</span></button>'
+    buttons += "".join(
+        f'<button type="button" class="tf-btn" data-tag="{attr(t)}" aria-pressed="false">{esc(t)} <span>{counts[t]}</span></button>'
+        for t in ordered
+    )
     body = (page_head(r["label"], r["h1"], r["lede"])
             + f"""<section class="sec"><div class="wrap">
   <p class="label" style="margin-bottom:18px"><b>03</b> / {esc(r['list_label'])}</p>
+  <div class="tag-filter" role="group" aria-label="{attr(r['filter_label'])}">{buttons}</div>
   <div class="notes">{rows}</div>
+  <p class="tf-empty muted" hidden>{esc(r['filter_empty'])}</p>
   <p class="label" style="margin-top:40px"><b>fmt</b> / {esc(r['format_label'])} — {esc(r['format'])}</p>
 </div></section>""")
     return page(site, lang, "research", title=r["title"], description=r["description"], body=body)
@@ -537,7 +551,9 @@ def note(site: Site, lang: str, slug: str) -> str:
     by = (f'<div class="byline"><span>{esc(site.config["author"]["name"])}</span><time datetime="{n["date"]}">{n["date"]}</time>'
           f'<span>{n["minutes"]} {esc(ui["min_read"])}</span><span class="accent">{esc(n["kind"])}</span></div>')
     if n.get("tags"):
-        by += tags(n["tags"])
+        base = site.url(lang, "research")
+        by += '<div class="tags">' + "".join(
+            f'<a class="tag" href="{base}?tag={attr(quote(t))}">{esc(t)}</a>' for t in n["tags"]) + "</div>"
     head = page_head(f'<a href="{site.url(lang, "research")}" style="text-decoration:none">{esc(ui["back_research"])}</a>',
                      esc(n["title"]), esc(n["abstract"]), by)
     body = head + f'<section class="sec"><div class="wrap"><article class="article rv">{html_body}</article></div></section>'
