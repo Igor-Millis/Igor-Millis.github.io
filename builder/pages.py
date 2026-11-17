@@ -154,7 +154,7 @@ def person_ld(site: Site, lang: str) -> dict:
         "url": site.abs_url(lang, "home"),
         "email": f"mailto:{a['email']}",
         "image": site.config["site"]["base_url"] + site.asset("img/igor-millis.webp"),
-        "sameAs": [a["github"], a["linkedin"]],
+        "sameAs": [a["github"], a["linkedin"], a["huggingface"]],
         "affiliation": {"@type": "CollegeOrUniversity", "name": "Universidade Federal do Espírito Santo (UFES)"},
         "knowsAbout": ["Statistics", "Machine Learning", "Data Engineering", "Data Science", "Large Language Models"],
     }
@@ -234,6 +234,7 @@ def about(site: Site, lang: str) -> str:
   <li><a href="mailto:{a['email']}" data-copy="{a['email']}"><span class="k">email</span><span class="v">{esc(a['email'])}</span><span class="arr">↗</span></a></li>
   <li><a href="{a['github']}" rel="me noopener"><span class="k">github</span><span class="v">github.com/{esc(a['github_handle'])}</span><span class="arr">↗</span></a></li>
   <li><a href="{a['linkedin']}" rel="me noopener"><span class="k">linkedin</span><span class="v">{esc(a['linkedin_handle'])}</span><span class="arr">↗</span></a></li>
+  <li><a href="{a['huggingface']}" rel="me noopener"><span class="k">hugging face</span><span class="v">huggingface.co/{esc(a['huggingface_handle'])}</span><span class="arr">↗</span></a></li>
 </ul>"""
     body = (
         page_head(ab["label"], ab["h1"])

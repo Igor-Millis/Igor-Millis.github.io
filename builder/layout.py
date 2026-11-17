@@ -65,6 +65,7 @@ def _cmdk_data(site: Site, lang: str, key: str) -> str:
         {"label": ui["copy_email"], "hint": a["email"], "action": "copy", "value": a["email"]},
         {"label": "GitHub", "hint": a["github_handle"], "href": a["github"], "ext": True},
         {"label": "LinkedIn", "hint": a["linkedin_handle"], "href": a["linkedin"], "ext": True},
+        {"label": "Hugging Face", "hint": a["huggingface_handle"], "href": a["huggingface"], "ext": True},
         {"label": ui["theme"], "hint": "t", "action": "theme"},
         {"label": f'{ui["lang_label"]}: {site.other(lang).upper()}', "hint": "l",
          "href": site.url(site.other(lang), key)},
@@ -178,6 +179,7 @@ def footer(site: Site, lang: str, key: str) -> str:
           <li><a href="mailto:{a['email']}">{esc(a['email'])}</a></li>
           <li><a href="{a['github']}" rel="me noopener">github ↗</a></li>
           <li><a href="{a['linkedin']}" rel="me noopener">linkedin ↗</a></li>
+          <li><a href="{a['huggingface']}" rel="me noopener">hugging face ↗</a></li>
         </ul>
       </div>
       <div>
